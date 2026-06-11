@@ -428,7 +428,7 @@ CREATE TABLE otp_records (
 | Category | Implementation |
 |----------|----------------|
 | **Auth** | `streamlit-authenticator` with bcrypt; session timeout 30 min |
-| **Authz** | Admin role check on every page load; role column in `users` table |
+| **Authz** | Admin role check: user_id must exist in `admins` table; implicit role via admins/hosts tables |
 | **Input Validation** | Pydantic models for all form submissions; server-side validation |
 | **SQL Injection** | SQLAlchemy ORM with parameterized queries only; no raw SQL |
 | **XSS** | Streamlit auto-escapes; sanitize any `st.markdown(unsafe_allow_html=True)` |
@@ -436,6 +436,14 @@ CREATE TABLE otp_records (
 | **Audit Logging** | `audit_log` table recording all admin actions (who, what, when) |
 | **Secrets** | `.env` file for DB credentials, not committed to git |
 | **CSRF** | Streamlit handles via session tokens |
+
+### Per-Module Authentication
+
+| Module | Sign Up | Sign In |
+|--------|---------|---------|
+| **Admin** | Created manually by existing admin (insert into `users` + `admins`) | Admin login page → checks `admins` table |
+| **Host** | Client app signup → inserts into `users` + `user_profiles` + `hosts` | Client login → checks `hosts` table |
+| **Guest** | Client app signup → inserts into `users` + `user_profiles` | Client login → no `hosts` or `admins` record |
 
 ---
 
@@ -493,7 +501,7 @@ bcrypt>=4.1
 
 ### [Security]
 - Admin authentication: bcrypt-hashed passwords, session-based login
-- Role-based access: every page checks `session_state.role == 'admin'`
+- Role-based access: every page checks if user_id exists in `admins` table (implicit role, no role column)
 - Audit trail: all admin mutations logged to `audit_log` table
 - Secrets in `.env` (never committed); loaded via `python-dotenv`
 - Input sanitization: Pydantic validation + Streamlit auto-escaping
