@@ -133,7 +133,9 @@ CREATE TABLE admins (
     created_at      TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 5. LISTINGS (owned by hosts via host_id FK)
+-- 5. LISTINGS (admin moderation only — core data owned by client app/Kayla Carl)
+-- Admin can only modify: status (approve/reject/suspend)
+-- Read-only access for: title, description, price, location, host_id
 CREATE TABLE listings (
     id              SERIAL PRIMARY KEY,
     host_id         INT REFERENCES hosts(id) ON DELETE CASCADE,
