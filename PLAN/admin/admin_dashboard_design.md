@@ -111,7 +111,9 @@ CREATE TABLE user_profiles (
     updated_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 3. HOSTS (extends users — a user is a host if their user_id exists here)
+-- 3. HOSTS (host-specific profile data — a user is a host if their user_id exists here)
+-- Contains: badge (superhost/new), response metrics, verification status
+-- Linked to users table via user_id FK
 CREATE TABLE hosts (
     id              SERIAL PRIMARY KEY,
     user_id         INT UNIQUE REFERENCES users(id) ON DELETE CASCADE,
