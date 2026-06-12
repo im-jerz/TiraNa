@@ -60,19 +60,30 @@ Host (Landlord) Module
     Generate financial reports
     Analyze property performance
 
-6. Reviews & Ratings Management
+6. Wallet & Financial Management
+    View current wallet balance
+    Track total earnings
+    Monitor pending earnings
+    View available balance for withdrawal
+    View transaction history
+    Track booking payments
+    Monitor wallet credits and deductions
+    Request wallet withdrawals
+    View withdrawal history and status
+
+7. Reviews & Ratings Management
     View guest reviews
     Respond to guest feedback
     Monitor property ratings
     Track customer satisfaction
 
-7. Messaging & Communication
+8. Messaging & Communication
     Communicate with guests
     Manage booking inquiries
     Receive reservation notifications
     Handle guest concerns and requests
 
-8. Account & Profile Management
+9. Account & Profile Management
     Update host profile information
     Manage contact details
     Change password and security settings
@@ -118,6 +129,24 @@ PAYMENTS
     Revenue records
     Payout information
 
+WALLETS
+    Wallet information
+    Current balance
+    Available balance
+    Pending balance
+
+WALLET_TRANSACTIONS
+    Wallet transaction records
+    Transaction type
+    Transaction amount
+    Transaction status
+
+WITHDRAWALS
+    Withdrawal requests
+    Withdrawal amount
+    Withdrawal status
+    Withdrawal date
+
 REVIEWS
     Guest ratings
     Feedback and comments
@@ -142,6 +171,7 @@ Proposed Host Dashboard Sections
         Active Bookings
         Pending Reservations
         Monthly Revenue
+        Wallet Balance
         Recent Activities
 
     4. Property Management
@@ -165,21 +195,29 @@ Proposed Host Dashboard Sections
         Earnings Reports
         Payout History
 
-    8. Guest Management
+    8. Wallet
+        Current Balance
+        Pending Earnings
+        Available Balance
+        Transaction History
+        Withdraw Funds
+        Withdrawal History
+
+    9. Guest Management
         Guest Records
         Booking History
         Guest Reviews
 
-    9. Reviews & Ratings
+    10. Reviews & Ratings
         Feedback Monitoring
         Rating Overview
 
-    10. Messages & Notifications
+    11. Messages & Notifications
         Inbox
         Reservation Alerts
         Guest Communications
 
-    11. Account Settings
+    12. Account Settings
         Profile Settings
         Security Settings
         Notification Preferences
