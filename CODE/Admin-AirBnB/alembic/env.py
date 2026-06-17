@@ -11,6 +11,10 @@ from database import Base
 from models.admin_user import AdminUser
 from models.otp_code import OTPCode
 from models.login_attempt import LoginAttempt
+from models.support_ticket import SupportTicket
+from models.ticket_message import TicketMessage
+from models.activity_log import ActivityLog
+from models.audit_log import AuditLog
 from config import Config
 
 config = context.config

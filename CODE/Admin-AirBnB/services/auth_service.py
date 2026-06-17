@@ -172,6 +172,22 @@ def has_valid_otp(db: Session, admin_id: str, purpose: str) -> bool:
 
 
 def resend_otp(db: Session, admin_id: str, purpose: str, email: str) -> tuple[str | None, str | None]:
+    # Rate limit: max 3 OTPs per admin per purpose in the last 5 minutes.
+    # This prevents abuse even if the user refreshes the page (which resets
+    # st.session_state.cooldown) or opens multiple tabs.
+    window = datetime.now(timezone.utc) - timedelta(minutes=5)
+    recent_otps = (
+        db.query(OTPCode)
+        .filter(
+            OTPCode.admin_id == admin_id,
+            OTPCode.purpose == purpose,
+            OTPCode.created_at > window,
+        )
+        .count()
+    )
+    if recent_otps >= 3:
+        return None, "Too many resend requests. Please wait a few minutes."
+
     code = generate_otp(db, admin_id, purpose)
     email_sent = send_otp_email(email, code, purpose)
     if Config.APP_ENV == "development":

@@ -65,6 +65,7 @@ def render():
                         if valid:
                             st.session_state.logged_in = True
                             st.session_state.admin_id = admin_id
+                            st.session_state.page = "dashboard"
                             st.session_state.pop("pending_admin_id", None)
                             st.session_state.pop("pending_email", None)
                             st.session_state.pop("otp_purpose", None)

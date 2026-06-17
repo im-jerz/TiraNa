@@ -5,6 +5,7 @@ import pandas as pd
 from database import SessionLocal
 from services.auth_service import get_admin_by_id
 from services.host_api import host_api
+from views.components.sidebar import render_sidebar
 
 
 def _render_kpi_cards(stats: dict):
@@ -73,15 +74,7 @@ def render():
         st.warning("Admin not found")
         st.stop()
 
-    with st.sidebar:
-        st.markdown(f"### {admin.full_name}")
-        st.markdown(f"{admin.email}")
-        st.divider()
-        if st.button("Logout", key="logout_btn", use_container_width=True):
-            st.query_params.clear()
-            for key in list(st.session_state.keys()):
-                del st.session_state[key]
-            st.rerun()
+    render_sidebar(admin)
 
     st.title(f"Welcome, {admin.full_name}!")
 
