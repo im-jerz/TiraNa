@@ -1,121 +1,66 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
+import SignIn from './pages/auth/SignIn'
+import SignUp from './pages/auth/SignUp'
+import VerifyEmail from './pages/auth/VerifyEmail'
+import ForgotPassword from './pages/auth/ForgotPassword'
+import ResetPassword from './pages/auth/ResetPassword'
 
-function App() {
-  const [count, setCount] = useState(0)
+/**
+ * Maps the `onNavigate(page, params)` calls used inside the auth pages
+ * to real React Router navigation. `params` (e.g. { email }) is passed
+ * along as route state so the destination page can read it.
+ */
+function AuthRoutes() {
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  const handleNavigate = (page, params = {}) => {
+    navigate(`/${page}`, { state: params })
+  }
+
+  const state = location.state || {}
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <Routes>
+      <Route path="/signin" element={<SignIn onNavigate={handleNavigate} />} />
+      <Route path="/signup" element={<SignUp onNavigate={handleNavigate} />} />
+      <Route
+        path="/verify-email"
+        element={<VerifyEmail onNavigate={handleNavigate} email={state.email || "you@example.com"} />}
+      />
+      <Route path="/forgot-password" element={<ForgotPassword onNavigate={handleNavigate} />} />
+      <Route
+        path="/reset-password"
+        element={<ResetPassword onNavigate={handleNavigate} email={state.email || ""} />}
+      />
 
-      <div className="ticks"></div>
+      {/* Default route */}
+      <Route path="/" element={<Navigate to="/signin" replace />} />
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Miss you Balik kana</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+      {/* Dashboard route (protected later) */}
+      <Route path="/dashboard" element={
+        <div style={{ padding: "2rem" }}>
+          <h1>Dashboard</h1>
+          <p>This will be your protected dashboard after login</p>
+          <button onClick={() => {
+            localStorage.removeItem("access_token")
+            localStorage.removeItem("refresh_token")
+            localStorage.removeItem("host")
+            navigate("/signin")
+          }}>
+            Sign Out
+          </button>
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      } />
+    </Routes>
+  )
+}
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+function App() {
+  return (
+    <Router>
+      <AuthRoutes />
+    </Router>
   )
 }
 
