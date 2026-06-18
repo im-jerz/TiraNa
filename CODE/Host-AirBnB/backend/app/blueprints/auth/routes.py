@@ -43,18 +43,11 @@ from app.utils.response import success_response, error_response
 from app.utils.validators import allowed_file, file_size_ok, ALLOWED_DOCUMENT_EXTENSIONS
 
 
-# In-memory JWT blocklist for /logout.
-# Swap for a Redis set in production so it works across multiple workers.
 _token_blocklist = set()
 
 
 def is_token_revoked(jwt_header, jwt_payload):
     return jwt_payload["jti"] in _token_blocklist
-
-
-# ─── Register ────────────────────────────────────────────────────────
-# flow.md 1.1 Sign Up — Steps 1 & 2 combined (multi-step is frontend-only;
-# the backend receives the full payload + two files in one request).
 
 @auth_bp.route("/register", methods=["POST"])
 def register():
@@ -95,9 +88,6 @@ def register():
     )
 
 
-# ─── OTP verification ──────────────────────────────────────────────────
-# flow.md 1.1 Sign Up — Step 3 (email OTP), and reused by reset-password.
-
 @auth_bp.route("/verify-otp", methods=["POST"])
 def verify_otp_route():
     schema = OtpVerifySchema()
@@ -126,9 +116,6 @@ def resend_otp():
 
     return success_response(message="A new verification code has been sent.")
 
-
-# ─── Login ───────────────────────────────────────────────────────────
-# flow.md 1.2 Sign In
 
 @auth_bp.route("/login", methods=["POST"])
 def login():
@@ -169,17 +156,12 @@ def login():
     )
 
 
-# ─── Refresh ─────────────────────────────────────────────────────────
-
 @auth_bp.route("/refresh", methods=["POST"])
 @jwt_required(refresh=True)
 def refresh():
     host_id = get_jwt_identity()
     new_access_token = create_access_token(identity=str(host_id))
     return success_response(data={"access_token": new_access_token})
-
-
-# ─── Logout ──────────────────────────────────────────────────────────
 
 @auth_bp.route("/logout", methods=["POST"])
 @jwt_required()
@@ -188,9 +170,6 @@ def logout():
     _token_blocklist.add(jti)
     return success_response(message="Logged out successfully.")
 
-
-# ─── Forgot / Reset password ────────────────────────────────────────
-# flow.md 1.3 Account Recovery
 
 @auth_bp.route("/forgot-password", methods=["POST"])
 def forgot_password():
@@ -204,8 +183,6 @@ def forgot_password():
     if host:
         auth_service.create_and_send_otp(data["email"], purpose="password_reset")
 
-    # Always return the same generic message — don't reveal whether the
-    # email is registered (prevents account enumeration).
     return success_response(
         message="If that email is registered, a reset code has been sent."
     )

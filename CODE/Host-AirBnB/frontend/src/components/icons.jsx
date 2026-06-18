@@ -1,8 +1,3 @@
-/* ─── Shared SVG Icon Set ───────────────────────────────────────
-   Hand-drawn-feel line icons, stroke-based, consistent with the
-   auth pages (strokeWidth 1.8, round caps). No emoji, no icon font.
-   ──────────────────────────────────────────────────────────────── */
-
 const base = {
   width: 20,
   height: 20,

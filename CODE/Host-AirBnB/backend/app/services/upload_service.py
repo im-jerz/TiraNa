@@ -11,10 +11,6 @@ import uuid
 from werkzeug.utils import secure_filename
 from flask import current_app
 
-# backend/app/services/upload_service.py -> backend/ -> Host-AirBnB/ -> frontend/src/assets/uploads
-# Property photos are saved directly into the frontend's asset folder per
-# project requirements, and served back out at /uploads/properties/... by
-# Flask's static route registered in app/__init__.py (see PROPERTY_UPLOAD_ROOT).
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 PROPERTY_UPLOAD_ROOT = os.path.normpath(
     os.path.join(_THIS_DIR, "..", "..", "..", "frontend", "src", "assets", "uploads")

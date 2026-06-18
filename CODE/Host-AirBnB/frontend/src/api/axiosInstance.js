@@ -1,12 +1,5 @@
 import axios from "axios";
 
-/**
- * Base URL of the Flask backend.
- *
- * Vite exposes env vars prefixed with VITE_ to the client via import.meta.env.
- * Set VITE_API_BASE_URL in a `.env` file at the frontend root if your Flask
- * server runs somewhere other than http://localhost:5000.
- */
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 const axiosInstance = axios.create({
@@ -16,7 +9,6 @@ const axiosInstance = axios.create({
   },
 });
 
-/* ─── Attach access token to every request ─────────────────────── */
 axiosInstance.interceptors.request.use((config) => {
   const token = localStorage.getItem("access_token");
   if (token) {
@@ -25,7 +17,6 @@ axiosInstance.interceptors.request.use((config) => {
   return config;
 });
 
-/* ─── Auto-refresh on 401, retry original request once ──────────── */
 let isRefreshing = false;
 let pendingQueue = [];
 
@@ -46,7 +37,6 @@ axiosInstance.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // /login and /refresh themselves returning 401 should not loop
     if (
       originalRequest.url?.includes("/auth/login") ||
       originalRequest.url?.includes("/auth/refresh")

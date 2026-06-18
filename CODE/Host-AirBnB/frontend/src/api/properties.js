@@ -35,9 +35,6 @@ export async function getProperties(params = {}) {
   return data;
 }
 
-/**
- * GET /api/host/properties/:id
- */
 export async function getProperty(id) {
   const { data } = await axiosInstance.get(`/api/host/properties/${id}`);
   return data;
@@ -89,18 +86,11 @@ export async function togglePropertyStatus(id, status) {
   return data;
 }
 
-/**
- * DELETE /api/host/properties/:id
- */
 export async function deleteProperty(id) {
   const { data } = await axiosInstance.delete(`/api/host/properties/${id}`);
   return data;
 }
 
-/**
- * Saves an in-progress "Add Property" draft (auto-save every 30s per spec).
- * POST /api/host/properties/draft
- */
 export async function savePropertyDraft(payload) {
   const { data } = await axiosInstance.post("/api/host/properties/draft", { payload });
   return data;

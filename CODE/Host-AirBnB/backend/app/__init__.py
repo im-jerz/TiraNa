@@ -20,7 +20,6 @@ def create_app(config_name: str = "development") -> Flask:
     app = Flask(__name__)
     app.config.from_object(config_by_name[config_name])
 
-    # ─── Extensions ────────────────────────────────────────────────
     db.init_app(app)
     migrate.init_app(app, db)
     bcrypt.init_app(app)
@@ -29,21 +28,13 @@ def create_app(config_name: str = "development") -> Flask:
     cors.init_app(app, resources={r"/api/*": {"origins": "*"}})
     mail.init_app(app)
 
-    # ─── Blueprints ──────────────────────────────────────────────
     register_blueprints(app)
 
-    # ─── Static file serving for uploaded property photos ─────────
-    # Physical files live under frontend/src/assets/uploads/properties/
-    # (per project requirements) — Flask serves them back out so the
-    # frontend's <img src="..."> tags resolve regardless of which dev
-    # server is hit. Swap for Cloudinary/S3 URLs in production and
-    # this route becomes unnecessary.
     @app.route("/uploads/properties/<path:filepath>")
     def uploaded_property_photo(filepath):
         directory = f"{PROPERTY_UPLOAD_ROOT}/properties"
         return send_from_directory(directory, filepath)
 
-    # ─── JWT blocklist (logout support) ───────────────────────────
     @jwt.token_in_blocklist_loader
     def check_if_token_revoked(jwt_header, jwt_payload):
         from app.blueprints.auth.routes import is_token_revoked
@@ -65,7 +56,6 @@ def create_app(config_name: str = "development") -> Flask:
     def revoked_token_callback(jwt_header, jwt_payload):
         return error_response("Token has been revoked. Please sign in again.", status=401)
 
-    # ─── Error handlers ────────────────────────────────────────────
     @app.errorhandler(404)
     def not_found(e):
         return error_response("Resource not found.", status=404)

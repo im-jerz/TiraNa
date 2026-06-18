@@ -14,7 +14,6 @@ class Config:
 
     SECRET_KEY = os.environ.get("SECRET_KEY", "change-this-in-production")
 
-    # ─── Database (Oracle via python-oracledb) ────────────────────
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         "DATABASE_URL",
         "oracle+oracledb://AIRBNB_HOST:Carlangelo%2319@localhost:1521/?service_name=FREEPDB1"
@@ -25,36 +24,25 @@ class Config:
         "pool_recycle": 1800,
     }
 
-    # ─── JWT ────────────────────────────────────────────────────────
     JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "change-this-too")
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=30)
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=7)
     JWT_TOKEN_LOCATION = ["headers"]
     JWT_HEADER_TYPE = "Bearer"
 
-    # ─── OTP (registration, password reset, withdrawal confirm) ─────
     OTP_LENGTH = 6
     OTP_EXPIRY_MINUTES = 10
 
-    # ─── Login rate limiting ──────────────────────────────────────
     MAX_LOGIN_ATTEMPTS = 5
     LOGIN_LOCKOUT_MINUTES = 15
 
-    # ─── Upload size caps ────────────────────────────────────────
-    # MAX_CONTENT_LENGTH caps the *whole* request body, not a single
-    # file. KYC registration sends 2 documents; adding a property can
-    # send up to 20 photos (5MB each, validated per-file in
-    # properties/routes.py) — so the global cap has to cover the
-    # worst case of a full photo batch, not just the KYC flow.
-    MAX_CONTENT_LENGTH = 110 * 1024 * 1024  # 110 MB
+    MAX_CONTENT_LENGTH = 110 * 1024 * 1024 
     ALLOWED_DOCUMENT_EXTENSIONS = {"jpg", "jpeg", "png", "pdf"}
 
-    # ─── Cloud storage (placeholders for upload_service.py) ─────────
     CLOUDINARY_CLOUD_NAME = os.environ.get("CLOUDINARY_CLOUD_NAME")
     CLOUDINARY_API_KEY = os.environ.get("CLOUDINARY_API_KEY")
     CLOUDINARY_API_SECRET = os.environ.get("CLOUDINARY_API_SECRET")
 
-    # ─── Mail (OTP delivery) ─────────────────────────────────────────
     MAIL_SERVER = os.environ.get("MAIL_SERVER", "smtp.gmail.com")
     MAIL_PORT = int(os.environ.get("MAIL_PORT", 587))
     MAIL_USE_TLS = True

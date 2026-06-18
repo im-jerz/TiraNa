@@ -31,7 +31,7 @@ from app.services.property_service import PropertyError
 from app.utils.response import success_response, error_response
 from app.utils.validators import allowed_file, file_size_ok, ALLOWED_IMAGE_EXTENSIONS
 
-MAX_PHOTO_BYTES = 5 * 1024 * 1024  # 5MB per photo, per flow.md edge case
+MAX_PHOTO_BYTES = 5 * 1024 * 1024
 
 
 def _parse_payload():
@@ -59,8 +59,6 @@ def _collect_and_validate_photos():
     return files, None
 
 
-# ─── List ────────────────────────────────────────────────────────────
-
 @properties_bp.route("", methods=["GET"])
 @host_required
 def list_properties():
@@ -72,8 +70,6 @@ def list_properties():
 
     return success_response(data={"properties": data})
 
-
-# ─── Create ──────────────────────────────────────────────────────────
 
 @properties_bp.route("", methods=["POST"])
 @host_required
@@ -104,8 +100,6 @@ def create_property():
     )
 
 
-# ─── Detail ──────────────────────────────────────────────────────────
-
 @properties_bp.route("/<int:property_id>", methods=["GET"])
 @host_required
 def get_property(property_id):
@@ -115,9 +109,6 @@ def get_property(property_id):
         return error_response(pe.message, status=pe.status)
 
     return success_response(data={"property": PropertyDetailSchema().dump(prop)})
-
-
-# ─── Update ──────────────────────────────────────────────────────────
 
 @properties_bp.route("/<int:property_id>", methods=["PUT"])
 @host_required
@@ -148,8 +139,6 @@ def update_property(property_id):
     return success_response(message=message, data={"property": PropertyDetailSchema().dump(prop)})
 
 
-# ─── Status toggle (activate/deactivate) ────────────────────────────
-
 @properties_bp.route("/<int:property_id>/status", methods=["PATCH"])
 @host_required
 def update_status(property_id):
@@ -168,8 +157,6 @@ def update_status(property_id):
     return success_response(message=message, data={"property": PropertyListItemSchema().dump(prop)})
 
 
-# ─── Delete ──────────────────────────────────────────────────────────
-
 @properties_bp.route("/<int:property_id>", methods=["DELETE"])
 @host_required
 def delete_property(property_id):
@@ -180,11 +167,6 @@ def delete_property(property_id):
 
     return success_response(message="Property deleted.")
 
-
-# ─── Draft auto-save (flow.md 3.2 edge case: "Draft saved" every 30s) ──
-# Minimal placeholder: acknowledges the save without persisting yet,
-# since a dedicated PROPERTY_DRAFTS table isn't part of the current
-# schema. Swap this for real persistence if/when that table is added.
 
 @properties_bp.route("/draft", methods=["POST"])
 @host_required

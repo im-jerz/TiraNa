@@ -27,9 +27,6 @@ class PropertyError(Exception):
         self.message = message
         self.status = status
 
-
-# ─── Helpers ─────────────────────────────────────────────────────────
-
 def _get_owned_property(property_id: int, host_id: int) -> Property:
     prop = Property.query.get(int(property_id))
     if prop is None:
@@ -95,9 +92,6 @@ def _save_photos(prop: Property, photo_files: list) -> None:
             )
         )
 
-
-# ─── List / Detail ───────────────────────────────────────────────────
-
 def list_properties(host_id: int, status_filter: str = None, sort: str = "recent"):
     query = Property.query.filter_by(host_id=host_id)
 
@@ -116,9 +110,6 @@ def list_properties(host_id: int, status_filter: str = None, sort: str = "recent
 
 def get_property_detail(property_id: int, host_id: int) -> Property:
     return _get_owned_property(property_id, host_id)
-
-
-# ─── Create ──────────────────────────────────────────────────────────
 
 def create_property(host_id: int, payload: dict, photo_files: list) -> Property:
     if len(photo_files) < 5:
@@ -149,7 +140,7 @@ def create_property(host_id: int, payload: dict, photo_files: list) -> Property:
         cancellation_policy=payload["cancellation_policy"],
     )
     db.session.add(prop)
-    db.session.flush()  # assigns prop.id before child rows reference it
+    db.session.flush()
 
     db.session.add(
         PropertyLocation(
@@ -171,11 +162,6 @@ def create_property(host_id: int, payload: dict, photo_files: list) -> Property:
     db.session.commit()
     return prop
 
-
-# ─── Update ──────────────────────────────────────────────────────────
-
-# Changing these fields requires another admin look per flow.md 3.3:
-# "Changes to photos/location may trigger admin re-review."
 _FIELDS_REQUIRING_REREVIEW = {"street", "city", "province", "zip_code", "lat", "lng", "photos"}
 
 
@@ -242,16 +228,11 @@ def update_property(property_id: int, host_id: int, payload: dict, photo_files: 
     photos_changed = bool(photo_files)
     _save_photos(prop, photo_files)
 
-    # Price/description edits go live immediately; location/photo edits
-    # send the listing back for a quick admin re-review (flow.md 3.3).
     if (location_changed or photos_changed) and prop.status == "active":
         prop.status = "pending_review"
 
     db.session.commit()
     return prop
-
-
-# ─── Status toggle ───────────────────────────────────────────────────
 
 def set_property_status(property_id: int, host_id: int, new_status: str) -> Property:
     prop = _get_owned_property(property_id, host_id)
@@ -265,8 +246,6 @@ def set_property_status(property_id: int, host_id: int, new_status: str) -> Prop
     db.session.commit()
     return prop
 
-
-# ─── Delete ──────────────────────────────────────────────────────────
 
 def delete_property(property_id: int, host_id: int) -> None:
     prop = _get_owned_property(property_id, host_id)

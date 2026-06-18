@@ -1,24 +1,13 @@
 import axiosInstance from "./axiosInstance";
 
 /**
- * Auth API calls — mirrors backend/app/blueprints/auth/routes.py
- *
- * Every backend response has the shape:
- *   { success: true,  message: "...", data: {...} }
- *   { success: false, message: "...", errors: {...} }
- *
- * On error, axios throws — callers should catch and read
- * `error.response.data.message` / `error.response.data.errors`.
- */
-
-/**
  * POST /api/auth/register
  * multipart/form-data — required by backend for id_document + selfie_document files.
  *
- * @param {object} fields - { full_name, email, password, confirm_password, phone }
+ * @param {object} fields 
  * @param {File} idDocument
  * @param {File} selfieDocument
- */
+ 
 export async function register(fields, idDocument, selfieDocument) {
   const formData = new FormData();
   Object.entries(fields).forEach(([key, value]) => formData.append(key, value));
@@ -46,18 +35,11 @@ export async function verifyOtp(email, otpCode, purpose = "email_verification") 
   return data;
 }
 
-/**
- * POST /api/auth/resend-otp
- */
 export async function resendOtp(email, purpose = "email_verification") {
   const { data } = await axiosInstance.post("/api/auth/resend-otp", { email, purpose });
   return data;
 }
 
-/**
- * POST /api/auth/login
- * On success, stores access_token + refresh_token in localStorage.
- */
 export async function login(email, password) {
   const { data } = await axiosInstance.post("/api/auth/login", { email, password });
 
@@ -70,9 +52,6 @@ export async function login(email, password) {
   return data;
 }
 
-/**
- * POST /api/auth/logout
- */
 export async function logout() {
   try {
     await axiosInstance.post("/api/auth/logout");
@@ -83,17 +62,12 @@ export async function logout() {
   }
 }
 
-/**
- * POST /api/auth/forgot-password
- */
 export async function forgotPassword(email) {
   const { data } = await axiosInstance.post("/api/auth/forgot-password", { email });
   return data;
 }
 
-/**
- * POST /api/auth/reset-password
- */
+
 export async function resetPassword(email, otpCode, newPassword, confirmPassword) {
   const { data } = await axiosInstance.post("/api/auth/reset-password", {
     email,

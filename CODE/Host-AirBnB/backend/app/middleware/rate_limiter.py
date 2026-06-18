@@ -12,7 +12,6 @@ replace the in-memory dict with Redis (same interface, swap storage).
 from datetime import datetime, timedelta
 from flask import current_app
 
-# email -> list of failed-attempt timestamps
 _failed_attempts = {}
 
 

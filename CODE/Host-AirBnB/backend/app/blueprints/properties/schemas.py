@@ -23,8 +23,6 @@ CANCELLATION_POLICIES = ("flexible", "moderate", "strict")
 TOGGLEABLE_STATUSES = ("active", "inactive")
 
 
-# ─── Nested input schemas (one per wizard step) ───────────────────────
-
 class BasicsInputSchema(Schema):
     property_type = fields.String(required=True)
     title = fields.String(required=True)
@@ -153,8 +151,6 @@ class StatusUpdateSchema(Schema):
         if value not in TOGGLEABLE_STATUSES:
             raise ValidationError(f"Status must be one of: {', '.join(TOGGLEABLE_STATUSES)}.")
 
-
-# ─── Output schemas ────────────────────────────────────────────────────
 
 class AddressOutputSchema(Schema):
     street = fields.String()

@@ -25,8 +25,6 @@ class AuthError(Exception):
         self.status = status
 
 
-# ─── Registration ──────────────────────────────────────────────────
-
 def register_host(data: dict, id_document_url: str, selfie_document_url: str) -> Host:
     """
     Creates a Host (status=awaiting_verification), its HostProfile,
@@ -46,7 +44,7 @@ def register_host(data: dict, id_document_url: str, selfie_document_url: str) ->
         email_verified=0,
     )
     db.session.add(host)
-    db.session.flush()  # assigns host.id before commit, needed for FKs below
+    db.session.flush()
 
     profile = HostProfile(
         host_id=host.id,
@@ -75,9 +73,6 @@ def register_host(data: dict, id_document_url: str, selfie_document_url: str) ->
     create_and_send_otp(host.email, purpose="email_verification")
 
     return host
-
-
-# ─── OTP ────────────────────────────────────────────────────────────
 
 def create_and_send_otp(email: str, purpose: str) -> OtpVerification:
     """
@@ -219,9 +214,6 @@ def _send_otp_email(email: str, code: str, purpose: str) -> None:
             status=502,
         ) from exc
 
-
-# ─── Login ───────────────────────────────────────────────────────────
-
 def authenticate_host(email: str, password: str) -> Host:
     """
     Verifies credentials. Raises AuthError(401) for bad credentials
@@ -241,9 +233,6 @@ def authenticate_host(email: str, password: str) -> Host:
         raise AuthError("Your account has been suspended. Contact support.", status=403)
 
     return host
-
-
-# ─── Password reset ─────────────────────────────────────────────────
 
 def reset_password(email: str, new_password: str) -> Host:
     host = Host.query.filter_by(email=email).first()

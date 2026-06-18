@@ -9,10 +9,8 @@ confirm fields) so the API never trusts client-side checks alone.
 import re
 from marshmallow import Schema, fields, validates, validates_schema, ValidationError
 
-# Min 8 chars, at least one uppercase, one digit, one special character
 PASSWORD_PATTERN = re.compile(r"^(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}$")
 
-# PH mobile numbers: 09xxxxxxxxx or +639xxxxxxxxx
 PH_PHONE_PATTERN = re.compile(r"^(\+63|0)[0-9]{10}$")
 
 OTP_PURPOSES = ("email_verification", "password_reset", "withdrawal_confirm")
@@ -24,9 +22,6 @@ def _validate_password(value):
             "Password must be at least 8 characters and include an "
             "uppercase letter, a number, and a special character."
         )
-
-
-# ─── Registration (flow.md 1.1 Sign Up, Steps 1-2) ────────────────────
 
 class RegisterSchema(Schema):
     full_name = fields.String(required=True)
@@ -55,14 +50,10 @@ class RegisterSchema(Schema):
             raise ValidationError("Passwords do not match.", field_name="confirm_password")
 
 
-# ─── Login (flow.md 1.2 Sign In) ───────────────────────────────────────
-
 class LoginSchema(Schema):
     email = fields.Email(required=True)
     password = fields.String(required=True, load_only=True)
 
-
-# ─── OTP verification (flow.md 1.1 Step 3, 1.3 Forgot Password) ───────
 
 class OtpVerifySchema(Schema):
     email = fields.Email(required=True)
@@ -90,8 +81,6 @@ class ResendOtpSchema(Schema):
             raise ValidationError(f"Purpose must be one of: {', '.join(OTP_PURPOSES)}.")
 
 
-# ─── Forgot / reset password (flow.md 1.3 Account Recovery) ───────────
-
 class ForgotPasswordSchema(Schema):
     email = fields.Email(required=True)
 
@@ -116,8 +105,6 @@ class ResetPasswordSchema(Schema):
         if data.get("new_password") != data.get("confirm_password"):
             raise ValidationError("Passwords do not match.", field_name="confirm_password")
 
-
-# ─── Response shape ────────────────────────────────────────────────────
 
 class HostPublicSchema(Schema):
     """Safe subset of Host fields returned after login/register."""
