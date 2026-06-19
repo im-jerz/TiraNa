@@ -1,5 +1,7 @@
 import streamlit as st
 
+from utils.icons import user_icon, compass_icon, svg_icon
+
 
 NAV_ITEMS = [
     ("Dashboard", "dashboard"),
@@ -27,11 +29,11 @@ def render_sidebar(admin) -> None:
     always knows where they are.
     """
     with st.sidebar:
-        st.markdown(f"### 👤 {admin.full_name}")
+        st.markdown(f"### {svg_icon(user_icon())} {admin.full_name}", unsafe_allow_html=True)
         st.caption(admin.email)
         st.divider()
 
-        st.markdown("### 🧭 Navigation")
+        st.markdown(f"### {svg_icon(compass_icon())} Navigation", unsafe_allow_html=True)
 
         current_page = st.session_state.get("page", "")
         for label, page_value in NAV_ITEMS:

@@ -6,6 +6,7 @@ from services.audit_service import log_action
 from services.auth_service import get_admin_by_id
 from views.components.sidebar import render_sidebar
 from views.components.master_detail import render_master_detail
+from utils.icons import list_icon, search_icon, svg_icon
 
 
 PER_PAGE = 20
@@ -130,8 +131,8 @@ def render():
         items=items,
         selection_key="selected_verification_id",
         render_detail=_render_verification_detail,
-        title=f"📋 Verifications ({status_filter})",
-        detail_title="🔍 Verification Details",
+        title=f"{svg_icon(list_icon())} Verifications ({status_filter})",
+        detail_title=f"{svg_icon(search_icon())} Verification Details",
         label_fields=("host_name", "host_email"),
         no_items_message="No verification requests found.",
         error_message="Could not load verifications. Host API may be unavailable.",

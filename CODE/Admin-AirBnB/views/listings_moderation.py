@@ -6,6 +6,7 @@ from services.audit_service import log_action
 from services.auth_service import get_admin_by_id
 from views.components.sidebar import render_sidebar
 from views.components.master_detail import render_master_detail
+from utils.icons import house_icon, search_icon, svg_icon
 
 
 PER_PAGE = 20
@@ -181,8 +182,8 @@ def render():
         items=items,
         selection_key="selected_listing_id",
         render_detail=_render_listing_detail,
-        title=f"🏠 Listings ({total})",
-        detail_title="🔍 Listing Details",
+        title=f"{svg_icon(house_icon())} Listings ({total})",
+        detail_title=f"{svg_icon(search_icon())} Listing Details",
         id_field="id",
         label_fields=("title",),
         no_items_message="No listings found.",

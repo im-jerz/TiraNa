@@ -9,6 +9,10 @@ from services.audit_service import log_action
 from services.sync_service import sync_bookings
 from services.auth_service import get_admin_by_id
 from views.components.sidebar import render_sidebar
+from utils.icons import (
+    check_circle_icon, clock_icon, x_circle_icon, dot_icon,
+    arrow_right_line, svg_icon,
+)
 
 
 PER_PAGE = 20
@@ -144,17 +148,17 @@ def render():
             with col2:
                 st.write(f"**{listing_title}**")
             with col3:
-                st.write(f"{check_in} → {check_out}")
+                st.markdown(f"{check_in} {svg_icon(arrow_right_line())} {check_out}", unsafe_allow_html=True)
             with col4:
                 st.write(f"**PHP {total_amount:,.2f}**")
             with col5:
-                status_color = {
-                    "confirmed": "🟢",
-                    "completed": "🔵",
-                    "cancelled": "🔴",
-                    "pending": "🟡",
-                }.get(status, "⚪")
-                st.write(f"{status_color} {status.title()}")
+                status_icon = {
+                    "confirmed": svg_icon(check_circle_icon(color="#16a34a")),
+                    "completed": svg_icon(check_circle_icon(color="#2563eb")),
+                    "cancelled": svg_icon(x_circle_icon(color="#dc2626")),
+                    "pending": svg_icon(clock_icon(color="#d97706")),
+                }.get(status, svg_icon(dot_icon(color="#9ca3af")))
+                st.markdown(f"{status_icon} {status.title()}", unsafe_allow_html=True)
 
             # Expandable detail section
             with st.expander(f"Details - {booking_id[:8]}"):

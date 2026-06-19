@@ -9,6 +9,7 @@ from services.audit_service import log_action
 from services.sync_service import sync_payments
 from services.auth_service import get_admin_by_id
 from views.components.sidebar import render_sidebar
+from utils.icons import check_circle_icon, clock_icon, x_circle_icon, dot_icon, svg_icon
 
 
 PER_PAGE = 20
@@ -203,12 +204,12 @@ def render():
                 with col4:
                     st.write(f"{method}")
                 with col5:
-                    status_color = {
-                        "completed": "🟢",
-                        "refunded": "🟡",
-                        "failed": "🔴",
-                    }.get(status, "⚪")
-                    st.write(f"{status_color} {status.title()}")
+                    status_icon = {
+                        "completed": svg_icon(check_circle_icon(color="#16a34a")),
+                        "refunded": svg_icon(clock_icon(color="#d97706")),
+                        "failed": svg_icon(x_circle_icon(color="#dc2626")),
+                    }.get(status, svg_icon(dot_icon(color="#9ca3af")))
+                    st.markdown(f"{status_icon} {status.title()}", unsafe_allow_html=True)
 
                 # Expand for detail + refund
                 with st.expander(f"Details - {payment_id[:8]}"):

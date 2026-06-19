@@ -9,6 +9,7 @@ from services.sync_service import sync_reviews
 from services.auth_service import get_admin_by_id
 from views.components.sidebar import render_sidebar
 from views.components.master_detail import render_master_detail
+from utils.icons import pencil_icon, search_icon, star_icon, svg_icon
 
 
 PER_PAGE = 20
@@ -25,7 +26,7 @@ def _render_review_detail(review_id: str) -> None:
 
         st.subheader(f"Review by {review.guest_name}")
 
-        st.write(f"**Rating:** {'⭐' * review.rating} ({review.rating}/5)")
+        st.markdown(f"**Rating:** {svg_icon(star_icon(color='#f59e0b')) * review.rating} ({review.rating}/5)", unsafe_allow_html=True)
         st.write(f"**Listing ID:** {review.listing_id}")
         st.write(f"**Guest:** {review.guest_name} ({review.guest_email})")
         st.write(f"**Date:** {review.created_at}")
@@ -142,8 +143,8 @@ def render():
         items=items,
         selection_key="selected_review_id",
         render_detail=_render_review_detail,
-        title=f"📝 Reviews ({total})",
-        detail_title="🔍 Review Details",
+        title=f"{svg_icon(pencil_icon())} Reviews ({total})",
+        detail_title=f"{svg_icon(search_icon())} Review Details",
         id_field="id",
         label_fields=("guest_name",),
         no_items_message="No reviews found.",

@@ -56,13 +56,13 @@ def render_master_detail(
 
     # ── List column ────────────────────────────────────────
     with col_list:
-        st.markdown(f"### {title}")
+        st.markdown(f"### {title}", unsafe_allow_html=True)
         _spacer()
 
         if items is None:
             with st.container(border=True):
                 st.error(error_message)
-                if st.button("🔄 Retry Connection", type="secondary", key=f"{selection_key}_retry"):
+                if st.button("Retry Connection", type="secondary", key=f"{selection_key}_retry"):
                     st.rerun()
         elif not items:
             with st.container(border=True):
@@ -90,7 +90,7 @@ def render_master_detail(
                 prev_col, info_col, next_col = st.columns([1, 2, 1])
                 with prev_col:
                     if st.button(
-                        "◀ Prev",
+                        "Prev",
                         key=f"{selection_key}_prev",
                         use_container_width=True,
                         disabled=page <= 1,
@@ -101,7 +101,7 @@ def render_master_detail(
                     st.caption(f"Page {page} of {total_pages}")
                 with next_col:
                     if st.button(
-                        "Next ▶",
+                        "Next",
                         key=f"{selection_key}_next",
                         use_container_width=True,
                         disabled=page >= total_pages,
@@ -111,7 +111,7 @@ def render_master_detail(
 
     # ── Detail column ──────────────────────────────────────
     with col_detail:
-        st.markdown(f"### {detail_title}")
+        st.markdown(f"### {detail_title}", unsafe_allow_html=True)
         _spacer()
 
         if not selected_id:

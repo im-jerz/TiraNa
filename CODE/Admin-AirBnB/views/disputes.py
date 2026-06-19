@@ -8,6 +8,7 @@ from services.dispute_service import (
 from services.auth_service import get_admin_by_id
 from views.components.sidebar import render_sidebar
 from views.components.master_detail import render_master_detail
+from utils.icons import scales_icon, search_icon, svg_icon
 
 
 PER_PAGE = 20
@@ -207,8 +208,8 @@ def render():
         items=items,
         selection_key="selected_dispute_id",
         render_detail=_render_dispute_detail,
-        title="⚖️ All Disputes",
-        detail_title="🔍 Dispute Details",
+        title=f"{svg_icon(scales_icon())} All Disputes",
+        detail_title=f"{svg_icon(search_icon())} Dispute Details",
         label_fields=("booking_id",),
         no_items_message="No disputes found.",
         error_message="Could not load disputes.",

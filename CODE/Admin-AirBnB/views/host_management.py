@@ -6,6 +6,7 @@ from services.audit_service import log_action
 from services.auth_service import get_admin_by_id
 from views.components.sidebar import render_sidebar
 from views.components.master_detail import render_master_detail
+from utils.icons import list_icon, search_icon, svg_icon
 
 
 PER_PAGE = 20
@@ -153,8 +154,8 @@ def render():
         items=items,
         selection_key="selected_host_id",
         render_detail=_render_host_detail,
-        title="📋 All Hosts",
-        detail_title="🔍 Host Details",
+        title=f"{svg_icon(list_icon())} All Hosts",
+        detail_title=f"{svg_icon(search_icon())} Host Details",
         label_fields=("full_name", "email"),
         no_items_message="No hosts found.",
         error_message="Could not load hosts. Host API may be unavailable.",

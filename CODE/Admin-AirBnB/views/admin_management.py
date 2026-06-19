@@ -7,6 +7,7 @@ from services.audit_service import log_action, get_audit_logs
 from services.auth_service import get_admin_by_id
 from views.components.sidebar import render_sidebar
 from views.components.master_detail import render_master_detail
+from utils.icons import user_icon, search_icon, svg_icon
 
 
 def _render_admin_detail(admin_id: str) -> None:
@@ -153,8 +154,8 @@ def render():
         items=items,
         selection_key="selected_admin_id",
         render_detail=_render_admin_detail,
-        title=f"👤 Admins ({total})",
-        detail_title="🔍 Admin Details",
+        title=f"{svg_icon(user_icon())} Admins ({total})",
+        detail_title=f"{svg_icon(search_icon())} Admin Details",
         label_fields=("full_name", "email"),
         no_items_message="No admins found.",
         total=total,
