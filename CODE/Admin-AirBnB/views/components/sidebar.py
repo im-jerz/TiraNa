@@ -3,10 +3,17 @@ import streamlit as st
 
 NAV_ITEMS = [
     ("Dashboard", "dashboard"),
-    ("User Management", "user_management"),
-    ("Host Management", "host_management"),
+    ("Listings", "listings_moderation"),
+    ("Bookings", "bookings_management"),
+    ("Payments", "payments_refunds"),
+    ("Reviews", "reviews_management"),
+    ("Users", "user_management"),
+    ("Hosts", "host_management"),
     ("Host Verification", "host_verification"),
-    ("Support Tickets", "support_tickets"),
+    ("Support", "support_tickets"),
+    ("Disputes", "disputes"),
+    ("Admins", "admin_management"),
+    ("Settings", "settings"),
 ]
 
 

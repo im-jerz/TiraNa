@@ -134,5 +134,86 @@ class HostAPIClient:
     def reject_verification(self, verification_id: str, reason: str = "") -> dict | None:
         return self._post(f"/api/admin/verifications/{verification_id}/reject", json={"reason": reason})
 
+    # ── Listings ───────────────────────────────────────────
+
+    def get_listings(self, status: str = "", search: str = "", page: int = 1, per_page: int = 20) -> dict | None:
+        return self._get("/api/admin/listings", params={
+            "status": status, "search": search, "page": page, "per_page": per_page
+        })
+
+    def get_listing(self, listing_id: str) -> dict | None:
+        return self._get(f"/api/admin/listings/{listing_id}")
+
+    def approve_listing(self, listing_id: str) -> dict | None:
+        return self._post(f"/api/admin/listings/{listing_id}/approve")
+
+    def reject_listing(self, listing_id: str, reason: str = "") -> dict | None:
+        return self._post(f"/api/admin/listings/{listing_id}/reject", json={"reason": reason})
+
+    def suspend_listing(self, listing_id: str, reason: str = "") -> dict | None:
+        return self._post(f"/api/admin/listings/{listing_id}/suspend", json={"reason": reason})
+
+    # ── Bookings ───────────────────────────────────────────
+
+    def get_bookings(self, status: str = "", page: int = 1, per_page: int = 20) -> dict | None:
+        return self._get("/api/admin/bookings", params={
+            "status": status, "page": page, "per_page": per_page
+        })
+
+    def get_booking(self, booking_id: str) -> dict | None:
+        return self._get(f"/api/admin/bookings/{booking_id}")
+
+    def get_booking_timeline(self, booking_id: str) -> list | None:
+        return self._get(f"/api/admin/bookings/{booking_id}/timeline")
+
+    def cancel_booking(self, booking_id: str, reason: str = "") -> dict | None:
+        return self._post(f"/api/admin/bookings/{booking_id}/cancel", json={"reason": reason})
+
+    # ── Payments ───────────────────────────────────────────
+
+    def get_payments(self, booking_id: str = "", page: int = 1, per_page: int = 20) -> dict | None:
+        params: dict = {"page": page, "per_page": per_page}
+        if booking_id:
+            params["booking_id"] = booking_id
+        return self._get("/api/admin/payments", params=params)
+
+    def get_payment(self, payment_id: str) -> dict | None:
+        return self._get(f"/api/admin/payments/{payment_id}")
+
+    def process_refund(self, payment_id: str, amount: float = 0, reason: str = "") -> dict | None:
+        return self._post(f"/api/admin/payments/{payment_id}/refund", json={
+            "amount": amount, "reason": reason
+        })
+
+    # ── Reviews ────────────────────────────────────────────
+
+    def get_reviews(self, listing_id: str = "", page: int = 1, per_page: int = 20) -> dict | None:
+        params: dict = {"page": page, "per_page": per_page}
+        if listing_id:
+            params["listing_id"] = listing_id
+        return self._get("/api/admin/reviews", params=params)
+
+    def get_review(self, review_id: str) -> dict | None:
+        return self._get(f"/api/admin/reviews/{review_id}")
+
+    def hide_review(self, review_id: str) -> dict | None:
+        return self._get(f"/api/admin/reviews/{review_id}/hide")
+
+    def show_review(self, review_id: str) -> dict | None:
+        return self._get(f"/api/admin/reviews/{review_id}/show")
+
+    # ── Withdrawals ────────────────────────────────────────
+
+    def get_withdrawals(self, page: int = 1, per_page: int = 20) -> dict | None:
+        return self._get("/api/admin/withdrawals", params={
+            "page": page, "per_page": per_page
+        })
+
+    def approve_withdrawal(self, withdrawal_id: str) -> dict | None:
+        return self._post(f"/api/admin/withdrawals/{withdrawal_id}/approve")
+
+    def reject_withdrawal(self, withdrawal_id: str, reason: str = "") -> dict | None:
+        return self._post(f"/api/admin/withdrawals/{withdrawal_id}/reject", json={"reason": reason})
+
 
 host_api = HostAPIClient()

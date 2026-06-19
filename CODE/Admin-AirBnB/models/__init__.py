@@ -8,6 +8,11 @@ from models.support_ticket import SupportTicket
 from models.ticket_message import TicketMessage
 from models.activity_log import ActivityLog
 from models.audit_log import AuditLog
+from models.system_setting import SystemSetting
+from models.booking_copy import BookingCache
+from models.payment_copy import PaymentCache
+from models.review_copy import ReviewCache
+from models.dispute import Dispute, DisputeMessage
 from database import Base, engine
 
 logger = logging.getLogger(__name__)

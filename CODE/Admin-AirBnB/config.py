@@ -21,3 +21,6 @@ class Config:
     # OTP
     OTP_EXPIRY_MINUTES = int(os.getenv("OTP_EXPIRY_MINUTES", "5"))
     OTP_LENGTH = int(os.getenv("OTP_LENGTH", "6"))
+
+    # Session
+    SESSION_TIMEOUT_MINUTES = int(os.getenv("SESSION_TIMEOUT_MINUTES", "30"))
