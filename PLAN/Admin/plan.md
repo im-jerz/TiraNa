@@ -4,226 +4,206 @@
 
 ### 1.1 Main Dashboard
 
-```
+```text
 [Admin Dashboard]
 ├─ Summary Cards
-│  ├─ Total Users
-│  ├─ Active Hosts
+│  ├─ Total Registered Users
+│  ├─ Total Verified Hosts
 │  ├─ Active Listings
-│  ├─ Ongoing Bookings
+│  ├─ Active Bookings
 │  └─ Platform Revenue
 ├─ Recent Activities
-├─ Pending Approvals
-├─ Open Support Cases
-└─ Quick Navigation to Management Sections
+├─ Pending Listing Approvals
+├─ Open Support Tickets
+└─ Quick Access to Management Sections
 ```
 
 ---
 
-## 2. User & Host Administration
+## 2. User & Host Management
 
-### 2.1 User Directory
+### 2.1 User Management
 
-```
+```text
 [User Management]
-├─ View all registered users
+├─ View registered users
 ├─ Search and filter accounts
-├─ View account information
-├─ Edit profile details
+├─ View user details
 ├─ Suspend or reactivate accounts
-└─ View verification status
+├─ Monitor account status
+└─ View verification information
 ```
 
-### 2.2 Host Administration
+### 2.2 Host Management
 
-```
+```text
 [Host Management]
 ├─ View host profiles
-├─ Review submitted documents
-├─ Assign or remove host badges
-├─ Approve or reject verification
-└─ Monitor host activity
+├─ Review verification requests
+├─ Approve or reject host verification
+├─ Assign host badges
+└─ Monitor host status
 ```
 
-### 2.3 Support Requests
+### 2.3 Support & Disputes
 
-```
+```text
 [Support Center]
-├─ View submitted tickets
-├─ Categorize concerns
-├─ Respond to inquiries
+├─ View support tickets
+├─ Assign ticket priority
+├─ Respond to user concerns
 ├─ Resolve disputes
-└─ Mark tickets as completed
+└─ Close completed cases
 ```
 
 ---
 
-## 3. Property Listing Management
+## 3. Listing Moderation
 
 ### 3.1 Listing Review
 
-```
-[Listings]
-├─ Pending submissions
-├─ Review property details
-├─ Check uploaded images
+```text
+[Listing Management]
+├─ View submitted listings
+├─ Review property information
+├─ Review uploaded images
 ├─ Approve listings
-└─ Reject or request revisions
+└─ Reject or flag listings
 ```
 
-### 3.2 Content Monitoring
+### 3.2 Content Moderation
 
-```
-[Content Moderation]
+```text
+[Moderation]
 ├─ Monitor reported listings
 ├─ Remove policy violations
-├─ Review user reports
-└─ Restore compliant listings
+├─ Review flagged content
+└─ Record moderation actions
 ```
 
 ---
 
-## 4. Reservation Oversight
+## 4. Booking Supervision
 
 ### 4.1 Booking Monitoring
 
-```
+```text
 [Booking Management]
-├─ View reservation calendar
-├─ Search bookings
+├─ View booking records
+├─ Search reservations
 ├─ Track booking status
 ├─ View booking details
-└─ Review reservation history
+└─ Monitor booking history
 ```
 
-### 4.2 Cancellation & Disputes
+### 4.2 Booking Actions
 
-```
+```text
 [Reservation Actions]
 ├─ Review cancellation requests
-├─ Process refunds
-├─ Handle booking disputes
+├─ Process refund requests
+├─ Resolve booking disputes
 └─ Apply administrative overrides
 ```
 
 ---
 
-## 5. Financial Management
+## 5. Financial Oversight
 
-### 5.1 Payment Monitoring
+### 5.1 Payments & Revenue
 
-```
-[Payments]
-├─ View transactions
-├─ Track platform commissions
-├─ Review payment records
-├─ Monitor host payouts
-└─ Check failed transactions
-```
-
-### 5.2 Financial Cases
-
-```
-[Financial Issues]
-├─ Payment disputes
-├─ Security deposit concerns
-├─ Insurance claims
-└─ Refund processing logs
+```text
+[Financial Dashboard]
+├─ View payment transactions
+├─ Monitor platform commissions
+├─ Track host payouts
+├─ Review payment disputes
+└─ Generate revenue summaries
 ```
 
 ---
 
-## 6. Reports & Analytics
+## 6. Analytics & Reports
 
-### 6.1 Performance Dashboard
+### 6.1 Dashboard Analytics
 
-```
+```text
 [Analytics]
-├─ Gross Booking Value
+├─ Gross Booking Value (GBV)
 ├─ Active Listings
 ├─ User Growth
-├─ Booking Volume
-└─ Revenue Summary
+├─ Booking Trends
+└─ Revenue Metrics
 ```
 
-### 6.2 Insights & Reports
+### 6.2 Reports
 
-```
+```text
 [Reports]
-├─ Seasonal demand analysis
-├─ Platform trends
-├─ Host performance
-├─ User activity reports
-└─ Export generated reports
+├─ Platform performance
+├─ Seasonal demand
+├─ User activity
+├─ Booking insights
+└─ Export reports
 ```
 
 ---
 
-## 7. Platform Configuration
+## 7. Platform Settings
 
-### 7.1 System Settings
+### 7.1 System Configuration
 
-```
-[Configuration]
-├─ Commission percentages
+```text
+[System Settings]
+├─ Commission rates
 ├─ Platform fees
-├─ Tax settings
+├─ Tax configuration
 ├─ Cleaning fee limits
-└─ General platform preferences
-```
-
-### 7.2 Administrative Controls
-
-```
-[System Controls]
-├─ Update global policies
-├─ Maintain configuration records
-├─ Manage feature toggles
-└─ Save system-wide changes
+└─ General platform settings
 ```
 
 ---
 
-## 8. Core Database Structure
+## 8. Admin Database (PostgreSQL)
 
-```
+```text
 PostgreSQL
-├─ Users
-├─ Hosts
-├─ Listings
-├─ Bookings
-├─ Payments
-├─ Reviews
-├─ Support_Tickets
-├─ Verification_Records
-├─ Analytics_Data
-└─ System_Settings
+├─ support_tickets
+├─ verification_records
+├─ moderation_actions
+├─ admin_logs
+├─ reports
+├─ analytics_data
+└─ system_settings
 ```
 
 ---
 
-## 9. Example API Endpoints
+## 9. Admin API Endpoints
 
-```
-Users
+```text
+User Management
 GET    /api/admin/users
-PUT    /api/admin/users/{id}
 PATCH  /api/admin/users/{id}/status
 
-Listings
-GET    /api/admin/listings
-PATCH  /api/admin/listings/{id}/approval
+Host Management
+GET    /api/admin/hosts
+PATCH  /api/admin/hosts/{id}/verify
 
-Bookings
+Listing Moderation
+GET    /api/admin/listings/pending
+PATCH  /api/admin/listings/{id}/approve
+
+Booking Management
 GET    /api/admin/bookings
-PATCH  /api/admin/bookings/{id}
+PATCH  /api/admin/bookings/{id}/resolve
 
-Payments
-GET    /api/admin/payments
-GET    /api/admin/commissions
+Support
+GET    /api/admin/support
+PATCH  /api/admin/support/{id}/close
 
 Analytics
-GET    /api/admin/analytics/overview
+GET    /api/admin/analytics
 
 Settings
 GET    /api/admin/settings
