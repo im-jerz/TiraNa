@@ -7,12 +7,10 @@ from models.payment_copy import PaymentCache
 from services.host_api import host_api
 from services.audit_service import log_action
 from services.sync_service import sync_payments
-from services.auth_service import get_admin_by_id
 from views.components.sidebar import render_sidebar
 from utils.icons import check_circle_icon, clock_icon, x_circle_icon, dot_icon, svg_icon
-
-
-PER_PAGE = 20
+from utils.auth import require_admin
+from utils.constants import PAGE_SIZE
 
 
 def _render_withdrawals():
@@ -94,30 +92,18 @@ def _render_withdrawals():
                             st.error("Failed to reject withdrawal.")
 
 
-def render():
-    if not st.session_state.get("logged_in"):
-        st.warning("Please sign in to access the dashboard.")
-        st.stop()
-
-    db = SessionLocal()
-    try:
-        admin = get_admin_by_id(db, st.session_state.get("admin_id", ""))
-    finally:
-        db.close()
-
-    if not admin:
-        st.warning("Admin not found")
-        st.stop()
-
+@require_admin
+def render(*, admin):
     render_sidebar(admin)
     st.title("Payments & Refunds")
 
     # Sync from Host API
-    db = SessionLocal()
-    try:
-        sync_payments(db)
-    finally:
-        db.close()
+    with st.spinner("Syncing payments from Host API..."):
+        db = SessionLocal()
+        try:
+            sync_payments(db)
+        finally:
+            db.close()
 
     # KPI cards (from cache)
     db = SessionLocal()
@@ -144,7 +130,7 @@ def render():
         db = SessionLocal()
         try:
             total = db.query(PaymentCache).count()
-            payments = db.query(PaymentCache).order_by(desc(PaymentCache.created_at)).offset((page - 1) * PER_PAGE).limit(PER_PAGE).all()
+            payments = db.query(PaymentCache).order_by(desc(PaymentCache.created_at)).offset((page - 1) * PAGE_SIZE).limit(PAGE_SIZE).all()
             payments_data = [
                 {
                     "id": p.id,
@@ -264,8 +250,8 @@ def render():
                                         st.error("Failed to process refund.")
 
         # Pagination
-        if total > PER_PAGE:
-            total_pages = (total + PER_PAGE - 1) // PER_PAGE
+        if total > PAGE_SIZE:
+            total_pages = (total + PAGE_SIZE - 1) // PAGE_SIZE
             st.divider()
             prev_col, info_col, next_col = st.columns([1, 2, 1])
             with prev_col:

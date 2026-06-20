@@ -7,17 +7,16 @@ from models.booking_copy import BookingCache
 from services.host_api import host_api
 from services.audit_service import log_action
 from services.sync_service import sync_bookings
-from services.auth_service import get_admin_by_id
 from views.components.sidebar import render_sidebar
 from utils.icons import (
     check_circle_icon, clock_icon, x_circle_icon, dot_icon,
     arrow_right_line, svg_icon,
 )
+from utils.auth import require_admin
+from utils.constants import PAGE_SIZE, BookingStatus
 
 
-PER_PAGE = 20
-
-STATUS_OPTIONS = ["", "confirmed", "completed", "cancelled", "pending"]
+STATUS_OPTIONS = ["", BookingStatus.CONFIRMED, BookingStatus.COMPLETED, BookingStatus.CANCELLED, BookingStatus.PENDING]
 STATUS_LABELS = ["All Statuses", "Confirmed", "Completed", "Cancelled", "Pending"]
 
 
@@ -37,30 +36,18 @@ def _render_booking_timeline(booking_id: str) -> None:
                 st.caption(note)
 
 
-def render():
-    if not st.session_state.get("logged_in"):
-        st.warning("Please sign in to access the dashboard.")
-        st.stop()
-
-    db = SessionLocal()
-    try:
-        admin = get_admin_by_id(db, st.session_state.get("admin_id", ""))
-    finally:
-        db.close()
-
-    if not admin:
-        st.warning("Admin not found")
-        st.stop()
-
+@require_admin
+def render(*, admin):
     render_sidebar(admin)
     st.title("Bookings Management")
 
     # Sync from Host API
-    db = SessionLocal()
-    try:
-        sync_bookings(db)
-    finally:
-        db.close()
+    with st.spinner("Syncing bookings from Host API..."):
+        db = SessionLocal()
+        try:
+            sync_bookings(db)
+        finally:
+            db.close()
 
     col1, col2 = st.columns([1, 2])
     with col1:
@@ -89,7 +76,7 @@ def render():
         if status_filter:
             query = query.filter(BookingCache.status == status_filter)
         total = query.count()
-        bookings = query.order_by(desc(BookingCache.created_at)).offset((page - 1) * PER_PAGE).limit(PER_PAGE).all()
+        bookings = query.order_by(desc(BookingCache.created_at)).offset((page - 1) * PAGE_SIZE).limit(PAGE_SIZE).all()
         bookings_data = [
             {
                 "id": b.id,
@@ -217,8 +204,8 @@ def render():
                                     st.error("Failed to cancel booking.")
 
     # Pagination
-    if total > PER_PAGE:
-        total_pages = (total + PER_PAGE - 1) // PER_PAGE
+    if total > PAGE_SIZE:
+        total_pages = (total + PAGE_SIZE - 1) // PAGE_SIZE
         st.divider()
         prev_col, info_col, next_col = st.columns([1, 2, 1])
         with prev_col:

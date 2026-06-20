@@ -5,13 +5,11 @@ from services.host_api import host_api
 from services.support_service import get_tickets
 from services.activity_service import get_activities
 from services.audit_service import log_action
-from services.auth_service import get_admin_by_id
 from views.components.sidebar import render_sidebar
 from views.components.master_detail import render_master_detail
 from utils.icons import list_icon, search_icon, svg_icon
-
-
-PER_PAGE = 20
+from utils.auth import require_admin
+from utils.constants import PAGE_SIZE
 
 
 def _render_guest_detail(guest_id: str) -> None:
@@ -93,21 +91,8 @@ def _render_guest_detail(guest_id: str) -> None:
         db.close()
 
 
-def render():
-    if not st.session_state.get("logged_in"):
-        st.warning("Please sign in to access the dashboard.")
-        st.stop()
-
-    db = SessionLocal()
-    try:
-        admin = get_admin_by_id(db, st.session_state.get("admin_id", ""))
-    finally:
-        db.close()
-
-    if not admin:
-        st.warning("Admin not found")
-        st.stop()
-
+@require_admin
+def render(*, admin):
     render_sidebar(admin)
     st.title("User / Guest Management")
 
@@ -137,7 +122,7 @@ def render():
         search=search,
         status=status_param,
         page=page,
-        per_page=PER_PAGE,
+        per_page=PAGE_SIZE,
     )
 
     items = data.get("guests") if data else None
@@ -154,6 +139,6 @@ def render():
         error_message="Could not load guests. Host API may be unavailable.",
         total=total,
         page=page,
-        per_page=PER_PAGE,
+        per_page=PAGE_SIZE,
         page_state_key="guest_page",
     )

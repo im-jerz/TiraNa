@@ -4,10 +4,10 @@ from sqlalchemy import desc
 from database import SessionLocal
 from models.admin_user import AdminUser
 from services.audit_service import log_action, get_audit_logs
-from services.auth_service import get_admin_by_id
 from views.components.sidebar import render_sidebar
 from views.components.master_detail import render_master_detail
 from utils.icons import user_icon, search_icon, svg_icon
+from utils.auth import require_admin
 
 
 def _render_admin_detail(admin_id: str) -> None:
@@ -72,21 +72,8 @@ def _render_admin_detail(admin_id: str) -> None:
         db.close()
 
 
-def render():
-    if not st.session_state.get("logged_in"):
-        st.warning("Please sign in to access the dashboard.")
-        st.stop()
-
-    db = SessionLocal()
-    try:
-        admin = get_admin_by_id(db, st.session_state.get("admin_id", ""))
-    finally:
-        db.close()
-
-    if not admin:
-        st.warning("Admin not found")
-        st.stop()
-
+@require_admin
+def render(*, admin):
     render_sidebar(admin)
     st.title("Admin Management")
 
@@ -108,17 +95,21 @@ def render():
                     st.error("Password must be at least 8 characters.")
                 else:
                     from services.auth_service import register_admin
-                    result = register_admin(db, new_email, new_password, new_name)
-                    if result:
-                        log_action(
-                            db, st.session_state.admin_id,
-                            "create_admin", "admin_user", result.id,
-                            f"Created admin: {new_email}"
-                        )
-                        st.success(f"Admin {new_name} created successfully.")
-                        st.rerun()
-                    else:
-                        st.error("Failed to create admin. Email may already exist.")
+                    db_create = SessionLocal()
+                    try:
+                        admin_id, error = register_admin(db_create, new_email, new_password, new_name)
+                        if admin_id:
+                            log_action(
+                                db_create, st.session_state.admin_id,
+                                "create_admin", "admin_user", admin_id,
+                                f"Created admin: {new_email}"
+                            )
+                            st.success(f"Admin {new_name} created successfully.")
+                            st.rerun()
+                        else:
+                            st.error(error or "Failed to create admin. Email may already exist.")
+                    finally:
+                        db_create.close()
 
     st.divider()
 
@@ -131,24 +122,28 @@ def render():
         placeholder="Search admins...",
     )
 
-    query = db.query(AdminUser)
-    if search:
-        query = query.filter(
-            (AdminUser.full_name.ilike(f"%{search}%")) |
-            (AdminUser.email.ilike(f"%{search}%"))
-        )
-    total = query.count()
-    admins = query.order_by(AdminUser.created_at.desc()).offset((page - 1) * 20).limit(20).all()
+    db_list = SessionLocal()
+    try:
+        query = db_list.query(AdminUser)
+        if search:
+            query = query.filter(
+                (AdminUser.full_name.ilike(f"%{search}%")) |
+                (AdminUser.email.ilike(f"%{search}%"))
+            )
+        total = query.count()
+        admins = query.order_by(AdminUser.created_at.desc()).offset((page - 1) * 20).limit(20).all()
 
-    items = [
-        {
-            "id": a.id,
-            "full_name": a.full_name,
-            "email": a.email,
-            "is_active": a.is_active,
-        }
-        for a in admins
-    ]
+        items = [
+            {
+                "id": a.id,
+                "full_name": a.full_name,
+                "email": a.email,
+                "is_active": a.is_active,
+            }
+            for a in admins
+        ]
+    finally:
+        db_list.close()
 
     render_master_detail(
         items=items,

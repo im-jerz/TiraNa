@@ -5,13 +5,11 @@ from services.support_service import (
     get_tickets, get_ticket, assign_ticket, resolve_ticket,
     add_message, get_messages,
 )
-from services.auth_service import get_admin_by_id
 from views.components.sidebar import render_sidebar
 from views.components.master_detail import render_master_detail
 from utils.icons import list_icon, search_icon, svg_icon
-
-
-PER_PAGE = 20
+from utils.auth import require_admin
+from utils.constants import PAGE_SIZE
 
 
 def _ticket_label(ticket) -> str:
@@ -31,7 +29,7 @@ def _fetch_tickets(search: str, status_filter: str, priority_filter: str, page: 
     db = SessionLocal()
     try:
         status_param = "" if status_filter == "All" else status_filter
-        data = get_tickets(db, status=status_param, page=page, per_page=PER_PAGE)
+        data = get_tickets(db, status=status_param, page=page, per_page=PAGE_SIZE)
         tickets = data["tickets"]
         if search:
             s = search.lower()
@@ -120,21 +118,8 @@ def _render_ticket_detail(ticket_id: str) -> None:
         db.close()
 
 
-def render():
-    if not st.session_state.get("logged_in"):
-        st.warning("Please sign in to access the dashboard.")
-        st.stop()
-
-    db = SessionLocal()
-    try:
-        admin = get_admin_by_id(db, st.session_state.get("admin_id", ""))
-    finally:
-        db.close()
-
-    if not admin:
-        st.warning("Admin not found")
-        st.stop()
-
+@require_admin
+def render(*, admin):
     render_sidebar(admin)
     st.title("Support Tickets")
 
@@ -178,6 +163,6 @@ def render():
         error_message="Could not load tickets. Database may be unavailable.",
         total=total,
         page=page,
-        per_page=PER_PAGE,
+        per_page=PAGE_SIZE,
         page_state_key="ticket_page",
     )

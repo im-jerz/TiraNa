@@ -3,13 +3,11 @@ import streamlit as st
 from database import SessionLocal
 from services.host_api import host_api
 from services.audit_service import log_action
-from services.auth_service import get_admin_by_id
 from views.components.sidebar import render_sidebar
 from views.components.master_detail import render_master_detail
 from utils.icons import list_icon, search_icon, svg_icon
-
-
-PER_PAGE = 20
+from utils.auth import require_admin
+from utils.constants import PAGE_SIZE
 
 
 def _render_host_detail(host_id: str) -> None:
@@ -100,21 +98,8 @@ def _render_host_detail(host_id: str) -> None:
                     st.rerun()
 
 
-def render():
-    if not st.session_state.get("logged_in"):
-        st.warning("Please sign in to access the dashboard.")
-        st.stop()
-
-    db = SessionLocal()
-    try:
-        admin = get_admin_by_id(db, st.session_state.get("admin_id", ""))
-    finally:
-        db.close()
-
-    if not admin:
-        st.warning("Admin not found")
-        st.stop()
-
+@require_admin
+def render(*, admin):
     render_sidebar(admin)
     st.title("Host Management")
 
@@ -144,7 +129,7 @@ def render():
         search=search,
         status=status_param,
         page=page,
-        per_page=PER_PAGE,
+        per_page=PAGE_SIZE,
     )
 
     items = data.get("hosts") if data else None
@@ -161,6 +146,6 @@ def render():
         error_message="Could not load hosts. Host API may be unavailable.",
         total=total,
         page=page,
-        per_page=PER_PAGE,
+        per_page=PAGE_SIZE,
         page_state_key="host_page",
     )

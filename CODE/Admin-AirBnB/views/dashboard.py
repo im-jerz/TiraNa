@@ -2,10 +2,9 @@ import streamlit as st
 import plotly.express as px
 import pandas as pd
 
-from database import SessionLocal
-from services.auth_service import get_admin_by_id
 from services.host_api import host_api
 from views.components.sidebar import render_sidebar
+from utils.auth import require_admin
 
 
 def _render_kpi_cards(stats: dict):
@@ -59,21 +58,8 @@ def _render_alerts(stats: dict):
             st.warning(a)
 
 
-def render():
-    if not st.session_state.get("logged_in"):
-        st.warning("Please sign in to access the dashboard.")
-        st.stop()
-
-    db = SessionLocal()
-    try:
-        admin = get_admin_by_id(db, st.session_state.get("admin_id", ""))
-    finally:
-        db.close()
-
-    if not admin:
-        st.warning("Admin not found")
-        st.stop()
-
+@require_admin
+def render(*, admin):
     render_sidebar(admin)
 
     st.title(f"Welcome, {admin.full_name}!")
@@ -81,7 +67,8 @@ def render():
     if not host_api.is_available():
         st.warning("Host API unavailable")
 
-    stats = host_api.get_stats()
+    with st.spinner("Loading dashboard data..."):
+        stats = host_api.get_stats()
 
     _render_kpi_cards(stats)
     st.divider()
