@@ -2,17 +2,21 @@ import streamlit as st
 import plotly.express as px
 import pandas as pd
 
+from database import SessionLocal
 from services.host_api import host_api
+from services.support_service import get_ticket_count
+from services.audit_service import get_audit_logs
 from views.components.sidebar import render_sidebar
 from utils.auth import require_admin
 
 
 def _render_kpi_cards(stats: dict):
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Total Bookings", f"{stats['total_bookings']:,}")
-    c2.metric("Total Revenue", f"₱{stats['total_revenue']:,.2f}")
-    c3.metric("Active Hosts", f"{stats['active_hosts']:,}")
-    c4.metric("Active Rooms", f"{stats['active_rooms']:,}")
+    c1, c2, c3, c4, c5 = st.columns(5)
+    c1.metric("Total Users", f"{stats.get('total_users', 0):,}")
+    c2.metric("Total Bookings", f"{stats.get('total_bookings', 0):,}")
+    c3.metric("Total Revenue", f"₱{stats.get('total_revenue', 0):,.2f}")
+    c4.metric("Active Hosts", f"{stats.get('active_hosts', 0):,}")
+    c5.metric("Active Rooms", f"{stats.get('active_rooms', 0):,}")
 
 
 def _render_revenue_chart():
@@ -46,11 +50,21 @@ def _render_booking_chart():
 def _render_alerts(stats: dict):
     alerts = []
     if stats.get("pending_verifications", 0) > 0:
-        alerts.append(f"{stats['pending_verifications']} pending account verifications")
+        alerts.append(f"{stats['pending_verifications']} pending host verifications")
+    if stats.get("pending_listings", 0) > 0:
+        alerts.append(f"{stats['pending_listings']} pending listing approvals")
     if stats.get("reported_rooms", 0) > 0:
-        alerts.append(f"{stats['reported_rooms']} reported rooms")
+        alerts.append(f"{stats['reported_rooms']} reported listings")
     if stats.get("open_disputes", 0) > 0:
         alerts.append(f"{stats['open_disputes']} open disputes")
+
+    db = SessionLocal()
+    try:
+        open_tickets = get_ticket_count(db, "open")
+        if open_tickets > 0:
+            alerts.append(f"{open_tickets} open support tickets")
+    finally:
+        db.close()
 
     if alerts:
         st.subheader("Alerts")

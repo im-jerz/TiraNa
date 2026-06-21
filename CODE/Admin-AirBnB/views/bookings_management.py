@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from sqlalchemy import desc
+from sqlalchemy import desc, or_
 
 from database import SessionLocal
 from models.booking_copy import BookingCache
@@ -49,8 +49,15 @@ def render(*, admin):
         finally:
             db.close()
 
-    col1, col2 = st.columns([1, 2])
+    col1, col2, col3 = st.columns([2, 1, 1])
     with col1:
+        search = st.text_input(
+            "Search by guest name, email, or listing",
+            label_visibility="collapsed",
+            key="booking_search",
+            placeholder="Search bookings...",
+        )
+    with col2:
         status_idx = st.selectbox(
             "Status",
             STATUS_OPTIONS,
@@ -58,7 +65,7 @@ def render(*, admin):
             label_visibility="collapsed",
             key="booking_status_filter",
         )
-    with col2:
+    with col3:
         export_col1, export_col2 = st.columns([3, 1])
         with export_col2:
             if st.button("Export CSV", key="export_bookings"):
@@ -75,6 +82,15 @@ def render(*, admin):
         query = db.query(BookingCache)
         if status_filter:
             query = query.filter(BookingCache.status == status_filter)
+        if search:
+            search_term = f"%{search}%"
+            query = query.filter(
+                or_(
+                    BookingCache.guest_name.ilike(search_term),
+                    BookingCache.guest_email.ilike(search_term),
+                    BookingCache.listing_title.ilike(search_term),
+                )
+            )
         total = query.count()
         bookings = query.order_by(desc(BookingCache.created_at)).offset((page - 1) * PAGE_SIZE).limit(PAGE_SIZE).all()
         bookings_data = [
@@ -169,14 +185,17 @@ def render(*, admin):
                 # Cancel action (only for confirmed/pending)
                 if status in ("confirmed", "pending"):
                     st.divider()
-                    if st.button("Cancel Booking", type="secondary", key=f"cancel_{booking_id}"):
-                        st.session_state[f"show_cancel_form_{booking_id}"] = True
+                    st.subheader("Administrative Actions")
+                    a1, a2 = st.columns(2)
+                    with a1:
+                        if st.button("Cancel Booking", type="secondary", key=f"cancel_{booking_id}"):
+                            st.session_state[f"show_cancel_form_{booking_id}"] = True
+                    with a2:
+                        if st.button("Force Complete", type="secondary", key=f"complete_{booking_id}"):
+                            st.session_state[f"show_complete_form_{booking_id}"] = True
 
                     if st.session_state.get(f"show_cancel_form_{booking_id}"):
-                        reason = st.text_area(
-                            "Cancellation reason",
-                            key=f"cancel_reason_{booking_id}"
-                        )
+                        reason = st.text_area("Cancellation reason", key=f"cancel_reason_{booking_id}")
                         if st.button("Confirm Cancellation", type="primary", key=f"confirm_cancel_{booking_id}"):
                             if not reason:
                                 st.error("Please provide a reason.")
@@ -189,7 +208,6 @@ def render(*, admin):
                                             db, st.session_state.admin_id,
                                             "cancel_booking", "booking", booking_id, reason
                                         )
-                                        # Update cache
                                         cached = db.query(BookingCache).filter(BookingCache.id == booking_id).first()
                                         if cached:
                                             cached.status = "cancelled"
@@ -202,6 +220,26 @@ def render(*, admin):
                                     st.rerun()
                                 else:
                                     st.error("Failed to cancel booking.")
+
+                    if st.session_state.get(f"show_complete_form_{booking_id}"):
+                        admin_note = st.text_area("Admin note (optional)", key=f"complete_note_{booking_id}")
+                        if st.button("Confirm Force Complete", type="primary", key=f"confirm_complete_{booking_id}"):
+                            db = SessionLocal()
+                            try:
+                                log_action(
+                                    db, st.session_state.admin_id,
+                                    "force_complete_booking", "booking", booking_id,
+                                    admin_note or "Admin force completed"
+                                )
+                                cached = db.query(BookingCache).filter(BookingCache.id == booking_id).first()
+                                if cached:
+                                    cached.status = "completed"
+                                    db.commit()
+                            finally:
+                                db.close()
+                            st.success("Booking marked as completed.")
+                            st.session_state.pop(f"show_complete_form_{booking_id}", None)
+                            st.rerun()
 
     # Pagination
     if total > PAGE_SIZE:

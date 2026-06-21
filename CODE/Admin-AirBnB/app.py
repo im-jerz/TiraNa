@@ -398,7 +398,6 @@ tirana_theme_css = """
 
         /* -- Alerts ---------------------------------------------------- */
         .stAlert {
-            background-color: var(--color-surface) !important;
             border: 1px solid var(--color-border) !important;
             border-left: 4px solid var(--color-accent) !important;
             color: var(--color-text) !important;
@@ -507,10 +506,10 @@ st.markdown(tirana_theme_css, unsafe_allow_html=True)
 page = st.session_state.page
 
 AUTHENTICATED_PAGES = {
-    "dashboard", "listings_moderation", "bookings_management",
+    "dashboard", "listings_moderation", "content_moderation", "bookings_management",
     "payments_refunds", "reviews_management", "user_management",
-    "host_management", "support_tickets",
-    "disputes", "admin_management", "settings",
+    "host_management", "host_verification", "support_tickets",
+    "disputes", "analytics", "admin_management", "settings",
 }
 
 if page not in AUTHENTICATED_PAGES:
@@ -541,9 +540,15 @@ elif page == "support_tickets":
 elif page == "disputes":
     from views.disputes import render as render_disputes
     render_disputes()
+elif page == "analytics":
+    from views.analytics import render as render_analytics
+    render_analytics()
 elif page == "listings_moderation":
     from views.listings_moderation import render as render_listings_moderation
     render_listings_moderation()
+elif page == "content_moderation":
+    from views.content_moderation import render as render_content_moderation
+    render_content_moderation()
 elif page == "bookings_management":
     from views.bookings_management import render as render_bookings_management
     render_bookings_management()

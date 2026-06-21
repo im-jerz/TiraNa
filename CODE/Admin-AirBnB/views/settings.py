@@ -17,8 +17,8 @@ def render(*, admin):
         settings = get_all_settings(db_settings)
         settings_dict = {s.key: s for s in settings}
 
-        tab_general, tab_commission, tab_api, tab_email, tab_payout = st.tabs([
-            "General", "Commission", "API Configuration", "Email (SMTP)", "Payout"
+        tab_general, tab_fees, tab_commission, tab_api, tab_email, tab_payout = st.tabs([
+            "General", "Fees & Tax", "Commission", "API Configuration", "Email (SMTP)", "Payout"
         ])
 
         def _get_value(key: str, default):
@@ -64,7 +64,7 @@ def render(*, admin):
 
             with st.form("commission_settings"):
                 commission = st.number_input(
-                    "Commission Percentage (%)",
+                    "Platform Commission Percentage (%)",
                     min_value=0.0,
                     max_value=100.0,
                     value=_get_value("commission_percent", 0.0),
@@ -77,6 +77,65 @@ def render(*, admin):
 
                 if st.form_submit_button("Save Commission Settings", disabled=True):
                     pass
+
+        with tab_fees:
+            st.subheader("Fees & Tax Configuration")
+
+            with st.form("fees_settings"):
+                tax_percent = st.number_input(
+                    "VAT Tax (%)",
+                    min_value=0.0,
+                    max_value=100.0,
+                    value=_get_value("tax_percent", 12.0),
+                    step=0.5,
+                )
+                host_fee = st.number_input(
+                    "Host Service Fee (%)",
+                    min_value=0.0,
+                    max_value=100.0,
+                    value=_get_value("host_service_fee_percent", 3.0),
+                    step=0.5,
+                )
+                guest_fee = st.number_input(
+                    "Guest Service Fee (%)",
+                    min_value=0.0,
+                    max_value=100.0,
+                    value=_get_value("guest_service_fee_percent", 14.0),
+                    step=0.5,
+                )
+
+                st.divider()
+                st.subheader("Cleaning Fee Limits")
+
+                min_cleaning = st.number_input(
+                    "Minimum Cleaning Fee (PHP)",
+                    min_value=0.0,
+                    value=_get_value("min_cleaning_fee", 0.0),
+                    step=50.0,
+                )
+                max_cleaning = st.number_input(
+                    "Maximum Cleaning Fee (PHP)",
+                    min_value=0.0,
+                    value=_get_value("max_cleaning_fee", 5000.0),
+                    step=100.0,
+                )
+                default_cleaning = st.number_input(
+                    "Default Cleaning Fee (PHP)",
+                    min_value=0.0,
+                    value=_get_value("default_cleaning_fee", 500.0),
+                    step=50.0,
+                )
+
+                if st.form_submit_button("Save Fees & Tax Settings"):
+                    set_setting(db_settings, "tax_percent", str(tax_percent), admin.id)
+                    set_setting(db_settings, "host_service_fee_percent", str(host_fee), admin.id)
+                    set_setting(db_settings, "guest_service_fee_percent", str(guest_fee), admin.id)
+                    set_setting(db_settings, "min_cleaning_fee", str(min_cleaning), admin.id)
+                    set_setting(db_settings, "max_cleaning_fee", str(max_cleaning), admin.id)
+                    set_setting(db_settings, "default_cleaning_fee", str(default_cleaning), admin.id)
+                    log_action(db_settings, admin.id, "update_settings", "system", "fees_tax", "Updated fees and tax settings")
+                    st.success("Fees & Tax settings saved.")
+                    st.rerun()
 
         with tab_api:
             st.subheader("Host API Configuration")
