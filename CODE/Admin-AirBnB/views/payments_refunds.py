@@ -1,9 +1,10 @@
 import streamlit as st
 import pandas as pd
-from sqlalchemy import desc
+from sqlalchemy import desc, or_
 
 from database import SessionLocal
 from models.payment_copy import PaymentCache
+from models.dispute import Dispute
 from services.host_api import host_api
 from services.audit_service import log_action
 from services.sync_service import sync_payments
@@ -120,16 +121,46 @@ def render(*, admin):
 
     st.divider()
 
-    # Tabs for Payments and Withdrawals
-    tab_payments, tab_withdrawals = st.tabs(["Payments", "Withdrawals"])
+    # Tabs for Payments, Withdrawals, and Disputes
+    tab_payments, tab_withdrawals, tab_disputes = st.tabs(["Payments", "Withdrawals", "Payment Disputes"])
 
     with tab_payments:
         page = st.session_state.get("payments_page", 1)
 
+        # Search and filter
+        col_search, col_filter = st.columns([3, 1])
+        with col_search:
+            search = st.text_input(
+                "Search by guest name or booking ID",
+                label_visibility="collapsed",
+                key="payment_search",
+                placeholder="Search payments...",
+            )
+        with col_filter:
+            payment_status_filter = st.selectbox(
+                "Status",
+                ["", "completed", "refunded", "failed"],
+                format_func=lambda x: "All Statuses" if x == "" else x.title(),
+                label_visibility="collapsed",
+                key="payment_status_filter",
+            )
+
         # Query from cache
         db = SessionLocal()
         try:
-            total = db.query(PaymentCache).count()
+            query = db.query(PaymentCache)
+            if payment_status_filter:
+                query = query.filter(PaymentCache.status == payment_status_filter)
+            if search:
+                search_term = f"%{search}%"
+                query = query.filter(
+                    or_(
+                        PaymentCache.guest_name.ilike(search_term),
+                        PaymentCache.booking_id.ilike(search_term),
+                        PaymentCache.guest_email.ilike(search_term),
+                    )
+                )
+            total = query.count()
             payments = db.query(PaymentCache).order_by(desc(PaymentCache.created_at)).offset((page - 1) * PAGE_SIZE).limit(PAGE_SIZE).all()
             payments_data = [
                 {
@@ -267,3 +298,26 @@ def render(*, admin):
 
     with tab_withdrawals:
         _render_withdrawals()
+
+    with tab_disputes:
+        st.subheader("Payment Disputes")
+        db = SessionLocal()
+        try:
+            disputes = db.query(Dispute).order_by(desc(Dispute.created_at)).limit(50).all()
+            if not disputes:
+                st.info("No payment disputes found.")
+            else:
+                for dispute in disputes:
+                    with st.container(border=True):
+                        col1, col2, col3 = st.columns([3, 1, 1])
+                        with col1:
+                            st.write(f"**Booking:** {dispute.booking_id[:8]}...")
+                            st.write(f"**Guest:** {dispute.guest_id[:8]}...")
+                            st.caption(dispute.reason[:100] + "..." if len(dispute.reason) > 100 else dispute.reason)
+                        with col2:
+                            status_color = {"open": "orange", "investigating": "blue", "resolved": "green", "dismissed": "gray"}.get(dispute.status, "gray")
+                            st.markdown(f":{status_color}[{dispute.status.title()}]")
+                        with col3:
+                            st.caption(str(dispute.created_at))
+        finally:
+            db.close()

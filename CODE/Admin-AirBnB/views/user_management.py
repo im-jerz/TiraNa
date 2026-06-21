@@ -21,30 +21,54 @@ def _render_guest_detail(guest_id: str) -> None:
 
     st.subheader(guest.get("full_name", "Unknown"))
     st.write(f"**Email:** {guest.get('email', '-')}")
+    st.write(f"**Phone:** {guest.get('phone', '-')}")
     st.write(f"**Status:** {guest.get('status', '-')}")
     st.write(f"**Joined:** {guest.get('created_at', '-')}")
+
+    st.divider()
+
+    # Verification Information
+    st.subheader("Verification Information")
+    col_v1, col_v2 = st.columns(2)
+    with col_v1:
+        verification_status = guest.get("verification_status", "not_verified")
+        status_color = {"verified": "green", "pending": "orange", "not_verified": "gray"}.get(verification_status, "gray")
+        st.markdown(f"**Identity Verification:** :{status_color}[{verification_status.replace('_', ' ').title()}]")
+        id_doc_type = guest.get("id_document_type", "-")
+        st.write(f"**ID Document Type:** {id_doc_type.replace('_', ' ').title() if id_doc_type != '-' else '-'}")
+    with col_v2:
+        phone_verified = guest.get("phone_verified", False)
+        st.markdown(f"**Phone Verified:** :{'green' if phone_verified else 'red'}[{'Yes' if phone_verified else 'No'}]")
+        email_verified = guest.get("email_verified", False)
+        st.markdown(f"**Email Verified:** :{'green' if email_verified else 'red'}[{'Yes' if email_verified else 'No'}]")
 
     st.divider()
 
     # Ban / Unban
     col_ban, col_unban = st.columns(2)
     with col_ban:
-        if st.button("Ban Guest", type="primary", disabled=guest.get("status") == "banned"):
+        if st.button("Ban Guest", type="primary", disabled=guest.get("status") == "banned", key="ban_guest_btn"):
+            st.session_state["show_ban_form"] = True
+        if st.session_state.get("show_ban_form"):
             reason = st.text_input("Reason for ban", key="ban_reason")
-            if reason:
-                result = host_api.ban_guest(guest_id, reason=reason)
-                if result:
-                    db = SessionLocal()
-                    try:
-                        log_action(db, st.session_state.admin_id, "ban_guest", "guest", guest_id, reason)
-                    finally:
-                        db.close()
-                    st.success("Guest banned.")
-                    st.rerun()
+            if st.button("Confirm Ban", type="primary", key="confirm_ban_btn"):
+                if not reason:
+                    st.error("Please provide a reason.")
                 else:
-                    st.error("Failed to ban guest.")
+                    result = host_api.ban_guest(guest_id, reason=reason)
+                    if result:
+                        db = SessionLocal()
+                        try:
+                            log_action(db, st.session_state.admin_id, "ban_guest", "guest", guest_id, reason)
+                        finally:
+                            db.close()
+                        st.success("Guest banned.")
+                        st.session_state.pop("show_ban_form", None)
+                        st.rerun()
+                    else:
+                        st.error("Failed to ban guest.")
     with col_unban:
-        if st.button("Unban Guest", disabled=guest.get("status") != "banned"):
+        if st.button("Unban Guest", disabled=guest.get("status") != "banned", key="unban_guest_btn"):
             result = host_api.unban_guest(guest_id)
             if result:
                 db = SessionLocal()

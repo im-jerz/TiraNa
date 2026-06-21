@@ -6,6 +6,7 @@ from utils.icons import user_icon, compass_icon, svg_icon
 NAV_ITEMS = [
     ("Dashboard", "dashboard"),
     ("Listings", "listings_moderation"),
+    ("Moderation", "content_moderation"),
     ("Bookings", "bookings_management"),
     ("Payments", "payments_refunds"),
     ("Reviews", "reviews_management"),
@@ -14,6 +15,7 @@ NAV_ITEMS = [
     ("Host Verification", "host_verification"),
     ("Support", "support_tickets"),
     ("Disputes", "disputes"),
+    ("Analytics", "analytics"),
     ("Admins", "admin_management"),
     ("Settings", "settings"),
 ]

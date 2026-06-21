@@ -17,6 +17,12 @@ DEFAULT_SETTINGS = {
     "support_email": ("", "Support contact email"),
     "min_withdrawal_amount": ("500", "Minimum host withdrawal amount (PHP)"),
     "platform_name": ("AirBnB Clone", "Platform display name"),
+    "tax_percent": ("12", "VAT tax percentage"),
+    "host_service_fee_percent": ("3", "Host service fee percentage"),
+    "guest_service_fee_percent": ("14", "Guest service fee percentage"),
+    "min_cleaning_fee": ("0", "Minimum cleaning fee (PHP)"),
+    "max_cleaning_fee": ("5000", "Maximum cleaning fee (PHP)"),
+    "default_cleaning_fee": ("500", "Default cleaning fee (PHP)"),
 }
 
 
