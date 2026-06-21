@@ -6,7 +6,7 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DATABASE_URL: postgresql://user:password@postgres:5432/admin_airbnb
       HOST_API_URL: http://host.docker.internal:5000
       HOST_API_KEY: ${HOST_API_KEY}
       APP_ENV: ${APP_ENV:-development}
