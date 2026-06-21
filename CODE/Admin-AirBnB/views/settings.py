@@ -57,20 +57,26 @@ def render(*, admin):
         with tab_commission:
             st.subheader("Commission Settings")
 
+            st.info(
+                "Commission is currently **waived** for v1. "
+                "No fees are charged to hosts. This setting is preserved for when commission is enabled in a future version."
+            )
+
             with st.form("commission_settings"):
                 commission = st.number_input(
                     "Commission Percentage (%)",
                     min_value=0.0,
                     max_value=100.0,
-                    value=_get_value("commission_percent", 10.0),
+                    value=_get_value("commission_percent", 0.0),
                     step=0.5,
+                    disabled=True,
+                    help="Commission is disabled for v1. The value is preserved for future use.",
                 )
 
-                if st.form_submit_button("Save Commission Settings"):
-                    set_setting(db_settings, "commission_percent", str(commission), admin.id)
-                    log_action(db_settings, admin.id, "update_settings", "system", "commission", f"Set commission to {commission}%")
-                    st.success("Commission settings saved.")
-                    st.rerun()
+                st.caption("This setting will be re-enabled when commission is activated in a future version.")
+
+                if st.form_submit_button("Save Commission Settings", disabled=True):
+                    pass
 
         with tab_api:
             st.subheader("Host API Configuration")

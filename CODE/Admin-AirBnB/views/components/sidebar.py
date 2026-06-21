@@ -11,7 +11,6 @@ NAV_ITEMS = [
     ("Reviews", "reviews_management"),
     ("Users", "user_management"),
     ("Hosts", "host_management"),
-    ("Host Verification", "host_verification"),
     ("Support", "support_tickets"),
     ("Disputes", "disputes"),
     ("Admins", "admin_management"),

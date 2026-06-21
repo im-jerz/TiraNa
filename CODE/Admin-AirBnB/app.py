@@ -475,6 +475,29 @@ tirana_theme_css = """
             box-shadow: 0 2px 8px rgba(212,148,62,0.12) !important;
             background: var(--color-surface) !important;
         }
+
+        /* -- Status badges ------------------------------------------- */
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.625rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        .status-active { background: #d1fae5; color: #065f46; }
+        .status-suspended { background: #fee2e2; color: #991b1b; }
+        .status-pending { background: #fef3c7; color: #92400e; }
+        .status-completed { background: #d1fae5; color: #065f46; }
+        .status-failed { background: #fee2e2; color: #991b1b; }
+        .status-refunded { background: #fef3c7; color: #92400e; }
+        .status-banned { background: #fee2e2; color: #991b1b; }
+
+        /* -- Better container spacing -------------------------------- */
+        .stTabs [data-baseweb="tab-panel"] {
+            padding-top: 1rem !important;
+        }
     </style>
 """
 
@@ -486,7 +509,7 @@ page = st.session_state.page
 AUTHENTICATED_PAGES = {
     "dashboard", "listings_moderation", "bookings_management",
     "payments_refunds", "reviews_management", "user_management",
-    "host_management", "host_verification", "support_tickets",
+    "host_management", "support_tickets",
     "disputes", "admin_management", "settings",
 }
 
@@ -511,9 +534,7 @@ elif page == "user_management":
 elif page == "host_management":
     from views.host_management import render as render_host_management
     render_host_management()
-elif page == "host_verification":
-    from views.host_verification import render as render_host_verification
-    render_host_verification()
+
 elif page == "support_tickets":
     from views.support_tickets import render as render_support_tickets
     render_support_tickets()

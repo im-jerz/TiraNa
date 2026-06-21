@@ -1,9 +1,11 @@
 import streamlit as st
 import pandas as pd
-from sqlalchemy import desc
+from datetime import datetime, timezone
+from sqlalchemy import desc, func
 
 from database import SessionLocal
 from models.payment_copy import PaymentCache
+from models.system_setting import SystemSetting
 from services.host_api import host_api
 from services.audit_service import log_action
 from services.sync_service import sync_payments
@@ -11,6 +13,20 @@ from views.components.sidebar import render_sidebar
 from utils.icons import check_circle_icon, clock_icon, x_circle_icon, dot_icon, svg_icon
 from utils.auth import require_admin
 from utils.constants import PAGE_SIZE
+
+
+def _get_last_sync_time() -> datetime | None:
+    db = SessionLocal()
+    try:
+        setting = db.query(SystemSetting).filter(SystemSetting.key == "last_sync_payments").first()
+        if setting and setting.value:
+            try:
+                return datetime.fromisoformat(setting.value)
+            except (ValueError, TypeError):
+                return None
+    finally:
+        db.close()
+    return None
 
 
 def _render_withdrawals():
@@ -118,6 +134,45 @@ def render(*, admin):
     c1.metric("Total Revenue", f"PHP {revenue_sum:,.2f}")
     c2.metric("Total Payments", f"{total_revenue:,}")
 
+    # Staleness warning
+    last_sync = _get_last_sync_time()
+    if last_sync:
+        elapsed = (datetime.now(timezone.utc) - last_sync).total_seconds() / 60
+        if elapsed > 5:
+            st.warning(f"Payment data is {elapsed:.0f} minutes old. Last sync: {last_sync.strftime('%H:%M:%S UTC')}")
+        else:
+            st.caption(f"Last synced: {elapsed:.0f} minutes ago")
+    else:
+        st.warning("Payment data has not been synced yet.")
+
+    st.divider()
+
+    # Payment method breakdown
+    st.subheader("Payment Methods")
+    db = SessionLocal()
+    try:
+        method_stats = db.query(
+            PaymentCache.method,
+            func.count(PaymentCache.id),
+            func.sum(PaymentCache.amount)
+        ).filter(
+            PaymentCache.status == "completed"
+        ).group_by(PaymentCache.method).all()
+
+        if method_stats:
+            cols = st.columns(len(method_stats))
+            for i, (method, count, total) in enumerate(method_stats):
+                with cols[i]:
+                    st.metric(
+                        label=method.upper() if method else "Unknown",
+                        value=f"PHP {total:,.2f}",
+                        help=f"{count} transactions"
+                    )
+        else:
+            st.info("No completed payments yet.")
+    finally:
+        db.close()
+
     st.divider()
 
     # Tabs for Payments and Withdrawals
@@ -190,12 +245,8 @@ def render(*, admin):
                 with col4:
                     st.write(f"{method}")
                 with col5:
-                    status_icon = {
-                        "completed": svg_icon(check_circle_icon(color="#16a34a")),
-                        "refunded": svg_icon(clock_icon(color="#d97706")),
-                        "failed": svg_icon(x_circle_icon(color="#dc2626")),
-                    }.get(status, svg_icon(dot_icon(color="#9ca3af")))
-                    st.markdown(f"{status_icon} {status.title()}", unsafe_allow_html=True)
+                    badge_class = f"status-{status}" if status in ["completed", "failed", "refunded"] else ""
+                    st.markdown(f'<span class="status-badge {badge_class}">{status.title()}</span>', unsafe_allow_html=True)
 
                 # Expand for detail + refund
                 with st.expander(f"Details - {payment_id[:8]}"):

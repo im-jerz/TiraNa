@@ -178,10 +178,6 @@ class TestViewsUseRequireAdminDecorator:
         render = self._get_render("views.host_management")
         assert render.__name__ == "render"
 
-    def test_host_verification_render_has_require_admin(self):
-        render = self._get_render("views.host_verification")
-        assert render.__name__ == "render"
-
     def test_support_tickets_render_has_require_admin(self):
         render = self._get_render("views.support_tickets")
         assert render.__name__ == "render"
@@ -219,7 +215,6 @@ class TestViewsRemoveLocalPerPage:
         "views.listings_moderation",
         "views.disputes",
         "views.host_management",
-        "views.host_verification",
         "views.support_tickets",
         "views.user_management",
         "views.payments_refunds",
