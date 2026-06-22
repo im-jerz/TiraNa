@@ -42,7 +42,7 @@ function StarIcon() {
 const signedInLinks = [
   { label: 'My Bookings', path: '/bookings' },
   { label: 'Saved', path: '/saved' },
-  { label: 'Ratings', path: '/ratings' },
+  { label: 'Reviews', path: '/reviews' },
   { label: 'Transactions', path: '/transactions' },
   { label: 'Profile', path: '/client/profile' },
 ]

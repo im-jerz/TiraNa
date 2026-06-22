@@ -1,19 +1,16 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-
-const trending = ['Baguio', 'Siargao', 'Tagaytay', 'Cebu', 'Boracay', 'Palawan']
-
-const stats = [
-  { label: 'Tahanan sa Pinas', value: 3247, suffix: '+' },
-  { label: 'Overall Rating', value: 48, suffix: '', decimal: true },
-  { label: 'Masasayang Guest', value: 1247, suffix: '+' },
-]
+import { fetchLocations, fetchStats } from '../api/listings'
+import { fetchClientStats, fetchRecentReviewers } from '../api/client'
+import { CLIENT_API_URL } from '../api/config'
 
 function useCountUp(target, isVisible, decimal) {
   const [count, setCount] = useState(0)
 
   useEffect(() => {
-    if (!isVisible || target === 0) return
+    if (!isVisible) return
+    setCount(0)
+    if (target === 0) return
     let start = 0
     const duration = 2000
     const increment = target / (duration / 16)
@@ -57,12 +54,49 @@ function Hero() {
   const [loaded, setLoaded] = useState(false)
   const [countersVisible, setCountersVisible] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const [locations, setLocations] = useState([])
+  const [reviewers, setReviewers] = useState([])
+  const [siteStats, setSiteStats] = useState({
+    total_listings: 0,
+    average_rating: 0,
+    total_reviews: 0,
+    total_guests: 0,
+  })
   const counterRef = useRef(null)
   const searchRef = useRef(null)
 
   useEffect(() => {
     setLoaded(true)
   }, [])
+
+  useEffect(() => {
+    fetchLocations()
+      .then(setLocations)
+      .catch(() => {})
+
+    fetchRecentReviewers()
+      .then(setReviewers)
+      .catch(() => {})
+
+    Promise.all([
+      fetchStats().catch(() => ({ total_listings: 0 })),
+      fetchClientStats().catch(() => ({ average_rating: 0, total_reviews: 0, total_completed_bookings: 0 })),
+    ]).then(([hostStats, clientStats]) => {
+      setSiteStats({
+        total_listings: hostStats.total_listings || 0,
+        average_rating: clientStats.average_rating || 0,
+        total_reviews: clientStats.total_reviews || 0,
+        total_guests: clientStats.total_completed_bookings || 0,
+      })
+    })
+  }, [])
+
+  const ratingDisplay = siteStats.average_rating
+    ? siteStats.average_rating.toFixed(1)
+    : ''
+  const reviewsDisplay = siteStats.total_reviews
+    ? `(${siteStats.total_reviews} review${siteStats.total_reviews !== 1 ? 's' : ''})`
+    : ''
 
   useEffect(() => {
     const el = counterRef.current
@@ -104,8 +138,8 @@ function Hero() {
   }
 
   const filteredSuggestions = search.trim()
-    ? trending.filter((d) => d.toLowerCase().includes(search.toLowerCase()))
-    : trending
+    ? locations.filter((d) => d.toLowerCase().includes(search.toLowerCase()))
+    : locations
 
   return (
     <section className="relative min-h-[90vh] flex flex-col lg:flex-row bg-charcoal">
@@ -182,7 +216,7 @@ function Hero() {
             {/* Trending pills */}
             <div className="flex flex-wrap items-center gap-2 mt-5">
               <span className="text-[10px] sm:text-xs text-white/40 uppercase tracking-wider mr-1">Sikat ngayon:</span>
-              {trending.slice(0, 5).map((d) => (
+              {locations.slice(0, 5).map((d) => (
                 <button
                   key={d}
                   onClick={() => handleSuggestionClick(d)}
@@ -198,28 +232,40 @@ function Hero() {
           <div ref={counterRef} className="mt-10 sm:mt-12">
               <div className="flex flex-wrap items-center gap-4 mb-5">
                 <div className="flex -space-x-2">
-                {[11, 25, 27].map((n) => (
-                  <div key={n} className="w-8 h-8 rounded-full border-2 border-charcoal overflow-hidden">
-                    <img src={`https://i.pravatar.cc/32?img=${n}`} alt="" className="w-full h-full object-cover" />
+                {reviewers.map((r) => (
+                  <div key={r.user_id} className="w-8 h-8 rounded-full border-2 border-charcoal overflow-hidden">
+                    {r.avatar ? (
+                      <img
+                        src={r.avatar.startsWith('http') ? r.avatar : `${CLIENT_API_URL}${r.avatar}`}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-sage/20 flex items-center justify-center text-[10px] font-bold text-sage">
+                        {r.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
                   </div>
                 ))}
                 <div className="w-8 h-8 rounded-full border-2 border-charcoal bg-sage flex items-center justify-center">
                   <span className="text-white text-[10px] font-bold">+</span>
                 </div>
               </div>
+              {ratingDisplay && (
               <div className="flex items-center gap-1.5 text-xs sm:text-sm text-white/60">
                 <span className="text-yellow-400 text-sm leading-none">★★★★★</span>
-                <span className="text-white font-semibold">4.8</span>
-                <span className="text-white/30">(2.4k reviews)</span>
+                <span className="text-white font-semibold">{ratingDisplay}</span>
+                <span className="text-white/30">{reviewsDisplay}</span>
               </div>
+              )}
             </div>
 
             <div className="w-full h-px bg-white/10 mb-5" />
 
             <div className="flex flex-wrap gap-x-12 gap-y-5">
-              {stats.map((s) => (
-                <StatItem key={s.label} {...s} visible={countersVisible} />
-              ))}
+              <StatItem label="Tahanan sa Pinas" value={siteStats.total_listings} suffix="+" visible={countersVisible} />
+              <StatItem label="Overall Rating" value={Math.round(siteStats.average_rating * 10)} suffix="" decimal visible={countersVisible} />
+              <StatItem label="Masasayang Guest" value={siteStats.total_reviews} suffix="+" visible={countersVisible} />
             </div>
           </div>
         </div>
