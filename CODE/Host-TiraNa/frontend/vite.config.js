@@ -5,7 +5,15 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': {
+      '/api/host/properties': {
+        target: 'http://backend:5000',
+        changeOrigin: true,
+      },
+      '/api/listings': {
+        target: 'http://backend:5000',
+        changeOrigin: true,
+      },
+      '/api/auth': {
         target: 'http://backend:5000',
         changeOrigin: true,
       },

@@ -51,7 +51,7 @@ router.post('/', authMiddleware, async (req, res) => {
     const conflict = await pool.query(
       `SELECT id FROM bookings
        WHERE property_id = $1
-         AND status = 'pending'
+         AND status = 'confirmed'
          AND check_in < $3
          AND check_out > $2
        LIMIT 1`,
@@ -103,7 +103,7 @@ router.patch('/:id/cancel', authMiddleware, async (req, res) => {
     const { id } = req.params
     const result = await pool.query(
       `UPDATE bookings SET status = 'cancelled'
-       WHERE id = $1 AND user_id = $2 AND status = 'pending'
+       WHERE id = $1 AND user_id = $2 AND status IN ('pending', 'confirmed')
        RETURNING id, status`,
       [id, req.user.id]
     )
@@ -144,7 +144,7 @@ router.patch('/:id/reschedule', authMiddleware, async (req, res) => {
     const conflict = await pool.query(
       `SELECT id FROM bookings
        WHERE property_id = $1 AND id != $2
-         AND status = 'pending'
+         AND status = 'confirmed'
          AND check_in < $4 AND check_out > $3
        LIMIT 1`,
       [propertyId, id, check_in, check_out]
@@ -173,7 +173,7 @@ router.patch('/:id/refund', authMiddleware, async (req, res) => {
     const { id } = req.params
     const result = await pool.query(
       `UPDATE bookings SET status = 'refund_requested'
-       WHERE id = $1 AND user_id = $2 AND status = 'cancelled'
+       WHERE id = $1 AND user_id = $2 AND status IN ('cancelled', 'pending')
        RETURNING id, status`,
       [id, req.user.id]
     )
@@ -193,7 +193,7 @@ router.get('/property/:propertyId', async (req, res) => {
       `SELECT check_in AT TIME ZONE 'Asia/Manila' as check_in,
               check_out AT TIME ZONE 'Asia/Manila' as check_out
        FROM bookings
-       WHERE property_id = $1 AND status = 'pending'
+       WHERE property_id = $1 AND status = 'confirmed'
        ORDER BY check_in ASC`,
       [req.params.propertyId]
     )

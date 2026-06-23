@@ -11,3 +11,4 @@ Flask-Mail==0.9.1
 gunicorn==23.0.0
 oracledb
 python-dotenv==1.0.1
+requests

@@ -10,29 +10,36 @@ const REVIEW_API = 'http://localhost:5000/api/reviews'
 const filters = [
   { id: 'all', label: 'All' },
   { id: 'pending', label: 'Pending' },
+  { id: 'confirmed', label: 'Confirmed' },
   { id: 'completed', label: 'Completed' },
   { id: 'cancelled', label: 'Cancelled' },
+  { id: 'refund_requested', label: 'Refund Requested' },
+  { id: 'refund_completed', label: 'Refund Completed' },
 ]
 
 const STATUS_STYLES = {
   pending: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+  confirmed: 'bg-blue-50 text-blue-700 border-blue-200',
   completed: 'bg-green-50 text-green-700 border-green-200',
   cancelled: 'bg-red-50 text-red-700 border-red-200',
   refund_requested: 'bg-purple-50 text-purple-700 border-purple-200',
+  refund_completed: 'bg-green-50 text-green-700 border-green-200',
 }
 
 const STATUS_LABELS = {
   pending: 'Pending',
+  confirmed: 'Confirmed',
   completed: 'Completed',
   cancelled: 'Cancelled',
   refund_requested: 'Refund Requested',
+  refund_completed: 'Refund Completed',
 }
 
 function getDisplayStatus(booking) {
   if (booking.status === 'pending') {
     const now = new Date()
     const checkOut = new Date(booking.check_out)
-    if (checkOut < now) return 'completed'
+    if (checkOut < now) return 'cancelled'
   }
   return booking.status
 }
@@ -601,6 +608,15 @@ function MyBookings() {
             </button>
           </>
         )}
+        {status === 'confirmed' && (
+          <button
+            type="button"
+            onClick={() => setCancelTarget(booking)}
+            className="px-4 py-2 text-xs font-medium uppercase tracking-wider text-red-500 border border-red-200 hover:bg-red-50 transition-colors bg-transparent"
+          >
+            Cancel
+          </button>
+        )}
         {status === 'completed' && !reviewedBookings.has(booking.id) && (
           <button
             type="button"
@@ -615,7 +631,7 @@ function MyBookings() {
             Review Submitted
           </span>
         )}
-        {status === 'cancelled' && (
+        {status === 'cancelled' && booking.payment_method === 'online' && (
           <button
             type="button"
             onClick={() => setRefundTarget(booking)}

@@ -873,7 +873,7 @@ function PropertyDetails() {
           const now = new Date()
           const completed = list.find(b => {
             if (String(b.property_id) !== String(id)) return false
-            if (b.status === 'cancelled' || b.status === 'refund_requested') return false
+            if (b.status !== 'confirmed') return false
             return new Date(b.check_out) < now
           })
           if (completed) {

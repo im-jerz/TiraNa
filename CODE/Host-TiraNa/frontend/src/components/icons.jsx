@@ -56,6 +56,20 @@ export const IconWallet = (p) => (
   </svg>
 );
 
+export const IconMoney = (p) => (
+  <svg {...base} {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 7v10M9 9.5c0-1 1.3-2 3-2s3 1 3 2-1.3 2-3 2-3 1-3 2 1.3 2 3 2 3-1 3-2" />
+  </svg>
+);
+
+export const IconUser = (p) => (
+  <svg {...base} {...p}>
+    <circle cx="12" cy="8" r="4" />
+    <path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8" />
+  </svg>
+);
+
 export const IconUsers = (p) => (
   <svg {...base} {...p}>
     <circle cx="9" cy="8" r="3" />
@@ -120,6 +134,13 @@ export const IconMapPin = (p) => (
   <svg {...base} {...p}>
     <path d="M12 21s7-6.1 7-11.5A7 7 0 0 0 5 9.5C5 14.9 12 21 12 21Z" />
     <circle cx="12" cy="9.5" r="2.3" />
+  </svg>
+);
+
+export const IconClock = (p) => (
+  <svg {...base} {...p}>
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12 6 12 12 16 14" />
   </svg>
 );
 
