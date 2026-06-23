@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { fetchListingDetail, fetchListings } from '../api/listings.js'
 
+const SAVED_API = 'http://localhost:5000/api/saved-properties'
+
 function StarIcon({ className }) {
   return (
     <svg className={className} viewBox="0 0 20 20" fill="currentColor">
@@ -834,6 +836,7 @@ function PropertyDetails() {
   const [checkInTime, setCheckInTime] = useState('14:00')
   const [checkOutTime, setCheckOutTime] = useState('11:00')
   const [guests, setGuests] = useState({ adults: 2, children: 0, infants: 0 })
+  const [saveLoading, setSaveLoading] = useState(false)
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -886,6 +889,13 @@ function PropertyDetails() {
               .catch(() => {})
           }
         })
+        .catch(() => {})
+
+      fetch(`${SAVED_API}/check/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then(res => res.json())
+        .then(data => setSaved(data.saved))
         .catch(() => {})
     }
   }, [id])
@@ -1158,8 +1168,36 @@ function PropertyDetails() {
             </button>
             <button
               type="button"
-              onClick={() => setSaved(!saved)}
-              className={`flex items-center gap-1.5 text-sm transition-colors ${saved ? 'text-red-500' : 'text-charcoal hover:text-red-400'}`}
+              onClick={async () => {
+                const token = localStorage.getItem('token')
+                if (!token) {
+                  navigate('/client/signup')
+                  return
+                }
+                setSaveLoading(true)
+                try {
+                  if (saved) {
+                    const res = await fetch(`${SAVED_API}/${id}`, {
+                      method: 'DELETE',
+                      headers: { Authorization: `Bearer ${token}` },
+                    })
+                    if (res.ok) setSaved(false)
+                  } else {
+                    const res = await fetch(`${SAVED_API}`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`,
+                      },
+                      body: JSON.stringify({ property_id: id }),
+                    })
+                    if (res.ok) setSaved(true)
+                  }
+                } catch {}
+                setSaveLoading(false)
+              }}
+              disabled={saveLoading}
+              className={`flex items-center gap-1.5 text-sm transition-colors ${saved ? 'text-red-500' : 'text-charcoal hover:text-red-400'} disabled:opacity-50`}
             >
               <HeartIcon className="w-4 h-4" filled={saved} />
               <span className="hidden sm:inline">{saved ? 'Saved' : 'Save'}</span>

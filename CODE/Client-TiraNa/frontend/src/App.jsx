@@ -13,6 +13,7 @@ import About from './pages/About.jsx'
 import Notifications from './pages/Notifications.jsx'
 import MyBookings from './pages/MyBookings.jsx'
 import Reviews from './pages/Reviews.jsx'
+import SavedProperties from './pages/SavedProperties.jsx'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -37,6 +38,7 @@ function App() {
         <Route path="/bookings" element={<MyBookings />} />
         <Route path="/bookings/:id/new" element={<Booking />} />
         <Route path="/reviews" element={<Reviews />} />
+        <Route path="/saved" element={<SavedProperties />} />
         <Route path="/about" element={<About />} />
     </Routes>
     </>
