@@ -10,6 +10,7 @@ import bookingRoutes from './routes/booking.js';
 import reviewRoutes from './routes/reviews.js';
 import statsRoutes from './routes/stats.js';
 import hostBookingRoutes from './routes/hostBookings.js';
+import hostReviewRoutes from './routes/hostReviews.js';
 import savedPropertiesRoutes from './routes/savedProperties.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -29,6 +30,7 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api', statsRoutes);
 app.use('/api/host', hostBookingRoutes);
+app.use('/api/host', hostReviewRoutes);
 app.use('/api/saved-properties', savedPropertiesRoutes);
 
 async function cleanupOldCodes() {
