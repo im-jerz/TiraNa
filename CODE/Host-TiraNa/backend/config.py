@@ -18,6 +18,12 @@ class Config:
         "DATABASE_URL",
         "oracle+oracledb://AIRBNB_HOST:Carlangelo%2319@localhost:1521/?service_name=FREEPDB1"
     )
+
+    # Client DB (CockroachDB) — used by revenue_service for bookings queries
+    CLIENT_API_URL = os.environ.get(
+        "CLIENT_API_URL",
+        "http://localhost:5000",
+    )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_pre_ping": True,

@@ -317,3 +317,22 @@ export const IconPaw = (p) => (
     <path d="M12 12c-3.3 0-5.5 2-5.5 4.3 0 1.8 1.5 3.2 3.4 3.2.9 0 1.5-.4 2.1-.4s1.2.4 2.1.4c1.9 0 3.4-1.4 3.4-3.2C17.5 14 15.3 12 12 12Z" />
   </svg>
 );
+
+export const IconArrowUp = (p) => (
+  <svg {...base} {...p}>
+    <path d="M12 19V5M5 12l7-7 7 7" />
+  </svg>
+);
+
+export const IconArrowDown = (p) => (
+  <svg {...base} {...p}>
+    <path d="M12 5v14M5 12l7 7 7-7" />
+  </svg>
+);
+
+export const IconDownload = (p) => (
+  <svg {...base} {...p}>
+    <path d="M12 4v12M8 12l4 4 4-4" />
+    <path d="M4 18v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1" />
+  </svg>
+);

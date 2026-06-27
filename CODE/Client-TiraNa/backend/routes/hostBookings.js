@@ -179,4 +179,126 @@ router.patch('/:id/refund-completed', async (req, res) => {
   }
 })
 
+
+/**
+ * GET /api/host/revenue
+ *
+ * Revenue data endpoint for the Host Flask backend (revenue_service.py).
+ * Returns summary, monthly breakdown, per-property totals, and payout history.
+ *
+ * Query params:
+ *   property_ids  — comma-separated property IDs (required)
+ *   start         — YYYY-MM-DD (required)
+ *   end           — YYYY-MM-DD (required)
+ *
+ * Only bookings with status IN ('confirmed', 'completed') count as revenue.
+ */
+router.get('/revenue', async (req, res) => {
+  try {
+    const { property_ids, start, end } = req.query
+ 
+    if (!property_ids) {
+      return res.status(400).json({ error: 'property_ids is required' })
+    }
+    if (!start || !end) {
+      return res.status(400).json({ error: 'start and end date are required' })
+    }
+ 
+    const ids = property_ids.split(',').map(id => id.trim()).filter(Boolean)
+    if (ids.length === 0) {
+      return res.status(400).json({ error: 'At least one property_id is required' })
+    }
+ 
+    const [monthlyResult, byPropertyResult, payoutsResult, summaryResult] = await Promise.all([
+      // Month-by-month grouped revenue
+      pool.query(`
+        SELECT
+          EXTRACT(YEAR  FROM check_in)::INT AS yr,
+          EXTRACT(MONTH FROM check_in)::INT AS mo,
+          COALESCE(SUM(total_price), 0)     AS gross,
+          COUNT(*)                           AS booking_count
+        FROM bookings
+        WHERE property_id = ANY($1)
+          AND status IN ('confirmed', 'completed')
+          AND check_in >= $2
+          AND check_in <= $3
+        GROUP BY yr, mo
+        ORDER BY yr, mo
+      `, [ids, start, end]),
+ 
+      // Per-property totals
+      pool.query(`
+        SELECT
+          property_id,
+          COALESCE(SUM(total_price), 0) AS gross,
+          COUNT(*)                       AS booking_count
+        FROM bookings
+        WHERE property_id = ANY($1)
+          AND status IN ('confirmed', 'completed')
+          AND check_in >= $2
+          AND check_in <= $3
+        GROUP BY property_id
+      `, [ids, start, end]),
+ 
+      // Completed bookings for payout history (full history, no date filter)
+      pool.query(`
+        SELECT
+          id,
+          total_price,
+          check_out,
+          property_id,
+          EXTRACT(YEAR  FROM check_out)::INT AS yr,
+          EXTRACT(MONTH FROM check_out)::INT AS mo
+        FROM bookings
+        WHERE property_id = ANY($1)
+          AND status = 'completed'
+        ORDER BY check_out DESC
+      `, [ids]),
+ 
+      // Overall summary for the period
+      pool.query(`
+        SELECT
+          COALESCE(SUM(total_price), 0) AS gross,
+          COUNT(*)                       AS booking_count
+        FROM bookings
+        WHERE property_id = ANY($1)
+          AND status IN ('confirmed', 'completed')
+          AND check_in >= $2
+          AND check_in <= $3
+      `, [ids, start, end]),
+    ])
+ 
+    res.json({
+      data: {
+        summary: {
+          gross: parseFloat(summaryResult.rows[0].gross),
+          booking_count: parseInt(summaryResult.rows[0].booking_count),
+        },
+        monthly: monthlyResult.rows.map(r => ({
+          yr: parseInt(r.yr),
+          mo: parseInt(r.mo),
+          gross: parseFloat(r.gross),
+          booking_count: parseInt(r.booking_count),
+        })),
+        by_property: byPropertyResult.rows.map(r => ({
+          property_id: r.property_id,
+          gross: parseFloat(r.gross),
+          booking_count: parseInt(r.booking_count),
+        })),
+        payouts: payoutsResult.rows.map(r => ({
+          id: r.id,
+          total_price: parseFloat(r.total_price),
+          check_out: r.check_out,
+          property_id: r.property_id,
+          yr: parseInt(r.yr),
+          mo: parseInt(r.mo),
+        })),
+      }
+    })
+  } catch (err) {
+    console.error('Revenue fetch error:', err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
 export default router
