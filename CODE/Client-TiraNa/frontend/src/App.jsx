@@ -18,6 +18,8 @@ const MyBookings = lazy(() => import('./pages/MyBookings.jsx'))
 const Reviews = lazy(() => import('./pages/Reviews.jsx'))
 const SavedProperties = lazy(() => import('./pages/SavedProperties.jsx'))
 const HostProfile = lazy(() => import('./pages/HostProfile.jsx'))
+const PaymentSuccess = lazy(() => import('./pages/PaymentSuccess.jsx'))
+const PaymentCancel = lazy(() => import('./pages/PaymentCancel.jsx'))
 
 const noFooterRoutes = ['/client/signup', '/client/signin', '/client/forgot-password', '/client/reset-password']
 
@@ -51,6 +53,8 @@ function App() {
           <Route path="/saved" element={<SavedProperties />} />
           <Route path="/about" element={<About />} />
           <Route path="/hosts/:id" element={<HostProfile />} />
+          <Route path="/payment/success" element={<PaymentSuccess />} />
+          <Route path="/payment/cancel" element={<PaymentCancel />} />
         </Routes>
       </Suspense>
       {showFooter && <Footer />}

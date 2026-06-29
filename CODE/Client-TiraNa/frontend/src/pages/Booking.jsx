@@ -169,6 +169,34 @@ function Booking() {
         return
       }
 
+      if (paymentMethod === 'online') {
+        const checkoutRes = await fetch('http://localhost:5000/api/payment/create-checkout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            booking_id: data.data.id,
+            amount: total,
+            property_title: title,
+            host_id: bookingData.host_id,
+            check_in: checkIn,
+            check_out: checkOut,
+          }),
+        })
+
+        const checkoutData = await checkoutRes.json()
+
+        if (!checkoutRes.ok) {
+          setError(checkoutData.error || 'Failed to initialize payment')
+          return
+        }
+
+        window.location.href = checkoutData.checkout_url
+        return
+      }
+
       setSuccess(true)
     } catch {
       setError('Connection error. Please try again.')

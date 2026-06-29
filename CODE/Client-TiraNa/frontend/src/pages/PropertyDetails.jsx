@@ -1643,6 +1643,7 @@ function PropertyDetails() {
                     price: room.price,
                     cleaningFee: room.cleaningFee,
                     serviceFee: room.serviceFee,
+                    host_id: room.host?.id,
                     ...data,
                   },
                 })
@@ -1901,6 +1902,7 @@ function PropertyDetails() {
                   price: room.price,
                   cleaningFee: room.cleaningFee,
                   serviceFee: room.serviceFee,
+                  host_id: room.host?.id,
                   checkIn: checkInDatetime,
                   checkOut: checkOutDatetime,
                   guests,

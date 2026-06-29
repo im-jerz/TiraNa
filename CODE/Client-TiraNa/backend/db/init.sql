@@ -122,3 +122,32 @@ CREATE TABLE IF NOT EXISTS saved_properties (
 
 CREATE INDEX IF NOT EXISTS idx_saved_properties_user
   ON saved_properties (user_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS payment_transactions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  booking_id UUID NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES client_users(id) ON DELETE CASCADE,
+  paymongo_session_id STRING,
+  paymongo_payment_id STRING,
+  host_id STRING,
+  amount DECIMAL NOT NULL,
+  payment_method STRING NOT NULL,
+  status STRING NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMP DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_payment_transactions_booking
+  ON payment_transactions (booking_id, status);
+
+CREATE TABLE IF NOT EXISTS wallets (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  host_id STRING NOT NULL,
+  booking_id UUID NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+  amount DECIMAL NOT NULL,
+  type STRING NOT NULL DEFAULT 'earning',
+  description STRING DEFAULT '',
+  created_at TIMESTAMP DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_wallets_host
+  ON wallets (host_id, created_at DESC);
