@@ -1,6 +1,16 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 import { fetchHostProfile } from '../api/listings'
+
+delete L.Icon.Default.prototype._getIconUrl
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+})
 
 function ArrowLeftIcon({ className }) {
   return (
@@ -27,6 +37,106 @@ function MapPinIcon({ className }) {
   )
 }
 
+function FitBounds({ positions }) {
+  const map = useMap()
+  useEffect(() => {
+    if (positions.length > 0) {
+      const bounds = L.latLngBounds(positions)
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 })
+    }
+  }, [map, positions])
+  return null
+}
+
+function HostSkeleton() {
+  return (
+    <div className="flex flex-col min-h-screen bg-white">
+      <div className="flex-1 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+        <div className="h-4 w-16 bg-gray-200 rounded animate-pulse mb-6" />
+        <div className="flex flex-col md:flex-row gap-8 md:gap-12">
+          <div className="flex flex-col items-center md:items-start md:w-80 shrink-0">
+            <div className="w-24 h-24 rounded-full bg-gray-200 animate-pulse mb-4" />
+            <div className="h-6 w-40 bg-gray-200 rounded animate-pulse mb-2" />
+            <div className="h-4 w-24 bg-gray-200 rounded animate-pulse mb-2" />
+            <div className="h-3 w-32 bg-gray-200 rounded animate-pulse mb-2" />
+            <div className="h-3 w-28 bg-gray-200 rounded animate-pulse" />
+          </div>
+          <div className="flex-1 space-y-8">
+            <div className="space-y-3">
+              <div className="h-5 w-32 bg-gray-200 rounded animate-pulse" />
+              <div className="h-3 w-full bg-gray-200 rounded animate-pulse" />
+              <div className="h-3 w-3/4 bg-gray-200 rounded animate-pulse" />
+              <div className="h-3 w-5/6 bg-gray-200 rounded animate-pulse" />
+            </div>
+            <div className="space-y-3">
+              <div className="h-5 w-48 bg-gray-200 rounded animate-pulse" />
+              <div className="h-64 w-full bg-gray-200 rounded animate-pulse" />
+            </div>
+            <div>
+              <div className="h-5 w-40 bg-gray-200 rounded animate-pulse mb-4" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="space-y-3">
+                    <div className="aspect-[4/3] bg-gray-200 rounded-xl animate-pulse" />
+                    <div className="h-3 w-3/4 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-3 w-1/2 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-3 w-2/3 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function useGeocode(locations) {
+  const [coords, setCoords] = useState({})
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!locations.length) {
+      setLoading(false)
+      return
+    }
+
+    const unique = [...new Set(locations)]
+    let cancelled = false
+    const cache = {}
+
+    async function geocode(location) {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(location + ', Philippines')}&format=json&limit=1`,
+          { headers: { 'Accept-Language': 'en' } }
+        )
+        const data = await res.json()
+        if (data.length > 0) {
+          cache[location] = [parseFloat(data[0].lat), parseFloat(data[0].lon)]
+        }
+      } catch {}
+    }
+
+    async function run() {
+      for (const loc of unique) {
+        await geocode(loc)
+      }
+      if (!cancelled) {
+        setCoords({ ...cache })
+        setLoading(false)
+      }
+    }
+
+    run()
+    return () => { cancelled = true }
+  }, [locations.join(',')])
+
+  return { coords, loading }
+}
+
 export default function HostProfile() {
   const { id } = useParams()
   const [host, setHost] = useState(null)
@@ -46,17 +156,27 @@ export default function HostProfile() {
       .finally(() => setLoading(false))
   }, [id])
 
-  if (loading) {
-    return (
-      <div className="flex flex-col min-h-screen bg-white">
-        <div className="flex-1 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-gray-400 text-sm">Loading host profile...</div>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  const locations = useMemo(
+    () => properties.map((p) => p.location).filter(Boolean),
+    [properties]
+  )
+  const { coords, loading: geoLoading } = useGeocode(locations)
+
+  const markerPositions = useMemo(() => {
+    return properties
+      .filter((p) => coords[p.location])
+      .map((p) => ({
+        position: coords[p.location],
+        property: p,
+      }))
+  }, [properties, coords])
+
+  const mapCenter = useMemo(() => {
+    if (markerPositions.length > 0) return markerPositions[0].position
+    return [12.8797, 121.774]
+  }, [markerPositions])
+
+  if (loading) return <HostSkeleton />
 
   if (error || !host) {
     return (
@@ -113,6 +233,51 @@ export default function HostProfile() {
               <div className="mb-8">
                 <h2 className="text-lg font-semibold text-charcoal mb-3">About {host.name}</h2>
                 <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">{host.bio}</p>
+              </div>
+            )}
+
+            {properties.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-lg font-semibold text-charcoal mb-4">
+                  {host.name}'s locations
+                </h2>
+                {geoLoading ? (
+                  <div className="h-72 w-full bg-gray-100 rounded-xl animate-pulse" />
+                ) : (
+                  <div className="h-72 w-full rounded-xl overflow-hidden border border-gray-200">
+                    <MapContainer
+                      center={mapCenter}
+                      zoom={12}
+                      scrollWheelZoom={false}
+                      className="h-full w-full"
+                      style={{ background: '#e5e7eb' }}
+                    >
+                      <TileLayer
+                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      />
+                      <FitBounds positions={markerPositions.map((m) => m.position)} />
+                      {markerPositions.map((m) => (
+                        <Marker key={m.property.id} position={m.position}>
+                          <Popup>
+                            <Link to={`/properties/${m.property.id}`} className="block min-w-[180px]">
+                              <img
+                                src={m.property.image || 'https://via.placeholder.com/200x120'}
+                                alt={m.property.name}
+                                className="w-full h-24 object-cover rounded mb-1"
+                              />
+                              <p className="font-medium text-sm text-charcoal">{m.property.name}</p>
+                              <p className="text-xs text-gray-500">{m.property.location}</p>
+                              <p className="text-xs font-semibold text-charcoal mt-0.5">
+                                ₱{m.property.price?.toLocaleString()} <span className="font-normal text-gray-400">night</span>
+                              </p>
+                            </Link>
+                          </Popup>
+                        </Marker>
+                      ))}
+                    </MapContainer>
+                  </div>
+                )}
               </div>
             )}
 
