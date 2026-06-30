@@ -83,15 +83,49 @@ router.post('/', authMiddleware, async (req, res) => {
 
 router.get('/', authMiddleware, async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1
+    const limit = parseInt(req.query.limit) || 10
+    const offset = (page - 1) * limit
+    const search = req.query.search || ''
+    const status = req.query.status || ''
+
+    let whereClause = 'WHERE b.user_id = $1'
+    const params = [req.user.id]
+    let paramIndex = 2
+
+    if (search) {
+      whereClause += ` AND (b.property_id ILIKE $${paramIndex} OR b.id::text ILIKE $${paramIndex})`
+      params.push(`%${search}%`)
+      paramIndex++
+    }
+
+    if (status) {
+      whereClause += ` AND b.status = $${paramIndex}`
+      params.push(status)
+      paramIndex++
+    }
+
+    const countResult = await pool.query(
+      `SELECT COUNT(*) FROM bookings b ${whereClause}`,
+      params
+    )
+    const total = parseInt(countResult.rows[0].count)
+
+    params.push(limit, offset)
     const result = await pool.query(
       `SELECT id, user_id, property_id,
               check_in AT TIME ZONE 'Asia/Manila' as check_in,
               check_out AT TIME ZONE 'Asia/Manila' as check_out,
               adults, children, infants, total_price, payment_method, status, created_at
-       FROM bookings WHERE user_id = $1 ORDER BY created_at DESC`,
-      [req.user.id]
+       FROM bookings b ${whereClause}
+       ORDER BY created_at DESC
+       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
+      params
     )
-    res.json({ data: result.rows })
+    res.json({
+      data: result.rows,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
+    })
   } catch (err) {
     console.error('Fetch bookings error:', err)
     res.status(500).json({ error: 'Internal server error' })

@@ -320,9 +320,61 @@ function Profile() {
 
   if (fetching) {
     return (
-      <>
+      <div className="flex flex-col min-h-screen bg-white">
         <Header />
-      </>
+        <div className="flex-1">
+          <section className="bg-gradient-to-br from-charcoal via-teal to-charcoal pt-28 sm:pt-36 pb-20 sm:pb-28">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8">
+                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-white/10 animate-pulse ring-2 ring-white/20 shrink-0" />
+                <div className="text-center sm:text-left">
+                  <div className="h-8 bg-white/10 rounded w-48 animate-pulse" />
+                  <div className="h-4 bg-white/10 rounded w-32 mt-2 animate-pulse" />
+                  <div className="h-4 bg-white/10 rounded w-40 mt-2 animate-pulse" />
+                </div>
+              </div>
+            </div>
+          </section>
+          <section className="py-8 sm:py-10">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="max-w-3xl mx-auto">
+                <div className="flex gap-6 mb-8">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="h-4 bg-gray-100 rounded w-20 animate-pulse" />
+                  ))}
+                </div>
+                <div className="space-y-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <div key={i}>
+                        <div className="h-3 bg-gray-100 rounded w-16 mb-2 animate-pulse" />
+                        <div className="h-10 bg-gray-50 rounded w-full animate-pulse" />
+                      </div>
+                    ))}
+                  </div>
+                  <div>
+                    <div className="h-3 bg-gray-100 rounded w-10 mb-2 animate-pulse" />
+                    <div className="h-10 bg-gray-50 rounded w-full animate-pulse" />
+                  </div>
+                  <div>
+                    <div className="h-3 bg-gray-100 rounded w-24 mb-2 animate-pulse" />
+                    <div className="h-10 bg-gray-50 rounded w-full animate-pulse" />
+                  </div>
+                  <div>
+                    <div className="h-3 bg-gray-100 rounded w-32 mb-2 animate-pulse" />
+                    <div className="h-10 bg-gray-50 rounded w-full animate-pulse" />
+                  </div>
+                  <div>
+                    <div className="h-3 bg-gray-100 rounded w-20 mb-2 animate-pulse" />
+                    <div className="h-24 bg-gray-50 rounded w-full animate-pulse" />
+                  </div>
+                  <div className="h-10 bg-gray-100 rounded w-32 animate-pulse" />
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
     )
   }
 
