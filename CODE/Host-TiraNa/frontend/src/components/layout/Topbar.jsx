@@ -1,7 +1,14 @@
 import { useNavigate } from "react-router-dom";
 import { IconMenu, IconBell } from "../icons";
 
-export default function Topbar({ eyebrow, title, onMenuClick, hostInitial = "J", hostName = "Juan Dela Cruz" }) {
+export default function Topbar({
+  eyebrow,
+  title,
+  onMenuClick,
+  hostInitial = "J",
+  hostName = "Juan Dela Cruz",
+  hostAvatarUrl = "",
+}) {
   const navigate = useNavigate();
 
   return (
@@ -26,7 +33,9 @@ export default function Topbar({ eyebrow, title, onMenuClick, hostInitial = "J",
           onClick={() => navigate("/dashboard/settings")}
           aria-label="Go to profile settings"
         >
-          <span className="topbar-avatar">{hostInitial}</span>
+          <span className="topbar-avatar">
+            {hostAvatarUrl ? <img src={hostAvatarUrl} alt="" /> : hostInitial}
+          </span>
           <span className="topbar-profile-name">{hostName}</span>
         </button>
       </div>

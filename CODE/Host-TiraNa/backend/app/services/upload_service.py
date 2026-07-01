@@ -1,3 +1,4 @@
+# app/services/upload_service.py
 """
 Upload helper for KYC documents and property photos.
 
@@ -10,6 +11,25 @@ import os
 import uuid
 from werkzeug.utils import secure_filename
 from flask import current_app
+
+
+def save_avatar(file_storage, host_id: int) -> str:
+    """
+    Saves an avatar photo and returns its public URL.
+
+    Dev: stores under instance/uploads/avatars/<host_id>/ and returns
+    a Flask-served path. Production: swap body for Cloudinary upload.
+    """
+    filename    = secure_filename(file_storage.filename)
+    unique_name = f"{uuid.uuid4().hex}_{filename}"
+
+    upload_dir = os.path.join(current_app.instance_path, "uploads", "avatars", str(host_id))
+    os.makedirs(upload_dir, exist_ok=True)
+
+    filepath = os.path.join(upload_dir, unique_name)
+    file_storage.save(filepath)
+
+    return f"/uploads/avatars/{host_id}/{unique_name}"
 
 
 def save_kyc_document(file_storage, folder: str) -> str:

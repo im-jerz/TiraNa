@@ -73,14 +73,14 @@ function formatMemberSince(str) {
   return new Date(str).toLocaleDateString("en-PH", { month: "long", year: "numeric" });
 }
 
-function HostIdCard({ draft, fileInputRef, onFile, onPick }) {
+function HostIdCard({ draft, fileInputRef, onFile, onPick, uploading }) {
   const hue = getAvatarHue(draft.full_name);
   return (
     <div className="stg-idcard">
       <div className="stg-idcard-top">
         <div className="stg-idcard-avatar" style={{ "--avatar-hue": hue }}>
           {draft.avatar_url ? <img src={draft.avatar_url} alt="" /> : <span>{getInitials(draft.full_name)}</span>}
-          <button type="button" className="stg-avatar-edit" onClick={onPick} aria-label="Change photo">
+          <button type="button" className="stg-avatar-edit" onClick={onPick} disabled={uploading} aria-label="Change photo">
             <IconCamera width={15} height={15} />
           </button>
           <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={onFile} />
@@ -124,8 +124,20 @@ function HostIdCard({ draft, fileInputRef, onFile, onPick }) {
 }
 
 export default function SettingsPage() {
-  const { profile, sessions, loading, savingProfile, changingPassword, revokingId, saveProfile, changePassword, revokeSession } =
-    useSettingsData();
+  const {
+    profile,
+    sessions,
+    loading,
+    loadError,
+    savingProfile,
+    uploadingAvatar,
+    changingPassword,
+    revokingId,
+    saveProfile,
+    uploadAvatar,
+    changePassword,
+    revokeSession,
+  } = useSettingsData();
   const toast = useToast();
 
   const [draft, setDraft] = useState(null);
@@ -170,16 +182,28 @@ export default function SettingsPage() {
     setProfileErrors((e) => ({ ...e, [field]: undefined }));
   }
 
-  function handleFile(e) {
+  async function handleFile(e) {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
       toast.push("Photo must be under 5MB.", "error");
       return;
     }
+
+    // Instant local preview while the real upload is in flight.
     const reader = new FileReader();
     reader.onload = () => setField("avatar_url", reader.result);
     reader.readAsDataURL(file);
+
+    try {
+      const avatarUrl = await uploadAvatar(file);
+      setField("avatar_url", avatarUrl);
+      toast.push("Photo updated.", "success");
+    } catch (err) {
+      toast.push(err.response?.data?.message || "Couldn't upload photo. Try again.", "error");
+    } finally {
+      e.target.value = "";
+    }
   }
 
   async function handleSaveProfile(e) {
@@ -192,9 +216,20 @@ export default function SettingsPage() {
       setProfileErrors(errs);
       return;
     }
-    await saveProfile(draft);
-    setDirty(false);
-    toast.push("Profile updated successfully.", "success");
+    try {
+      await saveProfile(draft);
+      setDirty(false);
+      toast.push("Profile updated successfully.", "success");
+    } catch (err) {
+      const backendErrors = err.response?.data?.errors;
+      if (backendErrors) {
+        setProfileErrors(
+          Object.fromEntries(Object.entries(backendErrors).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v]))
+        );
+      } else {
+        toast.push(err.response?.data?.message || "Couldn't save profile. Try again.", "error");
+      }
+    }
   }
 
   function handleDiscard() {
@@ -214,9 +249,19 @@ export default function SettingsPage() {
       return;
     }
     setPwErrors({});
-    await changePassword();
-    setPwForm({ current: "", next: "", confirm: "" });
-    toast.push("Password changed. Other sessions have been kept active.", "success");
+    try {
+      await changePassword(pwForm.current, pwForm.next, pwForm.confirm);
+      setPwForm({ current: "", next: "", confirm: "" });
+      toast.push("Password changed. Other sessions have been kept active.", "success");
+    } catch (err) {
+      const status = err.response?.status;
+      const message = err.response?.data?.message;
+      if (status === 401) {
+        setPwErrors({ current: message || "Current password is incorrect." });
+      } else {
+        toast.push(message || "Couldn't change password. Try again.", "error");
+      }
+    }
   }
 
   async function confirmRevoke() {
@@ -224,6 +269,21 @@ export default function SettingsPage() {
     await revokeSession(revokeTarget.id);
     toast.push(`Signed out of ${revokeTarget.device}.`, "success");
     setRevokeTarget(null);
+  }
+
+  if (loadError && !loading && !draft) {
+    return (
+      <div className="stg-wrap">
+        <div className="stg-content">
+          <div className="stg-card">
+            <div className="stg-card-head">
+              <h2>Couldn't load your profile</h2>
+              <p>{loadError}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (loading || !draft) {
@@ -240,7 +300,13 @@ export default function SettingsPage() {
   return (
     <div className="stg-wrap">
       <aside className="stg-rail">
-        <HostIdCard draft={draft} fileInputRef={fileInputRef} onFile={handleFile} onPick={() => fileInputRef.current?.click()} />
+        <HostIdCard
+          draft={draft}
+          fileInputRef={fileInputRef}
+          onFile={handleFile}
+          onPick={() => fileInputRef.current?.click()}
+          uploading={uploadingAvatar}
+        />
       </aside>
 
       <div className="stg-content">
@@ -266,8 +332,13 @@ export default function SettingsPage() {
                 {draft.avatar_url ? <img src={draft.avatar_url} alt="" /> : <span>{getInitials(draft.full_name)}</span>}
               </div>
               <div>
-                <button type="button" className="btn-inline btn-secondary" onClick={() => fileInputRef.current?.click()}>
-                  <IconCamera width={16} height={16} /> Upload new photo
+                <button
+                  type="button"
+                  className="btn-inline btn-secondary"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                >
+                  <IconCamera width={16} height={16} /> {uploadingAvatar ? "Uploading…" : "Upload new photo"}
                 </button>
                 <p className="field-hint" style={{ marginTop: "var(--space-2)" }}>JPG or PNG, up to 5MB.</p>
               </div>
