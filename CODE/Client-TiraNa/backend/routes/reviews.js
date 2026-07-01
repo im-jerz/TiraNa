@@ -220,15 +220,47 @@ router.get('/ratings', async (req, res) => {
 // ─── GET /my ──────────────────────────────────────────────────
 router.get('/my', authMiddleware, async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1
+    const limit = parseInt(req.query.limit) || 10
+    const offset = (page - 1) * limit
+    const search = req.query.search || ''
+    const minRating = parseFloat(req.query.min_rating) || 0
+    const maxRating = parseFloat(req.query.max_rating) || 5
+
+    let whereClause = 'WHERE r.user_id = $1 AND r.rating >= $2 AND r.rating <= $3'
+    const params = [req.user.id, minRating, maxRating]
+    let paramIndex = 4
+
+    if (search) {
+      whereClause += ` AND (r.property_id ILIKE $${paramIndex} OR r.review_text ILIKE $${paramIndex})`
+      params.push(`%${search}%`)
+      paramIndex++
+    }
+
+    const countResult = await pool.query(
+      `SELECT COUNT(*) FROM reviews r ${whereClause}`,
+      params
+    )
+    const total = parseInt(countResult.rows[0].count)
+
+    params.push(limit, offset)
     const result = await pool.query(
       `SELECT r.id, r.booking_id, r.property_id, r.rating, r.review_text, r.created_at,
               r.accuracy, r.check_in, r.cleanliness, r.communication, r.location, r.value
-       FROM reviews r
-       WHERE r.user_id = $1
-       ORDER BY r.created_at DESC`,
-      [req.user.id]
+       FROM reviews r ${whereClause}
+       ORDER BY r.created_at DESC
+       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
+      params
     )
     res.json({ data: result.rows.map(row => ({ ...row, checkIn: row.check_in })) })
+    const reviews = result.rows.map(row => ({
+      ...row,
+      checkIn: row.check_in,
+    }))
+    res.json({
+      data: reviews,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
+    })
   } catch (err) {
     console.error('Fetch my reviews error:', err)
     res.status(500).json({ error: 'Internal server error' })

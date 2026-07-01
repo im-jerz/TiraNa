@@ -39,6 +39,13 @@ export async function fetchListingDetail(id) {
   return json.data.property
 }
 
+export async function fetchHostProfile(hostId) {
+  const res = await fetch(`${HOST_API_URL}/api/listings/hosts/${hostId}`)
+  const json = await res.json()
+  if (!json.success) throw new Error(json.message)
+  return json.data
+}
+
 async function fetchPropertyRatings(propertyIds) {
   if (propertyIds.length === 0) return {}
   try {

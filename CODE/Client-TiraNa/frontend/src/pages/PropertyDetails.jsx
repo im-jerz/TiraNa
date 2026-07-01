@@ -328,43 +328,189 @@ function CategoryRatingRow({ label, value, onChange }) {
 
 function PhotoGallery({ images }) {
   const [selected, setSelected] = useState(0)
+  const [showAll, setShowAll] = useState(false)
+  const count = images.length
 
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-2 rounded-lg overflow-hidden max-h-[70vh]">
-      <div className="md:col-span-2 md:row-span-2 relative overflow-hidden bg-charcoal cursor-pointer group" onClick={() => setSelected(0)}>
+  if (count === 0) {
+    return (
+      <div className="bg-gray-100 rounded-lg h-64 flex items-center justify-center text-gray-400 text-sm">
+        No photos available
+      </div>
+    )
+  }
+
+  if (count === 1) {
+    return (
+      <div className="rounded-lg overflow-hidden max-h-[70vh]">
         <img
           src={images[0]}
-          alt="Main view"
-          className={`w-full h-full object-cover transition-opacity duration-500 ${selected === 0 ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
-        />
-        <img
-          src={images[selected]}
-          alt="Selected view"
+          alt="Property photo"
           className="w-full h-full object-cover"
         />
-        {selected !== 0 && (
-          <button
-            onClick={(e) => { e.stopPropagation(); setSelected(0) }}
-            className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1.5 text-xs font-medium text-charcoal hover:bg-white transition-colors rounded"
-          >
-            Show all photos
-          </button>
-        )}
       </div>
-      {images.slice(1, 5).map((img, i) => (
-        <button
-          key={i}
-          onClick={() => setSelected(i + 1)}
-          className={`relative overflow-hidden bg-charcoal hidden md:block ${selected === i + 1 ? 'ring-2 ring-sage' : ''}`}
-        >
+    )
+  }
+
+  if (count === 2) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 rounded-lg overflow-hidden max-h-[70vh]">
+        {images.map((img, i) => (
+          <button
+            key={i}
+            onClick={() => setSelected(i)}
+            className={`relative overflow-hidden bg-charcoal ${selected === i ? 'ring-2 ring-sage' : ''}`}
+          >
+            <img
+              src={img}
+              alt={`View ${i + 1}`}
+              className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+            />
+          </button>
+        ))}
+      </div>
+    )
+  }
+
+  if (count === 3) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 rounded-lg overflow-hidden max-h-[70vh]">
+        <div className="md:col-span-2 relative overflow-hidden bg-charcoal cursor-pointer" onClick={() => setSelected(0)}>
           <img
-            src={img}
-            alt={`View ${i + 2}`}
+            src={images[0]}
+            alt="Main view"
+            className="w-full h-full object-cover"
+          />
+          {selected !== 0 && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setSelected(0) }}
+              className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1.5 text-xs font-medium text-charcoal hover:bg-white transition-colors rounded"
+            >
+              Show all photos
+            </button>
+          )}
+        </div>
+        {images.slice(1).map((img, i) => (
+          <button
+            key={i}
+            onClick={() => setSelected(i + 1)}
+            className={`relative overflow-hidden bg-charcoal ${selected === i + 1 ? 'ring-2 ring-sage' : ''}`}
+          >
+            <img
+              src={img}
+              alt={`View ${i + 2}`}
+              className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+            />
+          </button>
+        ))}
+      </div>
+    )
+  }
+
+  if (count === 4) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-2 rounded-lg overflow-hidden max-h-[70vh]">
+        <div className="md:col-span-2 md:row-span-2 relative overflow-hidden bg-charcoal cursor-pointer" onClick={() => setSelected(0)}>
+          <img
+            src={images[0]}
+            alt="Main view"
+            className="w-full h-full object-cover"
+          />
+          {selected !== 0 && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setSelected(0) }}
+              className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1.5 text-xs font-medium text-charcoal hover:bg-white transition-colors rounded"
+            >
+              Show all photos
+            </button>
+          )}
+        </div>
+        {images.slice(1).map((img, i) => (
+          <button
+            key={i}
+            onClick={() => setSelected(i + 1)}
+            className={`relative overflow-hidden bg-charcoal ${selected === i + 1 ? 'ring-2 ring-sage' : ''}`}
+          >
+            <img
+              src={img}
+              alt={`View ${i + 2}`}
+              className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+            />
+          </button>
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-2 rounded-lg overflow-hidden max-h-[70vh]">
+        <div className="md:col-span-2 md:row-span-2 relative overflow-hidden bg-charcoal cursor-pointer group" onClick={() => setShowAll(true)}>
+          <img
+            src={images[0]}
+            alt="Main view"
             className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
           />
-        </button>
-      ))}
-    </div>
+          <button
+            className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1.5 text-xs font-medium text-charcoal hover:bg-white transition-colors rounded"
+          >
+            <svg className="w-4 h-4 inline-block mr-1.5 -mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+              <rect x="3" y="3" width="7" height="7" />
+              <rect x="14" y="3" width="7" height="7" />
+              <rect x="3" y="14" width="7" height="7" />
+              <rect x="14" y="14" width="7" height="7" />
+            </svg>
+            Show all photos
+          </button>
+        </div>
+        {images.slice(1, 5).map((img, i) => (
+          <button
+            key={i}
+            onClick={() => setShowAll(true)}
+            className="relative overflow-hidden bg-charcoal hidden md:block"
+          >
+            <img
+              src={img}
+              alt={`View ${i + 2}`}
+              className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+            />
+            {i === 3 && count > 5 && (
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                <span className="text-white font-medium text-lg">+{count - 5} more</span>
+              </div>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {showAll && (
+        <div className="fixed inset-0 z-50 bg-black/95 overflow-auto" onClick={() => setShowAll(false)}>
+          <div className="sticky top-0 z-10 bg-black/80 backdrop-blur-sm p-4 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => setShowAll(false)}
+              className="text-white/80 hover:text-white transition-colors"
+            >
+              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <span className="text-white text-sm font-medium">{count} photos</span>
+            <div className="w-6" />
+          </div>
+          <div className="max-w-4xl mx-auto px-4 py-6 space-y-4">
+            {images.map((img, i) => (
+              <img
+                key={i}
+                src={img}
+                alt={`Photo ${i + 1}`}
+                className="w-full object-cover"
+                loading="lazy"
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 
@@ -1238,17 +1384,31 @@ function PropertyDetails() {
 
             <hr className="my-5 border-gray-200" />
 
-            <div className="flex items-center gap-4">
-              <img
-                src={room.host.avatar}
-                alt={room.host.name}
-                className="w-12 h-12 rounded-full object-cover"
-              />
-              <div>
-                <p className="text-sm font-semibold text-charcoal">Hosted by {room.host.name}</p>
-                <p className="text-xs text-gray-400">Joined in {room.host.joined}</p>
+            {room.host?.id ? (
+              <Link to={`/hosts/${room.host.id}`} className="flex items-center gap-4 group">
+                <img
+                  src={room.host.avatar}
+                  alt={room.host.name}
+                  className="w-12 h-12 rounded-full object-cover"
+                />
+                <div>
+                  <p className="text-sm font-semibold text-charcoal group-hover:underline">Hosted by {room.host.name}</p>
+                  <p className="text-xs text-gray-400">Joined in {room.host.joined}</p>
+                </div>
+              </Link>
+            ) : (
+              <div className="flex items-center gap-4">
+                <img
+                  src={room.host?.avatar}
+                  alt={room.host?.name}
+                  className="w-12 h-12 rounded-full object-cover"
+                />
+                <div>
+                  <p className="text-sm font-semibold text-charcoal">Hosted by {room.host?.name}</p>
+                  <p className="text-xs text-gray-400">Joined in {room.host?.joined}</p>
+                </div>
               </div>
-            </div>
+            )}
 
             <hr className="my-5 border-gray-200" />
 
@@ -1483,6 +1643,7 @@ function PropertyDetails() {
                     price: room.price,
                     cleaningFee: room.cleaningFee,
                     serviceFee: room.serviceFee,
+                    host_id: room.host?.id,
                     ...data,
                   },
                 })
@@ -1741,6 +1902,7 @@ function PropertyDetails() {
                   price: room.price,
                   cleaningFee: room.cleaningFee,
                   serviceFee: room.serviceFee,
+                  host_id: room.host?.id,
                   checkIn: checkInDatetime,
                   checkOut: checkOutDatetime,
                   guests,

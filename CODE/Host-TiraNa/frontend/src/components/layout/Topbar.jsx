@@ -80,7 +80,14 @@ function NotifDropdown({ items, unreadCount, onClose, onSeeAll, onItemClick }) {
 }
 
 /* ─── Topbar ────────────────────────────────────────────────── */
-export default function Topbar({ eyebrow, title, onMenuClick, hostInitial = "H", hostName = "Host" }) {
+export default function Topbar({
+  eyebrow,
+  title,
+  onMenuClick,
+  hostInitial = "H",
+  hostName = "Host",
+  hostAvatarUrl = "",
+}) {
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [preview, setPreview] = useState([]);
@@ -158,16 +165,6 @@ export default function Topbar({ eyebrow, title, onMenuClick, hostInitial = "H",
     navigate(link || "/dashboard/notifications");
   }
 
-export default function Topbar({
-  eyebrow,
-  title,
-  onMenuClick,
-  hostInitial = "J",
-  hostName = "Juan Dela Cruz",
-  hostAvatarUrl = "",
-}) {
-  const navigate = useNavigate();
-
   return (
     <header className="topbar">
       <button type="button" className="topbar-menu-btn" onClick={onMenuClick} aria-label="Toggle navigation">
@@ -208,13 +205,6 @@ export default function Topbar({
           )}
         </div>
 
-        <button type="button" className="topbar-profile">
-          <span className="topbar-avatar">{hostInitial}</span>
-        </button>
-        <button type="button" className="topbar-icon-btn" aria-label="Notifications">
-          <IconBell />
-          <span className="topbar-icon-dot" />
-        </button>
         <button
           type="button"
           className="topbar-profile"
@@ -229,4 +219,4 @@ export default function Topbar({
       </div>
     </header>
   );
-}}
+}

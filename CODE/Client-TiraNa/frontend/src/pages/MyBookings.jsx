@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Header from '../components/Header.jsx'
-import Footer from '../components/Footer.jsx'
 import { HOST_API_URL } from '../api/config.js'
 
 const BOOKING_API = 'http://localhost:5000/api/bookings'
@@ -81,6 +80,39 @@ function CreditCardIcon({ className }) {
   )
 }
 
+function SearchIcon() {
+  return (
+    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+      <circle cx="11" cy="11" r="8" />
+      <path strokeLinecap="round" d="M21 21l-4.35-4.35" />
+    </svg>
+  )
+}
+
+function CloseIcon() {
+  return (
+    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  )
+}
+
+function ChevronLeftIcon() {
+  return (
+    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+    </svg>
+  )
+}
+
+function ChevronRightIcon() {
+  return (
+    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+    </svg>
+  )
+}
+
 function formatDate(dateStr) {
   return new Date(dateStr).toLocaleDateString('en-PH', {
     month: 'short',
@@ -127,65 +159,7 @@ function CancelModal({ booking, onClose, onConfirm, loading }) {
   )
 }
 
-function RescheduleModal({ booking, checkIn, checkOut, onCheckInChange, onCheckOutChange, onClose, onConfirm, loading, error }) {
-  const today = new Date().toISOString().slice(0, 16)
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
-      <div className="bg-white w-full max-w-sm p-6 sm:p-8 shadow-xl" onClick={e => e.stopPropagation()}>
-        <h3 className="text-base font-bold text-charcoal mb-2">Reschedule Booking</h3>
-        <p className="text-sm text-gray-500 mb-6 leading-relaxed">
-          Choose your new check-in and check-out dates.
-        </p>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1.5">New Check-in</label>
-            <input
-              type="datetime-local"
-              value={checkIn}
-              onChange={e => onCheckInChange(e.target.value)}
-              min={today}
-              className="w-full px-4 py-2.5 border border-gray-200 bg-white text-sm text-charcoal focus:outline-none focus:border-teal focus:ring-1 focus:ring-teal/20"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1.5">New Check-out</label>
-            <input
-              type="datetime-local"
-              value={checkOut}
-              onChange={e => onCheckOutChange(e.target.value)}
-              min={checkIn || today}
-              className="w-full px-4 py-2.5 border border-gray-200 bg-white text-sm text-charcoal focus:outline-none focus:border-teal focus:ring-1 focus:ring-teal/20"
-            />
-          </div>
-          {error && (
-            <div className="bg-red-50 border border-red-100 px-4 py-3">
-              <p className="text-xs text-red-600">{error}</p>
-            </div>
-          )}
-        </div>
-        <div className="flex items-center gap-3 mt-6">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={loading}
-            className="flex-1 py-2.5 text-sm font-medium text-charcoal border border-gray-200 hover:bg-gray-50 transition-colors bg-transparent"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={loading || !checkIn || !checkOut}
-            className="flex-1 py-2.5 text-sm font-medium text-white bg-sage hover:bg-olive transition-colors disabled:opacity-40"
-          >
-            {loading ? 'Rescheduling...' : 'Confirm'}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 function StarIcon({ className, filled }) {
   return (
@@ -385,12 +359,11 @@ function MyBookings() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [actionLoading, setActionLoading] = useState(false)
+  const [search, setSearch] = useState('')
+  const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 })
+  const searchTimeout = useRef(null)
 
   const [cancelTarget, setCancelTarget] = useState(null)
-  const [rescheduleTarget, setRescheduleTarget] = useState(null)
-  const [rescheduleCheckIn, setRescheduleCheckIn] = useState('')
-  const [rescheduleCheckOut, setRescheduleCheckOut] = useState('')
-  const [rescheduleError, setRescheduleError] = useState('')
   const [refundTarget, setRefundTarget] = useState(null)
   const [reviewTarget, setReviewTarget] = useState(null)
   const [reviewError, setReviewError] = useState('')
@@ -407,12 +380,16 @@ function MyBookings() {
     loadBookings()
   }, [navigate])
 
-  async function loadBookings() {
+  const loadBookings = useCallback(async (page = 1) => {
     setLoading(true)
     setError('')
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch(BOOKING_API, {
+      const params = new URLSearchParams({ page, limit: 10 })
+      if (search) params.set('search', search)
+      if (filter !== 'all') params.set('status', filter)
+
+      const res = await fetch(`${BOOKING_API}?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (!res.ok) {
@@ -426,6 +403,7 @@ function MyBookings() {
       }
       const data = await res.json()
       const list = data.data || []
+      setPagination(data.pagination || { page: 1, totalPages: 1, total: 0 })
 
       const ids = [...new Set(list.map(b => b.property_id))]
       const map = {}
@@ -446,7 +424,15 @@ function MyBookings() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [search, filter, navigate])
+
+  useEffect(() => {
+    if (searchTimeout.current) clearTimeout(searchTimeout.current)
+    searchTimeout.current = setTimeout(() => {
+      loadBookings(1)
+    }, 300)
+    return () => clearTimeout(searchTimeout.current)
+  }, [search, filter, loadBookings])
 
   async function handleCancel(bookingId) {
     setActionLoading(true)
@@ -459,51 +445,9 @@ function MyBookings() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       setCancelTarget(null)
-      await loadBookings()
+      await loadBookings(pagination.page)
     } catch (err) {
       setError(err.message)
-    } finally {
-      setActionLoading(false)
-    }
-  }
-
-  function openReschedule(booking) {
-    setRescheduleTarget(booking)
-    setRescheduleCheckIn(booking.check_in.slice(0, 16))
-    setRescheduleCheckOut(booking.check_out.slice(0, 16))
-    setRescheduleError('')
-  }
-
-  async function handleReschedule() {
-    if (!rescheduleCheckIn || !rescheduleCheckOut) {
-      setRescheduleError('Please select both dates')
-      return
-    }
-    if (new Date(rescheduleCheckOut) <= new Date(rescheduleCheckIn)) {
-      setRescheduleError('Check-out must be after check-in')
-      return
-    }
-    setActionLoading(true)
-    setRescheduleError('')
-    try {
-      const token = localStorage.getItem('token')
-      const res = await fetch(`${BOOKING_API}/${rescheduleTarget.id}/reschedule`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          check_in: rescheduleCheckIn,
-          check_out: rescheduleCheckOut,
-        }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error)
-      setRescheduleTarget(null)
-      await loadBookings()
-    } catch (err) {
-      setRescheduleError(err.message)
     } finally {
       setActionLoading(false)
     }
@@ -520,7 +464,7 @@ function MyBookings() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       setRefundTarget(null)
-      await loadBookings()
+      await loadBookings(pagination.page)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -582,9 +526,6 @@ function MyBookings() {
   }
 
   const displayStatus = getDisplayStatus
-  const filtered = filter === 'all'
-    ? bookings
-    : bookings.filter(b => displayStatus(b) === filter)
 
   function renderActions(booking) {
     const status = displayStatus(booking)
@@ -592,13 +533,6 @@ function MyBookings() {
       <div className="flex flex-wrap gap-2">
         {status === 'pending' && (
           <>
-            <button
-              type="button"
-              onClick={() => openReschedule(booking)}
-              className="px-4 py-2 text-xs font-medium uppercase tracking-wider text-teal border border-teal/30 hover:bg-teal/5 transition-colors bg-transparent"
-            >
-              Reschedule
-            </button>
             <button
               type="button"
               onClick={() => setCancelTarget(booking)}
@@ -646,20 +580,64 @@ function MyBookings() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="flex flex-col min-h-screen bg-white">
         <Header />
-        <div className="flex items-center justify-center pt-40">
-          <div className="w-6 h-6 border-2 border-sage border-t-transparent animate-spin" />
+        <div className="flex-1">
+          <section className="bg-gradient-to-br from-charcoal via-teal to-charcoal pt-28 sm:pt-36 pb-20 sm:pb-28">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="h-10 bg-white/10 rounded w-48 animate-pulse" />
+              <div className="h-4 bg-white/10 rounded w-64 mt-3 animate-pulse" />
+            </div>
+          </section>
+          <section className="py-8 sm:py-10">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="h-10 bg-gray-100 rounded w-full mb-6 animate-pulse" />
+              <div className="h-10 bg-gray-100 rounded w-full mb-8 animate-pulse" />
+              <div className="space-y-6">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="bg-white border border-gray-100 overflow-hidden">
+                    <div className="flex flex-col sm:flex-row">
+                      <div className="sm:w-56 h-48 sm:h-auto bg-gray-100 animate-pulse shrink-0" />
+                      <div className="flex-1 p-5 sm:p-6">
+                        <div className="flex items-start justify-between gap-4 mb-3">
+                          <div className="flex-1">
+                            <div className="h-5 bg-gray-100 rounded w-2/3 animate-pulse" />
+                            <div className="h-3 bg-gray-50 rounded w-1/3 mt-2 animate-pulse" />
+                          </div>
+                          <div className="h-6 w-20 bg-gray-100 rounded animate-pulse shrink-0" />
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                          {Array.from({ length: 3 }).map((_, j) => (
+                            <div key={j} className="flex items-center gap-2">
+                              <div className="w-4 h-4 bg-gray-100 rounded animate-pulse" />
+                              <div>
+                                <div className="h-2 bg-gray-50 rounded w-14 animate-pulse" />
+                                <div className="h-3 bg-gray-100 rounded w-20 mt-1 animate-pulse" />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                          <div className="h-5 bg-gray-100 rounded w-24 animate-pulse" />
+                          <div className="h-8 bg-gray-100 rounded w-20 animate-pulse" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
         </div>
-        <Footer />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="flex flex-col min-h-screen bg-white">
       <Header />
 
+      <div className="flex-1">
       <section className="bg-gradient-to-br from-charcoal via-teal to-charcoal pt-28 sm:pt-36 pb-20 sm:pb-28 relative overflow-hidden">
         <div className="absolute inset-0">
           <div className="absolute top-10 right-20 w-64 h-64 bg-sage/5 rounded-full blur-3xl" />
@@ -673,13 +651,37 @@ function MyBookings() {
         </div>
       </section>
 
-      <section className="py-8 sm:py-10">
+      <section className="pt-16 sm:pt-20 pb-8 sm:pb-10 -mt-10 relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {error && (
             <div className="mb-6 bg-red-50 border border-red-100 px-4 py-3">
               <p className="text-xs text-red-600">{error}</p>
             </div>
           )}
+
+          <div className="bg-white border border-gray-100 p-4 mb-6 space-y-3">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                <SearchIcon />
+              </div>
+              <input
+                type="text"
+                placeholder="Search by property ID or booking ID..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-50 border border-gray-200 text-charcoal placeholder-gray-400 focus:outline-none focus:border-sage focus:ring-1 focus:ring-sage/20 transition-colors"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 bg-transparent border-none cursor-pointer"
+                >
+                  <CloseIcon />
+                </button>
+              )}
+            </div>
+          </div>
 
           <div className="flex border-b border-gray-200 mb-8 overflow-x-auto">
             {filters.map((f) => (
@@ -694,36 +696,33 @@ function MyBookings() {
                 }`}
               >
                 {f.label}
-                {f.id !== 'all' && (
-                  <span className="ml-1.5 text-xs text-gray-300">
-                    ({bookings.filter(b => displayStatus(b) === f.id).length})
-                  </span>
-                )}
               </button>
             ))}
           </div>
 
-          {filtered.length === 0 ? (
+          {bookings.length === 0 ? (
             <div className="text-center py-20">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-50 flex items-center justify-center">
                 <CalendarIcon className="w-8 h-8 text-gray-300" />
               </div>
               <h3 className="text-lg font-bold text-charcoal mb-1">No bookings found</h3>
               <p className="text-sm text-gray-400 mb-6">
-                {filter === 'all'
-                  ? "You haven't made any bookings yet."
-                  : `No ${filter} bookings to show.`}
+                {search || filter !== 'all'
+                  ? 'No bookings match your search or filters.'
+                  : "You haven't made any bookings yet."}
               </p>
-              <Link
-                to="/properties"
-                className="inline-flex px-6 py-3 bg-sage text-white font-medium uppercase tracking-wider text-sm hover:bg-olive transition-colors"
-              >
-                Browse Properties
-              </Link>
+              {!search && filter === 'all' && (
+                <Link
+                  to="/properties"
+                  className="inline-flex px-6 py-3 bg-sage text-white font-medium uppercase tracking-wider text-sm hover:bg-olive transition-colors"
+                >
+                  Browse Properties
+                </Link>
+              )}
             </div>
           ) : (
             <div className="space-y-6">
-              {filtered.map((booking) => {
+              {bookings.map((booking) => {
                 const prop = properties[booking.property_id]
                 const status = displayStatus(booking)
                 const adults = Number(booking.adults)
@@ -825,10 +824,61 @@ function MyBookings() {
               })}
             </div>
           )}
+
+          {pagination.totalPages > 1 && (
+            <div className="flex items-center justify-center gap-1 mt-8">
+              <button
+                type="button"
+                onClick={() => loadBookings(pagination.page - 1)}
+                disabled={pagination.page <= 1}
+                className="p-2 text-charcoal border border-gray-200 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed bg-transparent cursor-pointer"
+              >
+                <ChevronLeftIcon />
+              </button>
+              {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
+                .filter(p => {
+                  if (pagination.totalPages <= 7) return true
+                  if (p === 1 || p === pagination.totalPages) return true
+                  if (Math.abs(p - pagination.page) <= 1) return true
+                  return false
+                })
+                .reduce((acc, p, i, arr) => {
+                  if (i > 0 && p - arr[i - 1] > 1) acc.push('...')
+                  acc.push(p)
+                  return acc
+                }, [])
+                .map((p, i) =>
+                  p === '...' ? (
+                    <span key={`ellipsis-${i}`} className="px-2 text-sm text-gray-400">...</span>
+                  ) : (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => loadBookings(p)}
+                      className={`w-9 h-9 text-sm font-medium transition-colors border cursor-pointer ${
+                        p === pagination.page
+                          ? 'bg-charcoal text-white border-charcoal'
+                          : 'bg-transparent text-charcoal border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  )
+                )}
+              <button
+                type="button"
+                onClick={() => loadBookings(pagination.page + 1)}
+                disabled={pagination.page >= pagination.totalPages}
+                className="p-2 text-charcoal border border-gray-200 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed bg-transparent cursor-pointer"
+              >
+                <ChevronRightIcon />
+              </button>
+            </div>
+          )}
         </div>
       </section>
 
-      <Footer />
+      </div>
 
       {cancelTarget && (
         <CancelModal
@@ -836,20 +886,6 @@ function MyBookings() {
           onClose={() => setCancelTarget(null)}
           onConfirm={() => handleCancel(cancelTarget.id)}
           loading={actionLoading}
-        />
-      )}
-
-      {rescheduleTarget && (
-        <RescheduleModal
-          booking={rescheduleTarget}
-          checkIn={rescheduleCheckIn}
-          checkOut={rescheduleCheckOut}
-          onCheckInChange={setRescheduleCheckIn}
-          onCheckOutChange={setRescheduleCheckOut}
-          onClose={() => setRescheduleTarget(null)}
-          onConfirm={handleReschedule}
-          loading={actionLoading}
-          error={rescheduleError}
         />
       )}
 

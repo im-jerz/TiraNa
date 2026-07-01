@@ -1,6 +1,8 @@
 from flask import request
 from marshmallow import Schema, fields
 
+from app.models.property import Property
+
 
 def _resolve_url(path):
     if not path:
@@ -17,6 +19,38 @@ PROPERTY_TYPE_LABELS = {
 }
 
 
+class HostProfileSchema(Schema):
+    id = fields.Integer()
+    name = fields.Method("get_name")
+    avatar = fields.Method("get_avatar")
+    joined = fields.Method("get_joined")
+    bio = fields.Method("get_bio")
+    isSuperhost = fields.Method("is_superhost")
+    listingsCount = fields.Method("get_listings_count")
+
+    def get_name(self, obj):
+        profile = obj.profile
+        return profile.full_name if profile else "Host"
+
+    def get_avatar(self, obj):
+        profile = obj.profile
+        return _resolve_url(profile.avatar_url) if profile and profile.avatar_url else ""
+
+    def get_joined(self, obj):
+        return str(obj.created_at.year) if obj.created_at else "2024"
+
+    def get_bio(self, obj):
+        profile = obj.profile
+        return profile.bio if profile and profile.bio else ""
+
+    def is_superhost(self, obj):
+        profile = obj.profile
+        return bool(profile and profile.is_superhost)
+
+    def get_listings_count(self, obj):
+        return Property.query.filter_by(host_id=obj.id, status="active").count()
+
+
 class ListingItemSchema(Schema):
     id = fields.Integer(attribute="id")
     title = fields.String()
@@ -27,6 +61,7 @@ class ListingItemSchema(Schema):
     reviews = fields.Method("get_review_count")
     reviewsCount = fields.Method("get_review_count")
     superhost = fields.Method("is_superhost")
+    hostId = fields.Method("get_host_id")
     image = fields.Method("get_cover_photo")
     type = fields.Method("get_type_label")
     guests = fields.Integer(attribute="max_guests")
@@ -49,6 +84,9 @@ class ListingItemSchema(Schema):
     def is_superhost(self, obj):
         profile = obj.host.profile if obj.host else None
         return bool(profile and profile.is_superhost)
+
+    def get_host_id(self, obj):
+        return obj.host.id if obj.host else None
 
     def get_cover_photo(self, obj):
         cover = next((img for img in obj.images if img.is_cover), None)
@@ -97,9 +135,12 @@ class ListingDetailSchema(ListingItemSchema):
     def get_host_info(self, obj):
         profile = obj.host.profile if obj.host else None
         return {
+            "id": obj.host.id if obj.host else None,
             "name": profile.full_name if profile else "Host",
             "avatar": _resolve_url(profile.avatar_url) if profile and profile.avatar_url else "",
             "joined": str(obj.host.created_at.year) if obj.host and obj.host.created_at else "2024",
+            "bio": profile.bio if profile and profile.bio else "",
+            "isSuperhost": bool(profile and profile.is_superhost),
         }
 
     def get_reviews(self, obj):

@@ -50,23 +50,49 @@ router.get('/', authMiddleware, async (req, res) => {
     const page = parseInt(req.query.page) || 1
     const limit = parseInt(req.query.limit) || 20
     const offset = (page - 1) * limit
+    const search = req.query.search || ''
+    const type = req.query.type || ''
+    const readStatus = req.query.read || ''
+
+    let whereClause = 'WHERE n.receiver_id = $1'
+    const params = [req.user.id]
+    let paramIndex = 2
+
+    if (search) {
+      whereClause += ` AND (n.title ILIKE $${paramIndex} OR n.message ILIKE $${paramIndex})`
+      params.push(`%${search}%`)
+      paramIndex++
+    }
+
+    if (type) {
+      whereClause += ` AND n.type = $${paramIndex}`
+      params.push(type)
+      paramIndex++
+    }
+
+    if (readStatus === 'read') {
+      whereClause += ' AND n.is_read = true'
+    } else if (readStatus === 'unread') {
+      whereClause += ' AND n.is_read = false'
+    }
 
     const countResult = await pool.query(
-      'SELECT COUNT(*) FROM notifications WHERE receiver_id = $1',
-      [req.user.id]
+      `SELECT COUNT(*) FROM notifications n ${whereClause}`,
+      params
     )
     const total = parseInt(countResult.rows[0].count)
 
+    params.push(limit, offset)
     const result = await pool.query(
       `SELECT
         n.id, n.sender_id, n.receiver_id, n.type, n.title, n.message, n.is_read, n.created_at,
         u.username AS sender_username
        FROM notifications n
        LEFT JOIN client_users u ON u.id = n.sender_id
-       WHERE n.receiver_id = $1
+       ${whereClause}
        ORDER BY n.created_at DESC
-       LIMIT $2 OFFSET $3`,
-      [req.user.id, limit, offset]
+       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
+      params
     )
 
     res.json({

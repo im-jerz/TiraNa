@@ -5,8 +5,10 @@ from app.blueprints.listings import listings_bp
 from app.blueprints.listings.schemas import (
     ListingItemSchema,
     ListingDetailSchema,
+    HostProfileSchema,
 )
 from app.extensions import db
+from app.models.host import Host
 from app.models.property import Property, PropertyLocation
 from app.utils.response import success_response, error_response
 
@@ -108,3 +110,21 @@ def listing_detail(property_id):
         return error_response("Property not found.", status=404)
 
     return success_response(data={"property": ListingDetailSchema().dump(prop)})
+
+
+@listings_bp.route("/hosts/<int:host_id>", methods=["GET"])
+def host_profile(host_id):
+    host = Host.query.get(int(host_id))
+    if host is None or host.status != "active":
+        return error_response("Host not found.", status=404)
+
+    properties = (
+        Property.query
+        .filter_by(host_id=host.id, status="active")
+        .order_by(Property.created_at.desc())
+        .all()
+    )
+
+    host_data = HostProfileSchema().dump(host)
+    properties_data = ListingItemSchema(many=True).dump(properties)
+    return success_response(data={"host": host_data, "properties": properties_data})

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import Header from '../components/Header.jsx'
-import Footer from '../components/Footer.jsx'
 
 const stats = [
   { label: 'Available Properties', value: '20+' },
@@ -79,9 +78,10 @@ function About() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="flex flex-col min-h-screen bg-white">
       <Header />
 
+      <div className="flex-1">
       <section className="bg-gradient-to-br from-charcoal via-teal to-charcoal pt-28 sm:pt-36 pb-20 sm:pb-28 relative overflow-hidden">
         <div className="absolute inset-0">
           <div className="absolute top-10 left-10 w-64 h-64 bg-sage/5 rounded-full blur-3xl" />
@@ -255,7 +255,7 @@ function About() {
       </section>
       )}
 
-      <Footer />
+      </div>
     </div>
   )
 }

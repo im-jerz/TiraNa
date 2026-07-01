@@ -1,7 +1,144 @@
 import { Router } from 'express'
+import nodemailer from 'nodemailer'
 import pool from '../db.js'
 
 const router = Router()
+
+const smtpAuth = process.env.SMTP_USER
+  ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+  : undefined
+
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: process.env.SMTP_PORT,
+  secure: false,
+  auth: smtpAuth,
+})
+
+function formatCurrency(amount) {
+  return Number(amount).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+async function sendBookingEmail(email, data) {
+  const { guestName, propertyTitle, bookingId, action, checkIn, checkOut, amount } = data
+
+  const actionText = {
+    confirmed: 'Your booking has been confirmed',
+    cancelled: 'Your booking has been cancelled',
+    refund_completed: 'Your refund has been processed',
+  }
+
+  await transporter.sendMail({
+    from: `"TiraNa" <${process.env.SMTP_USER}>`,
+    to: email,
+    subject: `Booking ${action === 'confirmed' ? 'Confirmed' : action === 'cancelled' ? 'Cancelled' : 'Refund Processed'} - ${propertyTitle}`,
+    text: `${actionText[action] || 'Your booking has been updated'} for ${propertyTitle}.`,
+    html: `
+      <div style="max-width:520px;margin:0 auto;font-family:Helvetica,Arial,sans-serif;color:#111;">
+        <div style="border-bottom:2px solid #111;padding:24px 0;text-align:center;">
+          <span style="font-size:20px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">TiraNa</span>
+        </div>
+        <div style="padding:32px 0;">
+          <h1 style="font-size:18px;font-weight:400;margin:0 0 8px;">${actionText[action] || 'Booking Updated'}</h1>
+          <p style="font-size:14px;color:#555;margin:0 0 24px;">Hi ${guestName}, here's an update on your booking.</p>
+
+          <div style="background:#f9f9f9;border-radius:8px;padding:24px;margin-bottom:24px;">
+            <h2 style="font-size:16px;font-weight:600;margin:0 0 16px;">${propertyTitle}</h2>
+            <table style="width:100%;font-size:13px;border-collapse:collapse;">
+              <tr>
+                <td style="padding:6px 0;color:#777;">Booking ID</td>
+                <td style="padding:6px 0;text-align:right;font-weight:500;">${bookingId}</td>
+              </tr>
+              <tr>
+                <td style="padding:6px 0;color:#777;">Check-in</td>
+                <td style="padding:6px 0;text-align:right;">${checkIn}</td>
+              </tr>
+              <tr>
+                <td style="padding:6px 0;color:#777;">Check-out</td>
+                <td style="padding:6px 0;text-align:right;">${checkOut}</td>
+              </tr>
+              <tr>
+                <td style="padding:6px 0;color:#777;">Total Amount</td>
+                <td style="padding:6px 0;text-align:right;font-weight:600;">₱${formatCurrency(amount)}</td>
+              </tr>
+            </table>
+          </div>
+
+          ${action === 'confirmed' ? `
+            <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px;margin-bottom:16px;">
+              <p style="font-size:13px;color:#166534;margin:0;">Your host has confirmed this booking. We look forward to your stay!</p>
+            </div>
+          ` : ''}
+          ${action === 'cancelled' ? `
+            <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;margin-bottom:16px;">
+              <p style="font-size:13px;color:#991b1b;margin:0;">This booking has been cancelled by the host. If you have any questions, please contact support.</p>
+            </div>
+          ` : ''}
+          ${action === 'refund_completed' ? `
+            <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:16px;margin-bottom:16px;">
+              <p style="font-size:13px;color:#1e40af;margin:0;">Your refund has been processed. The amount will be credited back to your original payment method.</p>
+            </div>
+          ` : ''}
+
+          <p style="font-size:12px;color:#999;margin-top:24px;">If you have questions, please contact our support team.</p>
+        </div>
+        <div style="border-top:1px solid #eee;padding:16px 0;text-align:center;font-size:11px;color:#999;">
+          TiraNa &mdash; All rights reserved.
+        </div>
+      </div>
+    `,
+  })
+}
+
+async function sendHostNotificationAndEmail(bookingId, action) {
+  const bookingResult = await pool.query(
+    `SELECT b.id, b.user_id, b.property_id, b.total_price, b.check_in, b.check_out,
+            u.username, u.email,
+            pi.first_name, pi.last_name
+     FROM bookings b
+     JOIN client_users u ON u.id = b.user_id
+     LEFT JOIN personal_information pi ON pi.user_id = u.id
+     WHERE b.id = $1`,
+    [bookingId]
+  )
+
+  if (bookingResult.rows.length === 0) return
+
+  const booking = bookingResult.rows[0]
+  const guestName = [booking.first_name, booking.last_name].filter(Boolean).join(' ') || booking.username || 'Guest'
+  const checkInDate = booking.check_in ? new Date(booking.check_in).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'
+  const checkOutDate = booking.check_out ? new Date(booking.check_out).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'
+
+  const titles = {
+    confirmed: 'Booking Confirmed',
+    cancelled: 'Booking Cancelled',
+    refund_completed: 'Refund Processed',
+  }
+
+  const messages = {
+    confirmed: `Great news! Your booking for "${booking.property_id}" has been confirmed by the host. Check-in: ${checkInDate}, Check-out: ${checkOutDate}. Total: ₱${formatCurrency(booking.total_price)}. We look forward to hosting you!`,
+    cancelled: `Your booking for "${booking.property_id}" has been cancelled by the host. Check-in was scheduled for ${checkInDate}. If you have any concerns, please contact support.`,
+    refund_completed: `Your refund for booking "${booking.property_id}" has been processed. Amount: ₱${formatCurrency(booking.total_price)}. The refund will be credited to your original payment method.`,
+  }
+
+  await pool.query(
+    `INSERT INTO notifications (sender_id, receiver_id, type, title, message)
+     VALUES (NULL, $1, 'booking', $2, $3)`,
+    [booking.user_id, titles[action], messages[action]]
+  )
+
+  if (booking.email) {
+    sendBookingEmail(booking.email, {
+      guestName,
+      propertyTitle: booking.property_id,
+      bookingId: booking.id,
+      action,
+      checkIn: checkInDate,
+      checkOut: checkOutDate,
+      amount: booking.total_price,
+    }).catch(err => console.error('Send booking email error:', err))
+  }
+}
 
 router.get('/property-bookings', async (req, res) => {
   try {
@@ -145,6 +282,8 @@ router.patch('/:id/status', async (req, res) => {
       return res.status(404).json({ error: 'Booking not found or cannot be updated' })
     }
 
+    sendHostNotificationAndEmail(id, status).catch(err => console.error('Notification error:', err))
+
     res.json({ message: `Booking ${status} successfully`, data: result.rows[0] })
   } catch (err) {
     console.error('Update booking status error:', err)
@@ -171,6 +310,13 @@ router.patch('/:id/refund-completed', async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Booking not found or refund not applicable' })
     }
+
+    await pool.query(
+      `DELETE FROM wallets WHERE booking_id = $1`,
+      [id]
+    )
+
+    sendHostNotificationAndEmail(id, 'refund_completed').catch(err => console.error('Notification error:', err))
 
     res.json({ message: 'Refund completed successfully', data: result.rows[0] })
   } catch (err) {

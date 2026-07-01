@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import Header from '../components/Header.jsx'
 import Hero from '../components/Hero.jsx'
-import Footer from '../components/Footer.jsx'
 import { fetchFeaturedListings } from '../api/listings.js'
 import { RatingStars } from '../components/StarRating.jsx'
 
@@ -26,8 +25,9 @@ function Homepage() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="flex flex-col min-h-screen bg-white">
       <Header />
+      <div className="flex-1">
       <Hero />
 
       <section className="py-16 sm:py-20 bg-gray-50">
@@ -257,7 +257,7 @@ function Homepage() {
         </section>
       )}
 
-      <Footer />
+      </div>
     </div>
   )
 }

@@ -84,6 +84,19 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 })
 
+router.get('/count', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT COUNT(*) FROM saved_properties WHERE user_id = $1`,
+      [req.user.id]
+    )
+    res.json({ count: parseInt(result.rows[0].count) })
+  } catch (err) {
+    console.error('Count saved properties error:', err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
 router.get('/check/:propertyId', authMiddleware, async (req, res) => {
   try {
     const result = await pool.query(
