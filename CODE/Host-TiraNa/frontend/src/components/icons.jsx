@@ -336,3 +336,39 @@ export const IconDownload = (p) => (
     <path d="M4 18v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1" />
   </svg>
 );
+
+export const IconCamera = (p) => (
+  <svg {...base} {...p}>
+    <path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z" />
+    <circle cx="12" cy="13.5" r="3.5" />
+  </svg>
+);
+
+export const IconLaptop = (p) => (
+  <svg {...base} {...p}>
+    <rect x="4" y="5" width="16" height="10.5" rx="1.2" />
+    <path d="M2.5 19.5h19M9.5 19.5 10 16h4l.5 3.5" />
+  </svg>
+);
+
+export const IconSmartphone = (p) => (
+  <svg {...base} {...p}>
+    <rect x="7" y="2.5" width="10" height="19" rx="2" />
+    <path d="M11 18.2h2" />
+  </svg>
+);
+
+export const IconLock = (p) => (
+  <svg {...base} {...p}>
+    <rect x="5" y="11" width="14" height="9.5" rx="1.5" />
+    <path d="M8 11V7.5a4 4 0 0 1 8 0V11" />
+    <path d="M12 14.7v2.4" />
+  </svg>
+);
+
+export const IconGlobe = (p) => (
+  <svg {...base} {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M3 12h18M12 3c2.4 2.5 3.6 5.6 3.6 9s-1.2 6.5-3.6 9c-2.4-2.5-3.6-5.6-3.6-9S9.6 5.5 12 3Z" />
+  </svg>
+);

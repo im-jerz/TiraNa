@@ -14,6 +14,7 @@ def register_blueprints(app):
     from app.blueprints.reviews import reviews_bp
     from app.blueprints.notifications import notifications_bp
     from app.blueprints.internal import internal_bp
+    from app.blueprints.settings import settings_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(properties_bp)
@@ -22,3 +23,4 @@ def register_blueprints(app):
     app.register_blueprint(reviews_bp)
     app.register_blueprint(notifications_bp)
     app.register_blueprint(internal_bp)
+    app.register_blueprint(settings_bp)

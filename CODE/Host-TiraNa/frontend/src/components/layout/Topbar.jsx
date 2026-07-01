@@ -158,6 +158,16 @@ export default function Topbar({ eyebrow, title, onMenuClick, hostInitial = "H",
     navigate(link || "/dashboard/notifications");
   }
 
+export default function Topbar({
+  eyebrow,
+  title,
+  onMenuClick,
+  hostInitial = "J",
+  hostName = "Juan Dela Cruz",
+  hostAvatarUrl = "",
+}) {
+  const navigate = useNavigate();
+
   return (
     <header className="topbar">
       <button type="button" className="topbar-menu-btn" onClick={onMenuClick} aria-label="Toggle navigation">
@@ -200,9 +210,23 @@ export default function Topbar({ eyebrow, title, onMenuClick, hostInitial = "H",
 
         <button type="button" className="topbar-profile">
           <span className="topbar-avatar">{hostInitial}</span>
+        </button>
+        <button type="button" className="topbar-icon-btn" aria-label="Notifications">
+          <IconBell />
+          <span className="topbar-icon-dot" />
+        </button>
+        <button
+          type="button"
+          className="topbar-profile"
+          onClick={() => navigate("/dashboard/settings")}
+          aria-label="Go to profile settings"
+        >
+          <span className="topbar-avatar">
+            {hostAvatarUrl ? <img src={hostAvatarUrl} alt="" /> : hostInitial}
+          </span>
           <span className="topbar-profile-name">{hostName}</span>
         </button>
       </div>
     </header>
   );
-}
+}}
