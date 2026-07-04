@@ -9,6 +9,7 @@ export default function AdminVerifications() {
   const [selected, setSelected] = useState(null)
   const [rejectReason, setRejectReason] = useState('')
   const [actionLoading, setActionLoading] = useState(false)
+  const [confirmApprove, setConfirmApprove] = useState(null)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -29,13 +30,14 @@ export default function AdminVerifications() {
   const handleApprove = async (id) => {
     setActionLoading(true)
     try {
-      if (selected?.type === 'guest') {
+      if (confirmApprove?.type === 'guest') {
         await approveGuestVerification(id)
       } else {
         await approveHostVerification(id)
       }
       fetchData()
       setSelected(null)
+      setConfirmApprove(null)
     } catch (err) {
       setError(err.message)
     }
@@ -47,7 +49,7 @@ export default function AdminVerifications() {
     setActionLoading(true)
     try {
       if (selected?.type === 'guest') {
-        await rejectGuestVerification(id)
+        await rejectGuestVerification(id, rejectReason)
       } else {
         await rejectHostVerification(id, rejectReason)
       }
@@ -217,10 +219,10 @@ export default function AdminVerifications() {
                     </button>
                     <button
                       className="btn btn-brand"
-                      onClick={() => handleApprove(selected.id)}
+                      onClick={() => setConfirmApprove(selected)}
                       disabled={actionLoading}
                     >
-                      {actionLoading && !rejectReason ? 'Approving...' : 'Approve'}
+                      Approve
                     </button>
                   </div>
                 </>
@@ -236,6 +238,42 @@ export default function AdminVerifications() {
               )}
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Confirm Approve Modal */}
+      <div className={`modal-overlay ${confirmApprove ? 'open' : ''}`} onClick={() => setConfirmApprove(null)}>
+        <div className="modal" style={{ maxWidth: '440px' }} onClick={e => e.stopPropagation()}>
+          <div className="modal-header">
+            <h2 className="modal-title">Confirm Approval</h2>
+            <button className="modal-close" onClick={() => setConfirmApprove(null)}>×</button>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '0 0 8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg width="20" height="20" fill="none" stroke="#16a34a" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </div>
+              <div>
+                <p style={{ fontWeight: 600, fontSize: '14px', color: 'var(--dark)' }}>Approve {confirmApprove?.name || 'user'}?</p>
+                <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>Type: <span className={`badge badge-${confirmApprove?.type === 'host' ? 'active' : 'completed'}`} style={{ fontSize: '11px' }}>{confirmApprove?.type}</span></p>
+              </div>
+            </div>
+            <p style={{ fontSize: '13px', color: '#6b7280', margin: 0, lineHeight: '1.6' }}>
+              This will mark their ID as verified and grant them full access to the platform. This action can be reversed later.
+            </p>
+          </div>
+          <div className="modal-footer">
+            <button className="btn btn-ghost" onClick={() => setConfirmApprove(null)} disabled={actionLoading}>
+              Cancel
+            </button>
+            <button
+              className="btn btn-brand"
+              onClick={() => handleApprove(confirmApprove?.id)}
+              disabled={actionLoading}
+            >
+              {actionLoading ? 'Approving...' : 'Yes, Approve'}
+            </button>
+          </div>
         </div>
       </div>
     </>

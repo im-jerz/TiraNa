@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback } from 'react'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API_URL = import.meta.env.VITE_API_URL || ''
 const AdminAuthContext = createContext(null)
 
 export function AdminAuthProvider({ children }) {
@@ -11,12 +11,24 @@ export function AdminAuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem('admin_token'))
 
   const login = useCallback(async (username, password) => {
-    const res = await fetch(`${API_URL}/admin/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
-    })
-    const data = await res.json()
+    let res
+    try {
+      res = await fetch(`${API_URL}/admin/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      })
+    } catch (fetchErr) {
+      throw new Error('Cannot connect to server. Please check your connection and try again.')
+    }
+
+    let data
+    try {
+      data = await res.json()
+    } catch {
+      throw new Error('Invalid response from server.')
+    }
+
     if (!res.ok) throw new Error(data.detail || 'Login failed')
 
     // If OTP is required, don't set tokens yet
@@ -32,12 +44,24 @@ export function AdminAuthProvider({ children }) {
   }, [])
 
   const verifyOtp = useCallback(async (email, code, tempToken) => {
-    const res = await fetch(`${API_URL}/admin/auth/verify-otp`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, code, temp_token: tempToken }),
-    })
-    const data = await res.json()
+    let res
+    try {
+      res = await fetch(`${API_URL}/admin/auth/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code, temp_token: tempToken }),
+      })
+    } catch (fetchErr) {
+      throw new Error('Cannot connect to server. Please check your connection and try again.')
+    }
+
+    let data
+    try {
+      data = await res.json()
+    } catch {
+      throw new Error('Invalid response from server.')
+    }
+
     if (!res.ok) throw new Error(data.detail || 'OTP Verification failed')
 
     localStorage.setItem('admin_token', data.access_token)

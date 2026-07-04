@@ -61,7 +61,8 @@ router.get('/admin/verifications', internalApiRequired, async (req, res) => {
 
     let query = `
       SELECT cu.id, cu.username, cu.email, pi.first_name, pi.last_name,
-             pi.id_verified, pi.id_front_url, pi.id_back_url, cu.created_at
+             pi.id_verified, pi.id_front_url, pi.id_back_url,
+             pi.id_rejection_reason, pi.id_rejected_at, cu.created_at
       FROM client_users cu
       JOIN personal_information pi ON pi.user_id = cu.id
       WHERE pi.id_front_url IS NOT NULL AND pi.id_front_url != ''
@@ -76,11 +77,19 @@ router.get('/admin/verifications', internalApiRequired, async (req, res) => {
     const countParams = []
 
     if (status === 'pending') {
-      const clause = ` AND pi.id_verified = false`
+      const clause = ` AND pi.id_verified = false AND (pi.id_rejection_reason IS NULL OR pi.id_rejection_reason = '')`
       query += clause
       countQuery += clause
     } else if (status === 'approved') {
       const clause = ` AND pi.id_verified = true`
+      query += clause
+      countQuery += clause
+    } else if (status === 'rejected') {
+      const clause = ` AND pi.id_verified = false AND pi.id_rejection_reason IS NOT NULL AND pi.id_rejection_reason != ''`
+      query += clause
+      countQuery += clause
+    } else {
+      const clause = ` AND pi.id_verified = false AND (pi.id_rejection_reason IS NULL OR pi.id_rejection_reason = '')`
       query += clause
       countQuery += clause
     }
@@ -91,17 +100,26 @@ router.get('/admin/verifications', internalApiRequired, async (req, res) => {
     const result = await pool.query(query, params)
     const countResult = await pool.query(countQuery, countParams)
 
-    const verifications = result.rows.map(u => ({
-      id: u.id,
-      name: `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username,
-      email: u.email,
-      type: 'guest',
-      status: u.id_verified ? 'approved' : 'pending',
-      id_url: u.id_front_url || null,
-      id_back_url: u.id_back_url || null,
-      selfie_url: null,
-      created_at: u.created_at ? u.created_at.toISOString() : null,
-    }))
+    const verifications = result.rows.map(u => {
+      let status = 'pending'
+      if (u.id_verified) {
+        status = 'approved'
+      } else if (u.id_rejection_reason) {
+        status = 'rejected'
+      }
+      return {
+        id: u.id,
+        name: `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username,
+        email: u.email,
+        type: 'guest',
+        status,
+        rejection_reason: u.id_rejection_reason || null,
+        id_url: u.id_front_url || null,
+        id_back_url: u.id_back_url || null,
+        selfie_url: null,
+        created_at: u.created_at ? u.created_at.toISOString() : null,
+      }
+    })
 
     res.json({
       success: true,
@@ -119,7 +137,7 @@ router.get('/admin/verifications', internalApiRequired, async (req, res) => {
 router.post('/admin/verifications/:id/approve', internalApiRequired, async (req, res) => {
   try {
     const result = await pool.query(
-      `UPDATE personal_information SET id_verified = true, updated_at = now()
+      `UPDATE personal_information SET id_verified = true, id_rejection_reason = NULL, id_rejected_at = NULL, updated_at = now()
        WHERE user_id = $1 AND id_front_url IS NOT NULL AND id_front_url != ''`,
       [req.params.id]
     )
@@ -135,10 +153,11 @@ router.post('/admin/verifications/:id/approve', internalApiRequired, async (req,
 
 router.post('/admin/verifications/:id/reject', internalApiRequired, async (req, res) => {
   try {
+    const reason = req.body.reason || 'Rejected by admin'
     const result = await pool.query(
-      `UPDATE personal_information SET id_verified = false, updated_at = now()
+      `UPDATE personal_information SET id_verified = false, id_rejection_reason = $2, id_rejected_at = now(), updated_at = now()
        WHERE user_id = $1 AND id_front_url IS NOT NULL AND id_front_url != ''`,
-      [req.params.id]
+      [req.params.id, reason]
     )
     if (result.rowCount === 0) {
       return res.status(404).json({ success: false, error: 'Verification request not found' })
@@ -282,11 +301,11 @@ router.get('/admin/payments/count', internalApiRequired, async (req, res) => {
 
 router.get('/admin/payments/revenue', internalApiRequired, async (req, res) => {
   try {
-    // Get total revenue (sum of all completed payments)
+    // Get total revenue (sum of all completed or paid payments)
     const revenueResult = await pool.query(`
       SELECT COALESCE(SUM(amount), 0) AS total_revenue 
       FROM payment_transactions 
-      WHERE status = 'completed'
+      WHERE status IN ('completed', 'paid')
     `)
     
     // Get total refunded

@@ -138,11 +138,7 @@ async def public_stats(
     total_admins = db.query(AdminAccount).count()
     active_admins = db.query(AdminAccount).filter(AdminAccount.is_active == True).count()
 
-    host_stats = {}
-    try:
-        host_stats = await client.get_stats()
-    except Exception:
-        host_stats = {}
+    host_stats = await client.get_stats()
 
     return PublicStatsResponse(
         total_admins=total_admins,

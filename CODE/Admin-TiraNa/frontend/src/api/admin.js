@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API_URL = import.meta.env.VITE_API_URL || ''
 
 function getHeaders() {
   const token = localStorage.getItem('admin_token')
@@ -9,10 +9,23 @@ function getHeaders() {
 }
 
 async function api(path, options = {}) {
-  const res = await fetch(`${API_URL}${path}`, { headers: getHeaders(), ...options })
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.detail || 'Request failed')
-  return data
+  let lastErr
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch(`${API_URL}${path}`, { headers: getHeaders(), ...options })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.detail || 'Request failed')
+      return data
+    } catch (err) {
+      lastErr = err
+      if (attempt === 0 && (err.name === 'TypeError' || err.message?.includes('fetch'))) {
+        await new Promise(r => setTimeout(r, 500))
+        continue
+      }
+      throw err
+    }
+  }
+  throw lastErr
 }
 
 // ── Auth ──
@@ -96,16 +109,22 @@ export async function approveGuestVerification(id) {
   return api(`/admin/host/client/verifications/${id}/approve`, { method: 'POST' })
 }
 
-export async function rejectGuestVerification(id) {
-  return api(`/admin/host/client/verifications/${id}/reject`, { method: 'POST' })
+export async function rejectGuestVerification(id, reason) {
+  const params = new URLSearchParams({ reason })
+  return api(`/admin/host/client/verifications/${id}/reject?${params}`, { method: 'POST' })
 }
 
 // ── Public Stats (no auth) ──
 
 export async function getPublicStats() {
-  const res = await fetch(`${API_URL}/api/public/stats`)
-  if (!res.ok) return { total_admins: 0, active_admins: 0, total_users: 0, total_bookings: 0, total_revenue: 0 }
-  return res.json()
+  const defaults = { total_admins: 0, active_admins: 0, total_users: 0, total_bookings: 0, total_revenue: 0 }
+  try {
+    const res = await fetch(`${API_URL}/api/public/stats`)
+    if (!res.ok) return defaults
+    return res.json()
+  } catch {
+    return defaults
+  }
 }
 
 // ── Dashboard Stats ──

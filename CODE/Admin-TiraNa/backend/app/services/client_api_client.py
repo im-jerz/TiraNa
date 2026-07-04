@@ -1,4 +1,10 @@
+"""
+HTTP client for calling Client-TiraNa internal API endpoints.
+Includes retry logic for resilience against weak/offline scenarios.
+"""
+
 import httpx
+import asyncio
 import logging
 from typing import Optional, Dict, Any, List
 from ..config import get_settings
@@ -13,59 +19,77 @@ class ClientAPIClient:
 
     def __init__(self):
         self.base_url = settings.CLIENT_API_BASE_URL.rstrip("/")
-        self.timeout = 10.0
+        self.timeout = 8.0
+        self.max_retries = 2
         self.headers = {
             "X-Internal-API-Key": settings.INTERNAL_API_KEY
         }
 
+    async def _request(self, method: str, endpoint: str, params: Optional[Dict] = None, data: Optional[Dict] = None) -> Optional[Dict]:
+        """Make HTTP request with retry logic."""
+        url = f"{self.base_url}{endpoint}"
+        last_error = None
+
+        for attempt in range(self.max_retries + 1):
+            try:
+                async with httpx.AsyncClient(timeout=self.timeout) as client:
+                    if method == "GET":
+                        response = await client.get(url, params=params, headers=self.headers)
+                    elif method == "POST":
+                        response = await client.post(url, json=data, headers=self.headers)
+                    elif method == "DELETE":
+                        response = await client.delete(url, headers=self.headers)
+                    else:
+                        return None
+
+                    response.raise_for_status()
+                    return response.json()
+
+            except httpx.ConnectError as e:
+                last_error = e
+                if attempt < self.max_retries:
+                    wait = 0.5 * (attempt + 1)
+                    logger.warning(f"Client API connect error (attempt {attempt + 1}/{self.max_retries + 1}): {endpoint} - retrying in {wait}s")
+                    await asyncio.sleep(wait)
+                else:
+                    logger.warning(f"Client API unavailable after {self.max_retries + 1} attempts: {endpoint}")
+
+            except httpx.TimeoutException as e:
+                last_error = e
+                if attempt < self.max_retries:
+                    wait = 0.5 * (attempt + 1)
+                    logger.warning(f"Client API timeout (attempt {attempt + 1}/{self.max_retries + 1}): {endpoint} - retrying in {wait}s")
+                    await asyncio.sleep(wait)
+                else:
+                    logger.warning(f"Client API timeout after {self.max_retries + 1} attempts: {endpoint}")
+
+            except httpx.HTTPStatusError as e:
+                logger.error(f"Client API HTTP {e.response.status_code}: {endpoint}")
+                return None
+
+            except Exception as e:
+                logger.error(f"Client API error: {endpoint} - {str(e)}")
+                return None
+
+        return None
+
     async def _get(self, endpoint: str, params: Optional[Dict] = None) -> Optional[Dict]:
-        try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
-                response = await client.get(
-                    f"{self.base_url}{endpoint}",
-                    params=params,
-                    headers=self.headers
-                )
-                response.raise_for_status()
-                return response.json()
-        except httpx.ConnectError:
-            logger.warning(f"Client API unavailable: {endpoint}")
-            return None
-        except httpx.TimeoutException:
-            logger.warning(f"Client API timeout: {endpoint}")
-            return None
-        except Exception as e:
-            logger.error(f"Client API error: {endpoint} - {str(e)}")
-            return None
+        return await self._request("GET", endpoint, params=params)
+
+    async def _post(self, endpoint: str, data: Optional[Dict] = None) -> Optional[Dict]:
+        return await self._request("POST", endpoint, data=data)
+
+    async def _delete(self, endpoint: str) -> Optional[Dict]:
+        return await self._request("DELETE", endpoint)
 
     def _unwrap(self, result: Optional[Dict]) -> Optional[Dict]:
         if result and isinstance(result, dict) and "data" in result:
             return result["data"]
         return result
 
-    async def _post(self, endpoint: str, data: Optional[Dict] = None) -> Optional[Dict]:
-        """Make POST request to Client API with error handling."""
-        try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
-                response = await client.post(
-                    f"{self.base_url}{endpoint}",
-                    json=data,
-                    headers=self.headers
-                )
-                response.raise_for_status()
-                return response.json()
-        except httpx.ConnectError:
-            logger.warning(f"Client API unavailable: {endpoint}")
-            return None
-        except httpx.TimeoutException:
-            logger.warning(f"Client API timeout: {endpoint}")
-            return None
-        except Exception as e:
-            logger.error(f"Client API error: {endpoint} - {str(e)}")
-            return None
+    # ─── Users ─────────────────────────────────────────────────
 
     async def get_users(self, search: str = "", skip: int = 0, limit: int = 50) -> List[Dict]:
-        """Get list of client users from Client API."""
         params = {"skip": skip, "limit": limit}
         if search:
             params["search"] = search
@@ -73,8 +97,9 @@ class ClientAPIClient:
         data = self._unwrap(result)
         return data.get("users", []) if data else []
 
+    # ─── Verifications ─────────────────────────────────────────
+
     async def get_verifications(self, status: str = "", type: str = "", skip: int = 0, limit: int = 50) -> List[Dict]:
-        """Get list of verification requests from Client API."""
         params = {"skip": skip, "limit": limit}
         if status:
             params["status"] = status
@@ -84,8 +109,17 @@ class ClientAPIClient:
         data = self._unwrap(result)
         return data.get("verifications", []) if data else []
 
+    async def approve_verification(self, verification_id: str) -> bool:
+        result = await self._post(f"/api/admin/verifications/{verification_id}/approve")
+        return result is not None
+
+    async def reject_verification(self, verification_id: str, reason: str = "") -> bool:
+        result = await self._post(f"/api/admin/verifications/{verification_id}/reject", {"reason": reason})
+        return result is not None
+
+    # ─── Bookings ──────────────────────────────────────────────
+
     async def get_bookings(self, status: str = "", search: str = "", skip: int = 0, limit: int = 50) -> List[Dict]:
-        """Get list of bookings from Client API."""
         params = {"skip": skip, "limit": limit}
         if status:
             params["status"] = status
@@ -94,8 +128,20 @@ class ClientAPIClient:
         result = await self._get("/api/admin/bookings", params)
         return result.get("data", []) if result else []
 
+    async def get_booking_count(self, status: str = "") -> int:
+        params = {}
+        if status:
+            params["status"] = status
+        result = await self._get("/api/admin/bookings/count", params)
+        return result.get("count", 0) if result else 0
+
+    async def get_booking_trend(self, period: str = "monthly") -> List[Dict]:
+        result = await self._get("/api/admin/bookings/trend", {"period": period})
+        return result.get("data", []) if result else []
+
+    # ─── Payments ──────────────────────────────────────────────
+
     async def get_payments(self, status: str = "", search: str = "", skip: int = 0, limit: int = 50) -> List[Dict]:
-        """Get list of payments from Client API."""
         params = {"skip": skip, "limit": limit}
         if status:
             params["status"] = status
@@ -105,7 +151,6 @@ class ClientAPIClient:
         return result.get("data", []) if result else []
 
     async def get_payment_count(self, status: str = "") -> int:
-        """Get count of payments from Client API."""
         params = {}
         if status:
             params["status"] = status
@@ -113,42 +158,26 @@ class ClientAPIClient:
         return result.get("count", 0) if result else 0
 
     async def get_revenue_stats(self) -> Dict[str, Any]:
-        """Get revenue statistics from Client API."""
         result = await self._get("/api/admin/payments/revenue")
         return result or {"total_revenue": 0, "total_refunded": 0}
 
+    async def get_revenue_trend(self, period: str = "monthly") -> List[Dict]:
+        result = await self._get("/api/admin/revenue/trend", {"period": period})
+        return result.get("data", []) if result else []
+
     async def refund_payment(self, payment_id: str, amount: float, reason: str) -> bool:
-        """Process a refund for a payment via Client API."""
         result = await self._post(f"/api/admin/payments/{payment_id}/refund", {
             "amount": amount,
             "reason": reason
         })
         return result is not None
 
-    async def get_booking_count(self, status: str = "") -> int:
-        """Get count of bookings from Client API."""
-        params = {}
-        if status:
-            params["status"] = status
-        result = await self._get("/api/admin/bookings/count", params)
-        return result.get("count", 0) if result else 0
-
-    async def get_booking_trend(self, period: str = "monthly") -> List[Dict]:
-        """Get booking trend data from Client API."""
-        result = await self._get("/api/admin/bookings/trend", {"period": period})
-        return result.get("data", []) if result else []
-
-    async def get_revenue_trend(self, period: str = "monthly") -> List[Dict]:
-        """Get revenue trend data from Client API."""
-        result = await self._get("/api/admin/revenue/trend", {"period": period})
-        return result.get("data", []) if result else []
+    # ─── Reviews ───────────────────────────────────────────────
 
     async def get_reviews(self, skip: int = 0, limit: int = 50) -> List[Dict]:
-        """Get list of reviews from Client API."""
         params = {"skip": skip, "limit": limit}
         result = await self._get("/api/reviews", params)
         data = self._unwrap(result)
-        # Handle both formats: {data: {reviews: [...]}} or {reviews: [...]}
         if data and isinstance(data, dict):
             reviews = data.get("reviews", [])
             if not reviews and "data" in data:
@@ -157,23 +186,11 @@ class ClientAPIClient:
         return []
 
     async def hide_review(self, review_id: int) -> bool:
-        """Hide a review via Client API."""
         result = await self._post(f"/api/reviews/{review_id}/hide")
         return result is not None
 
     async def show_review(self, review_id: int) -> bool:
-        """Show a hidden review via Client API."""
         result = await self._post(f"/api/reviews/{review_id}/show")
-        return result is not None
-
-    async def approve_verification(self, verification_id: str) -> bool:
-        """Approve a client verification."""
-        result = await self._post(f"/api/admin/verifications/{verification_id}/approve")
-        return result is not None
-
-    async def reject_verification(self, verification_id: str) -> bool:
-        """Reject a client verification."""
-        result = await self._post(f"/api/admin/verifications/{verification_id}/reject")
         return result is not None
 
 

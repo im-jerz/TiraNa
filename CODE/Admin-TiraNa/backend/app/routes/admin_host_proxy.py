@@ -268,8 +268,9 @@ async def approve_client_verification(
 @router.post("/client/verifications/{verification_id}/reject")
 async def reject_client_verification(
     verification_id: str,
+    reason: str = "",
     current_admin: AdminAccount = Depends(get_current_admin)
 ):
     """Reject a client verification request via Client API."""
-    success = await client_api_client.reject_verification(verification_id)
+    success = await client_api_client.reject_verification(verification_id, reason)
     return {"message": "Verification rejected" if success else "Failed to reject verification"}

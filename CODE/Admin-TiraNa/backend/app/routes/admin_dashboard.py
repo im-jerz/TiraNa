@@ -20,61 +20,53 @@ async def dashboard_stats(
     open_tickets = db.query(SupportTicket).filter(SupportTicket.status == "open").count()
 
     # Fetch stats from Client API for user, booking, and revenue data
-    client_stats = {}
-    try:
-        # Get user stats from Client API
-        users_data = await client_api_client.get_users()
-        client_stats['total_users'] = len(users_data) if users_data else 0
-        # For now, set verified/unverified to 0 - these would need separate endpoints
-        client_stats['verified_users'] = 0
-        client_stats['unverified_users'] = client_stats['total_users']
-    except Exception as e:
-        print(f"Error fetching users from Client API: {e}")
-        client_stats['total_users'] = 0
-        client_stats['verified_users'] = 0
-        client_stats['unverified_users'] = 0
+    client_users = await client_api_client.get_users()
+    host_data = await host_client.get_hosts()
+    host_users = host_data.get("users", []) if isinstance(host_data, dict) else []
+
+    total_users = len(client_users) + len(host_users)
 
     # Get booking and revenue stats from Client API
     revenue_trend = []
     booking_trend = []
-    
+    total_bookings = 0
+    total_revenue = 0
+
     try:
         revenue_trend = await client_api_client.get_revenue_trend(period)
-    except Exception as e:
-        print(f"Error fetching revenue trend from Client API: {e}")
+    except Exception:
+        pass
 
     try:
         booking_trend = await client_api_client.get_booking_trend(period)
-    except Exception as e:
-        print(f"Error fetching booking trend from Client API: {e}")
+    except Exception:
+        pass
 
     try:
-        client_stats['total_bookings'] = await client_api_client.get_booking_count()
-    except Exception as e:
-        print(f"Error fetching booking count from Client API: {e}")
-        client_stats['total_bookings'] = 0
+        total_bookings = await client_api_client.get_booking_count()
+    except Exception:
+        pass
 
     # Get host stats from Host API for active_listings and pending_withdrawals
-    host_stats = {}
-    try:
-        host_stats = await host_client.get_stats()
-    except Exception as e:
-        print(f"Error fetching host stats from Host API: {e}")
+    host_stats = await host_client.get_stats()
 
     # Get revenue totals from Client API
-    revenue_data = {}
-    try:
-        revenue_data = await client_api_client.get_revenue_stats()
-    except Exception as e:
-        print(f"Error fetching revenue data from Client API: {e}")
+    revenue_data = await client_api_client.get_revenue_stats()
+    total_revenue = revenue_data.get("total_revenue", 0) if revenue_data else 0
+
+    # Count verified users from both backends
+    verified_host_users = sum(1 for h in host_users if h.get("is_verified"))
+    verified_client_users = sum(1 for c in client_users if c.get("is_verified"))
+    verified_users = verified_host_users + verified_client_users
+    unverified_users = total_users - verified_users
 
     return DashboardStatsResponse(
-        total_users=client_stats.get("total_users", 0),
-        verified_users=client_stats.get("verified_users", 0),
-        unverified_users=client_stats.get("unverified_users", 0),
-        active_listings=host_stats.get("active_listings", 0),
-        total_bookings=client_stats.get("total_bookings", 0),
-        revenue_this_month=revenue_data.get("total_revenue", 0) if revenue_data else 0,
+        total_users=total_users,
+        verified_users=verified_users,
+        unverified_users=unverified_users,
+        active_listings=host_stats.get("active_listings", 0) or host_stats.get("total_properties", 0),
+        total_bookings=total_bookings,
+        revenue_this_month=total_revenue,
         pending_withdrawals=host_stats.get("pending_withdrawals", 0),
         open_support_tickets=open_tickets,
         revenue_trend=revenue_trend,

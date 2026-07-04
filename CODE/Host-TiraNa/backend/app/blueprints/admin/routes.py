@@ -101,7 +101,7 @@ def get_bookings():
 
     try:
         response = requests.get(
-            f"{CLIENT_API_URL}/api/host/bookings/property-bookings",
+            f"{CLIENT_API_URL}/api/host/property-bookings",
             params=params,
             headers={"X-Internal-API-Key": INTERNAL_API_KEY},
             timeout=5
@@ -113,11 +113,22 @@ def get_bookings():
 @admin_bp.route("/reviews", methods=["GET"])
 @internal_api_required
 def get_reviews():
+    # Get all property IDs to pass to client backend
+    try:
+        properties = Property.query.with_entities(Property.id).all()
+        property_ids = ",".join(str(p.id) for p in properties)
+    except Exception:
+        property_ids = ""
+
+    params = request.args.copy()
+    if property_ids:
+        params.setdefault("property_ids", property_ids)
+
     # Proxy to client backend
     try:
         response = requests.get(
-            f"{CLIENT_API_URL}/api/host/reviews/property-reviews",
-            params=request.args,
+            f"{CLIENT_API_URL}/api/host/property-reviews",
+            params=params,
             headers={"X-Internal-API-Key": INTERNAL_API_KEY},
             timeout=5
         )

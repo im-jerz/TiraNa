@@ -51,7 +51,8 @@ services:
         condition: service_healthy
     networks:
       - tira_network
-      - tirana-network
+      - host-net
+      - client-net
 
   # ──────────────────────────────────────────────
   # Frontend (Tailwind CSS via Node/Nginx)
@@ -65,7 +66,7 @@ services:
     ports:
       - "5175:3000"
     environment:
-      - VITE_API_URL=http://localhost:5002
+      - VITE_API_URL=
     depends_on:
       - backend
     networks:
@@ -81,6 +82,9 @@ volumes:
 networks:
   tira_network:
     driver: bridge
-  tirana-network:
+  host-net:
     external: true
     name: host-tirana_tirana-network
+  client-net:
+    external: true
+    name: client-tirana_default
