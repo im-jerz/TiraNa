@@ -252,7 +252,6 @@ router.get('/my', authMiddleware, async (req, res) => {
        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
       params
     )
-    res.json({ data: result.rows.map(row => ({ ...row, checkIn: row.check_in })) })
     const reviews = result.rows.map(row => ({
       ...row,
       checkIn: row.check_in,

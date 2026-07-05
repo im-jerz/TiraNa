@@ -372,3 +372,40 @@ export const IconGlobe = (p) => (
     <path d="M3 12h18M12 3c2.4 2.5 3.6 5.6 3.6 9s-1.2 6.5-3.6 9c-2.4-2.5-3.6-5.6-3.6-9S9.6 5.5 12 3Z" />
   </svg>
 );
+
+export const IconBank = (p) => (
+  <svg {...base} {...p}>
+    <path d="M3 10.5 12 4l9 6.5" />
+    <path d="M4.5 10.5v8.5M8.5 10.5v8.5M15.5 10.5v8.5M19.5 10.5v8.5" />
+    <path d="M3 20.5h18" />
+  </svg>
+);
+
+export const IconVault = (p) => (
+  <svg {...base} {...p}>
+    <rect x="3.5" y="3.5" width="17" height="17" rx="2" />
+    <circle cx="12" cy="12" r="4.2" />
+    <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+    <path d="M12 7.8V6M12 18v-1.8M16.2 12H18M6 12h1.8" />
+  </svg>
+);
+
+export const IconReceipt = (p) => (
+  <svg {...base} {...p}>
+    <path d="M6 2.8h12v18.4l-2.4-1.5-2.4 1.5-2.4-1.5-2.4 1.5-2.4-1.5V2.8Z" />
+    <path d="M8.5 8h7M8.5 11.5h7M8.5 15h4" />
+  </svg>
+);
+
+export const IconRefresh = (p) => (
+  <svg {...base} {...p}>
+    <path d="M4 12a8 8 0 0 1 13.6-5.7M20 12a8 8 0 0 1-13.6 5.7" />
+    <path d="M17.2 3.5v3.3h-3.3M6.8 20.5v-3.3h3.3" />
+  </svg>
+);
+
+export const IconFilter = (p) => (
+  <svg {...base} {...p}>
+    <path d="M4 5h16M7 12h10M10 19h4" />
+  </svg>
+);

@@ -1,0 +1,802 @@
+/* ════════════════════════════════════════════════════════════════
+   WALLET & FINANCIAL MANAGEMENT — Host/Landlord aesthetic
+   Signature: "The Ledger" — a passbook/vault motif instead of the
+   generic four-identical-cards fintech layout. Flat surfaces, SVG
+   only, no gradients, no emoji.
+   Breakpoints: mobile (<768) | tablet (768) | laptop (1024) | desktop (1280)
+   ════════════════════════════════════════════════════════════════ */
+
+/* ─── Page scaffold ──────────────────────────────────────────── */
+
+.wlt-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-5) var(--space-4) var(--space-10);
+  max-width: 1200px;
+  margin: 0 auto;
+  min-height: 100%;
+}
+
+.wlt-header { display: flex; flex-direction: column; gap: var(--space-1); }
+
+.wlt-title {
+  font-family: var(--font-heading);
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  color: var(--color-text-primary);
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.wlt-subtitle { font-size: var(--text-sm); color: var(--color-text-secondary); }
+
+/* ─── Top grid: hero + passbook ─────────────────────────────────
+   Mobile: single column stack.
+   Tablet+: two columns side by side (see media queries below). */
+
+.wlt-top-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+}
+
+/* ── Hero: Available Balance panel ── */
+
+.wlt-hero {
+  background: var(--color-panel);
+  color: var(--color-text-on-panel);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6) var(--space-5);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.wlt-hero-top { display: flex; align-items: center; gap: var(--space-3); position: relative; }
+
+.wlt-hero-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: rgba(201, 168, 76, 0.16);
+  color: var(--color-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.wlt-hero-eyebrow {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-on-panel);
+  opacity: 0.75;
+  font-weight: 600;
+}
+
+.wlt-hero-amount {
+  position: relative;
+  font-family: var(--font-heading);
+  font-size: clamp(2.1rem, 6vw, var(--text-5xl));
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.05;
+}
+
+.wlt-hero-note {
+  position: relative;
+  font-size: var(--text-sm);
+  color: var(--color-text-on-panel);
+  opacity: 0.78;
+  line-height: 1.55;
+  max-width: 46ch;
+}
+
+.wlt-withdraw-btn {
+  position: relative;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 48px;
+  padding: 0 var(--space-6);
+  border-radius: var(--radius-md);
+  background: var(--color-accent);
+  color: var(--color-primary);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  margin-top: var(--space-1);
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.wlt-withdraw-btn:hover { background: var(--color-accent-hover); }
+.wlt-withdraw-btn:active { transform: scale(0.97); }
+
+.wlt-hero-quickstats {
+  position: relative;
+  display: flex;
+  gap: var(--space-6);
+  margin-top: var(--space-2);
+  padding-top: var(--space-4);
+  border-top: 1px solid rgba(227, 231, 240, 0.16);
+}
+
+.wlt-hero-quickstats div { display: flex; flex-direction: column; gap: 2px; }
+
+.wlt-hero-quickstats span {
+  font-size: var(--text-xs);
+  opacity: 0.68;
+}
+
+.wlt-hero-quickstats strong {
+  font-family: var(--font-heading);
+  font-size: var(--text-base);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Passbook: balance breakdown strip ── */
+
+.wlt-passbook {
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+}
+
+.wlt-passbook-title {
+  font-family: var(--font-heading);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-3);
+}
+
+.wlt-passbook-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) 0;
+  border-top: 1px dashed var(--color-border);
+}
+
+.wlt-passbook-row:first-of-type { border-top: none; }
+
+.wlt-passbook-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.wlt-passbook-label svg { color: var(--color-accent-hover); flex-shrink: 0; }
+
+.wlt-passbook-row strong {
+  font-family: var(--font-heading);
+  font-size: var(--text-base);
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.wlt-passbook-foot {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px dashed var(--color-border);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+/* ─── Content grid: transactions + withdrawal history ───────────
+   Mobile/Tablet: single column stack.
+   Laptop+: two columns (see media queries). */
+
+.wlt-content-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.wlt-tx-card, .wlt-wd-card {
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-5);
+}
+
+.wlt-tx-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-4);
+}
+
+.wlt-card-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: var(--text-base);
+  color: var(--color-text-primary);
+}
+
+.wlt-card-title svg { color: var(--color-accent-hover); }
+
+.wlt-export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 36px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.wlt-export-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+/* ── Filters ── */
+
+.wlt-tx-filters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.wlt-tx-tabs {
+  display: flex;
+  gap: var(--space-1);
+  background: var(--color-surface-alt);
+  border-radius: var(--radius-lg);
+  padding: 3px;
+  overflow-x: auto;
+  width: max-content;
+  max-width: 100%;
+}
+
+.wlt-tx-tab {
+  height: 32px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  font-family: var(--font-heading);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.wlt-tx-tab.active { background: var(--color-surface); color: var(--color-primary); box-shadow: var(--shadow-sm); }
+
+.wlt-date-range {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.wlt-date-range input[type="date"] {
+  height: 34px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+  min-width: 0;
+  flex: 1;
+}
+
+/* ── Transaction table (desktop) / receipt cards (mobile) ──
+   Single markup, CSS-only reflow via data-label attrs. */
+
+.wlt-tx-table-wrap { overflow-x: auto; }
+
+.wlt-tx-table { width: 100%; border-collapse: collapse; }
+
+.wlt-tx-table thead th {
+  text-align: left;
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  padding: 0 var(--space-2) var(--space-2);
+  border-bottom: 1.5px solid var(--color-border);
+}
+
+.wlt-tx-table thead th.num { text-align: right; }
+
+.wlt-tx-table tbody tr { border-bottom: 1px solid var(--color-border); }
+.wlt-tx-table tbody tr:last-child { border-bottom: none; }
+
+.wlt-tx-table td { padding: var(--space-3) var(--space-2); font-size: var(--text-sm); vertical-align: middle; }
+.wlt-tx-table td.num { text-align: right; }
+
+.wlt-tx-date { display: flex; flex-direction: column; color: var(--color-text-secondary); font-weight: 500; }
+.wlt-tx-date span { font-size: var(--text-xs); color: var(--color-text-muted); }
+
+.wlt-tx-desc { color: var(--color-text-primary); max-width: 260px; }
+
+.wlt-tx-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-full);
+  padding: 3px var(--space-3);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.wlt-tx-badge--credit { background: var(--color-success-light); color: var(--color-success); }
+.wlt-tx-badge--debit { background: var(--color-error-light); color: var(--color-error); }
+.wlt-tx-badge--withdrawal { background: rgba(27, 42, 74, 0.08); color: var(--color-primary); }
+.wlt-tx-badge--adjust { background: rgba(201, 168, 76, 0.16); color: var(--color-accent-hover); }
+
+.wlt-tx-amount { font-variant-numeric: tabular-nums; font-weight: 700; font-family: var(--font-heading); }
+.wlt-tx-amount--pos { color: var(--color-success); }
+.wlt-tx-amount--neg { color: var(--color-error); }
+
+.wlt-tx-balance { font-variant-numeric: tabular-nums; color: var(--color-text-secondary); }
+
+/* ── Withdrawal history list ── */
+
+.wlt-wd-list { display: flex; flex-direction: column; gap: var(--space-3); }
+
+.wlt-wd-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.wlt-wd-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.wlt-wd-info { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
+.wlt-wd-info strong { font-family: var(--font-heading); font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+.wlt-wd-info span { font-size: var(--text-xs); color: var(--color-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wlt-wd-date { color: var(--color-text-muted); }
+
+.wlt-wd-status-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-1); flex-shrink: 0; }
+
+.wlt-wd-status {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  padding: 3px var(--space-2);
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+.wlt-wd-status--processed { background: var(--color-success-light); color: var(--color-success); }
+.wlt-wd-status--pending { background: rgba(201, 168, 76, 0.16); color: var(--color-accent-hover); }
+.wlt-wd-status--failed { background: var(--color-error-light); color: var(--color-error); }
+
+.wlt-retry-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-error);
+}
+
+.wlt-retry-btn:hover { text-decoration: underline; }
+.wlt-retry-btn:disabled { opacity: 0.5; }
+
+/* ── Empty / skeleton ── */
+
+.wlt-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-10) var(--space-4);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.wlt-empty svg { color: var(--color-text-muted); }
+.wlt-empty p { font-size: var(--text-sm); }
+
+.wlt-skel {
+  background: var(--color-surface-alt);
+  border-radius: var(--radius-md);
+  position: relative;
+  overflow: hidden;
+}
+
+.wlt-skel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+  background-size: 200% 100%;
+  animation: wltShimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes wltShimmer { from { background-position: 150% 0; } to { background-position: -50% 0; } }
+
+/* ════════════════════════════════════════════════════════════════
+   WITHDRAWAL SLIP MODAL (8.3)
+   ════════════════════════════════════════════════════════════════ */
+
+.wlt-slip {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 480px;
+  max-height: 92vh;
+  overflow: hidden;
+  display: flex;
+  animation: modalPop 180ms ease-out;
+}
+
+.wlt-slip-rail { display: none; }
+
+.wlt-slip-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-5);
+  overflow-y: auto;
+  min-width: 0;
+}
+
+.wlt-slip-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.wlt-slip-head h3 {
+  flex: 1;
+  font-family: var(--font-heading);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.wlt-slip-close { color: var(--color-text-muted); flex-shrink: 0; }
+.wlt-slip-close:hover { color: var(--color-text-primary); }
+
+.wlt-slip-dots { display: flex; gap: 6px; }
+.wlt-slip-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--color-border); }
+.wlt-slip-dot.active { background: var(--color-accent); width: 18px; border-radius: 4px; }
+.wlt-slip-dot.done { background: var(--color-primary); }
+
+.wlt-slip-step { display: flex; flex-direction: column; gap: var(--space-4); }
+
+.wlt-slip-avail {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-alt);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.wlt-slip-avail strong { font-family: var(--font-heading); color: var(--color-text-primary); font-variant-numeric: tabular-nums; }
+
+.wlt-slip-field { display: flex; flex-direction: column; gap: var(--space-2); }
+.wlt-slip-field span { font-size: var(--text-xs); font-weight: 600; color: var(--color-text-secondary); }
+
+.wlt-slip-field input {
+  height: 44px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+}
+
+.wlt-slip-field input:focus { border-color: var(--color-border-focus); }
+
+.wlt-amount-input {
+  display: flex;
+  align-items: center;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-3);
+  height: 52px;
+}
+
+.wlt-amount-input.error { border-color: var(--color-error); }
+.wlt-amount-input:focus-within { border-color: var(--color-border-focus); }
+
+.wlt-amount-peso { font-family: var(--font-heading); font-weight: 700; color: var(--color-text-muted); margin-right: var(--space-1); }
+
+.wlt-amount-input input {
+  border: none;
+  flex: 1;
+  height: 100%;
+  font-family: var(--font-heading);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.wlt-field-error { display: flex; align-items: center; gap: 4px; font-size: var(--text-xs); color: var(--color-error); }
+
+.wlt-slip-hint { font-size: var(--text-xs); color: var(--color-text-muted); line-height: 1.5; }
+
+.wlt-quick-amounts { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+
+.wlt-quick-amounts button {
+  height: 34px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-full);
+  border: 1.5px solid var(--color-border);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.wlt-quick-amounts button:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+.wlt-slip-actions { display: flex; gap: var(--space-3); margin-top: var(--space-1); }
+.wlt-slip-actions .btn-inline { flex: 1; height: 46px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+
+/* ── Method list ── */
+
+.wlt-method-list { display: flex; flex-direction: column; gap: var(--space-2); }
+
+.wlt-method-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  position: relative;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.wlt-method-option.selected { border-color: var(--color-primary); background: var(--color-surface-alt); }
+.wlt-method-option input { position: absolute; opacity: 0; }
+
+.wlt-method-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.wlt-method-option.selected .wlt-method-icon { background: var(--color-primary); color: var(--color-text-inverse); }
+
+.wlt-method-text { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
+.wlt-method-text strong { font-size: var(--text-sm); color: var(--color-text-primary); }
+.wlt-method-text span { font-size: var(--text-xs); color: var(--color-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.wlt-method-default {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-accent-hover);
+  background: rgba(201, 168, 76, 0.16);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.wlt-add-method-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  align-self: flex-start;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-primary);
+  padding: var(--space-2) 0;
+}
+
+.wlt-add-method-btn:hover { text-decoration: underline; }
+
+.wlt-kind-toggle {
+  display: flex;
+  gap: var(--space-1);
+  background: var(--color-surface-alt);
+  border-radius: var(--radius-lg);
+  padding: 3px;
+}
+
+.wlt-kind-toggle button {
+  flex: 1;
+  height: 34px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.wlt-kind-toggle button.active { background: var(--color-surface); color: var(--color-primary); box-shadow: var(--shadow-sm); }
+
+/* ── Review step ── */
+
+.wlt-review-lines {
+  border: 1.5px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.wlt-review-line { display: flex; justify-content: space-between; font-size: var(--text-sm); color: var(--color-text-secondary); }
+.wlt-review-line strong { color: var(--color-text-primary); font-variant-numeric: tabular-nums; }
+.wlt-review-line.total { padding-top: var(--space-2); border-top: 1px solid var(--color-border); font-size: var(--text-base); }
+.wlt-review-line.total strong { font-family: var(--font-heading); font-size: var(--text-lg); color: var(--color-primary); }
+
+.wlt-review-method {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-surface-alt);
+  border-radius: var(--radius-md);
+}
+
+/* ── Status step ── */
+
+.wlt-slip-done { align-items: center; text-align: center; padding-top: var(--space-2); }
+
+.wlt-done-badge {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--color-success-light);
+  color: var(--color-success);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wlt-done-title {
+  font-family: var(--font-heading);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   RESPONSIVE — deliberately different layouts per breakpoint
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── Mobile (<768px): stacked, horizontal-scroll rail for tabs,
+   sticky withdraw button feel via full-width CTA ── */
+
+@media (max-width: 767px) {
+  .wlt-withdraw-btn { width: 100%; justify-content: center; }
+  .wlt-hero-quickstats { flex-direction: column; gap: var(--space-2); }
+
+  /* Transaction table -> receipt card list */
+  .wlt-tx-table thead { display: none; }
+  .wlt-tx-table, .wlt-tx-table tbody, .wlt-tx-table tr, .wlt-tx-table td { display: block; width: 100%; }
+  .wlt-tx-table tr {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    margin-bottom: var(--space-3);
+  }
+  .wlt-tx-table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-1) 0;
+    text-align: right;
+  }
+  .wlt-tx-table td::before {
+    content: attr(data-label);
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    font-weight: 600;
+    text-align: left;
+  }
+  .wlt-tx-table td.wlt-tx-desc { text-align: right; max-width: none; }
+  .wlt-tx-table td[data-label="Date"] .wlt-tx-date { align-items: flex-end; }
+}
+
+/* ── Tablet (768–1023px): hero + passbook side by side,
+   content stays stacked (transactions full width, then withdrawals) ── */
+
+@media (min-width: 768px) {
+  .wlt-page { padding: var(--space-6) var(--space-6) var(--space-12); }
+  .wlt-top-grid { grid-template-columns: 1.3fr 1fr; align-items: stretch; }
+  .wlt-tx-filters { flex-direction: row; align-items: center; justify-content: space-between; }
+
+  .wlt-slip { max-width: 640px; }
+  .wlt-slip-rail {
+    display: flex;
+    flex-direction: column;
+    width: 176px;
+    flex-shrink: 0;
+    background: var(--color-panel);
+    color: var(--color-text-on-panel);
+    padding: var(--space-5) var(--space-4);
+    gap: var(--space-4);
+  }
+  .wlt-slip-rail-brand {
+    font-family: var(--font-heading);
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    opacity: 0.7;
+    margin-bottom: var(--space-2);
+  }
+  .wlt-slip-rail-step { display: flex; align-items: center; gap: var(--space-2); opacity: 0.55; }
+  .wlt-slip-rail-step.active, .wlt-slip-rail-step.done { opacity: 1; }
+  .wlt-slip-rail-num {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 1.5px solid rgba(227,231,240,0.4);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; flex-shrink: 0;
+  }
+  .wlt-slip-rail-step.active .wlt-slip-rail-num { background: var(--color-accent); color: var(--color-primary); border-color: var(--color-accent); }
+  .wlt-slip-rail-step.done .wlt-slip-rail-num { background: var(--color-success); color: #fff; border-color: var(--color-success); }
+  .wlt-slip-rail-label { font-size: var(--text-xs); font-weight: 600; }
+  .wlt-slip-dots { display: none; }
+}
+
+/* ── Laptop (1024–1279px): content grid becomes two columns,
+   passbook gets a fixed comfortable width next to hero ── */
+
+@media (min-width: 1024px) {
+  .wlt-top-grid { grid-template-columns: 1.6fr 1fr; }
+  .wlt-content-grid { grid-template-columns: 1.7fr 1fr; }
+  .wlt-hero-amount { font-size: var(--text-5xl); }
+}
+
+/* ── Desktop (>=1280px): wider canvas, three-way top grid
+   (hero / passbook / nothing extra keeps hero dominant but roomy) ── */
+
+@media (min-width: 1280px) {
+  .wlt-page { max-width: 1320px; padding-left: var(--space-8); padding-right: var(--space-8); }
+  .wlt-top-grid { grid-template-columns: 1.8fr 1fr; gap: var(--space-5); }
+  .wlt-content-grid { grid-template-columns: 2fr 1fr; gap: var(--space-5); }
+  .wlt-hero { padding: var(--space-8) var(--space-6); }
+  .wlt-passbook { padding: var(--space-6); }
+}
