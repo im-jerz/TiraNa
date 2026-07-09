@@ -11,7 +11,10 @@ import {
 } from "../../components/icons";
 import { useToast } from "../../components/common/Toast";
 import { getGuests, setGuestNote } from "../../api/guests";
+import useSilentPoll from "../../utils/useSilentPoll";
 import "../../styles/guests.css";
+
+const POLL_INTERVAL_MS = 20_000;
 
 /* ─── Utility ───────────────────────────────────────────────── */
 
@@ -421,7 +424,7 @@ export default function GuestManagement() {
   const [selectedGuest, setSelectedGuest] = useState(null);
   const searchRef = useRef(null);
 
-  async function loadGuests() {
+  const loadGuests = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -433,9 +436,18 @@ export default function GuestManagement() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
-  useEffect(() => { loadGuests(); }, []);
+  useEffect(() => { loadGuests(); }, [loadGuests]);
+
+  // Background refresh: a newly-booked guest (or an updated stay) shows up
+  // on its own, without the host needing to reload the page.
+  const silentRefresh = useCallback(async () => {
+    const data = await getGuests();
+    setGuests(data);
+  }, []);
+
+  useSilentPoll(silentRefresh, POLL_INTERVAL_MS);
 
   useEffect(() => {
     function onKey(e) { if (e.key === "Escape") setSelectedGuest(null); }

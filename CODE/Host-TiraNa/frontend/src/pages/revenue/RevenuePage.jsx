@@ -11,6 +11,9 @@ import {
 } from '../../components/icons'
 import { getBookings } from '../../api/bookings'
 import axiosInstance from '../../api/axiosInstance'
+import useSilentPoll from '../../utils/useSilentPoll'
+
+const POLL_INTERVAL_MS = 20_000
 
 /* ─── Constants ──────────────────────────────────────────────── */
 
@@ -349,6 +352,17 @@ export default function RevenuePage() {
   }, [])
 
   useEffect(() => { load() }, [load])
+
+  // Background refresh: a new booking changes gross/net revenue, so
+  // re-fetch periodically without flipping the page into a loading state.
+  const silentRefresh = useCallback(async () => {
+    const ids = Object.keys(propertyMap)
+    if (ids.length === 0) return
+    const bRes = await getBookings(ids)
+    setBookings(bRes.data ?? [])
+  }, [propertyMap])
+
+  useSilentPoll(silentRefresh, POLL_INTERVAL_MS)
 
   const { gross, commission, net, avgPerBooking, monthlyData, byProperty, totalFiltered } =
     useMemo(() => deriveRevenue(bookings, propertyMap, period), [bookings, propertyMap, period])

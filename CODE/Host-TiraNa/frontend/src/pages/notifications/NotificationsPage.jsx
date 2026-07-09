@@ -1,6 +1,9 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../../api/axiosInstance";
+import useSilentPoll from "../../utils/useSilentPoll";
+
+const POLL_INTERVAL_MS = 20_000;
 import { resolveNotificationLink } from "../../utils/notificationLinks";
 import "../../styles/notifications.css";
 
@@ -283,6 +286,21 @@ export default function NotificationsPage() {
   useEffect(() => {
     fetchNotifications(1);
   }, [fetchNotifications]);
+
+  const pageRef = useRef(page);
+  useEffect(() => { pageRef.current = page; }, [page]);
+
+  // Background refresh: new notifications (e.g. a fresh booking) show up
+  // on their own. Only refreshes while on page 1 so it doesn't yank the
+  // host off whatever page of older notifications they're browsing.
+  const silentRefresh = useCallback(async () => {
+    if (pageRef.current !== 1) return;
+    const { data } = await axiosInstance.get(`/api/notifications?page=1&per_page=50`);
+    setNotifications(data.data.notifications);
+    setTotalPages(data.data.pages);
+  }, []);
+
+  useSilentPoll(silentRefresh, POLL_INTERVAL_MS);
 
   async function markRead(id) {
     try {

@@ -149,7 +149,7 @@ export default function WithdrawModal({ available, methods, onClose, onSubmit, o
                     autoFocus
                   />
                 </div>
-                {amountErr && <span className="wlt-field-error"><IconAlertCircle width={13} height={13} /> {amountErr}</span>}
+                {amountErr && <span className="wlt-field-error" role="alert"><IconAlertCircle width={13} height={13} /> {amountErr}</span>}
               </label>
               <p className="wlt-slip-hint">Minimum withdrawal is {fmt(MIN_WITHDRAWAL)}.</p>
               <div className="wlt-quick-amounts">
@@ -269,12 +269,12 @@ export default function WithdrawModal({ available, methods, onClose, onSubmit, o
                 </span>
               </div>
               <p className="wlt-slip-hint">Processing time is 1–3 business days. You'll get a notification once it's done.</p>
-              {submitErr && <span className="wlt-field-error"><IconAlertCircle width={13} height={13} /> {submitErr}</span>}
+              {submitErr && <span className="wlt-field-error" role="alert"><IconAlertCircle width={13} height={13} /> {submitErr}</span>}
               <div className="wlt-slip-actions">
                 <button type="button" className="btn-inline btn-secondary" onClick={() => setStepIdx(1)} disabled={submitting}>
                   <IconChevronLeft width={15} height={15} /> Back
                 </button>
-                <button type="button" className="btn-inline btn-primary" onClick={handleConfirm} disabled={submitting}>
+                <button type="button" className="btn-inline btn-primary" onClick={handleConfirm} disabled={submitting} aria-busy={submitting}>
                   {submitting ? "Submitting…" : "Confirm withdrawal"}
                 </button>
               </div>

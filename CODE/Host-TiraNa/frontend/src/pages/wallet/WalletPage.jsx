@@ -1,8 +1,11 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import "../../styles/wallet.css";
 import useWalletData from "./useWalletData";
 import WithdrawModal from "./WithdrawModal";
+import RefundFlowModal from "./RefundFlowModal";
 import { useToast } from "../../components/common/Toast";
+import { getHostPropertyIds } from "../../api/bookings";
 import {
   IconVault,
   IconArrowUp,
@@ -111,6 +114,19 @@ export default function WalletPage() {
   const [dateTo, setDateTo] = useState("");
   const [retryingId, setRetryingId] = useState(null);
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [propertyIds, setPropertyIds] = useState([]);
+  const refundBookingId = searchParams.get("refund");
+
+  useEffect(() => {
+    getHostPropertyIds().then(setPropertyIds).catch(() => setPropertyIds([]));
+  }, []);
+
+  function closeRefundFlow() {
+    searchParams.delete("refund");
+    setSearchParams(searchParams, { replace: true });
+  }
+
   const filteredTx = useMemo(() => {
     return transactions.filter((tx) => {
       if (txFilter !== "all" && classify(tx) !== txFilter) return false;
@@ -127,6 +143,12 @@ export default function WalletPage() {
       .slice()
       .sort((a, b) => new Date(a.check_out) - new Date(b.check_out));
   }, [transactions]);
+
+  const refundPropertyTitle = useMemo(() => {
+    if (!refundBookingId) return null;
+    const match = transactions.find((tx) => String(tx.booking_id) === String(refundBookingId));
+    return match?.property_title ?? null;
+  }, [transactions, refundBookingId]);
 
   if (loading) return <WalletSkeleton />;
   if (error) return <WalletError message={error} onRetry={reload} />;
@@ -400,6 +422,19 @@ export default function WalletPage() {
           onClose={() => setShowWithdraw(false)}
           onSubmit={handleWithdrawSubmit}
           onSaveMethod={saveMethod}
+        />
+      )}
+
+      {refundBookingId && propertyIds.length > 0 && (
+        <RefundFlowModal
+          bookingId={refundBookingId}
+          propertyIds={propertyIds}
+          propertyTitle={refundPropertyTitle}
+          onClose={closeRefundFlow}
+          onCompleted={() => {
+            push("Refund completed successfully.", "success");
+            reload();
+          }}
         />
       )}
     </div>

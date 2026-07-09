@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { IconCalendar, IconCheck, IconX, IconUser, IconMapPin, IconClock, IconMoney } from "../../components/icons";
 import SkeletonGrid from "../../components/property/SkeletonGrid";
 import ConfirmModal from "../../components/common/ConfirmModal";
@@ -155,8 +155,9 @@ function BookingCard({ booking, onConfirm, onCancel, onCompleteRefund, isHighlig
 }
 
 export default function BookingsPage() {
-  const { bookings, stats, loading, error, confirm, cancel, completeRefund } = useBookingsData();
+  const { bookings, stats, loading, error, confirm, cancel } = useBookingsData();
   const { push } = useToast();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [activeFilter, setActiveFilter] = useState("all");
@@ -212,7 +213,7 @@ export default function BookingsPage() {
   }
 
   function handleCompleteRefundRequest(booking) {
-    setPendingAction({ type: "refund", booking });
+    navigate(`/dashboard/wallet?refund=${booking.id}`);
   }
 
   async function handleConfirm() {
@@ -225,9 +226,6 @@ export default function BookingsPage() {
       } else if (pendingAction.type === "cancel") {
         await cancel(pendingAction.booking.id);
         push("Booking declined.", "success");
-      } else if (pendingAction.type === "refund") {
-        await completeRefund(pendingAction.booking.id);
-        push("Refund marked as completed.", "success");
       }
       setPendingAction(null);
     } catch (err) {
@@ -337,28 +335,14 @@ export default function BookingsPage() {
 
       <ConfirmModal
         open={!!pendingAction}
-        tone={pendingAction?.type === "cancel" ? "danger" : pendingAction?.type === "refund" ? "success" : "warn"}
-        title={
-          pendingAction?.type === "confirm"
-            ? `Confirm this booking?`
-            : pendingAction?.type === "refund"
-            ? `Mark refund as completed?`
-            : `Decline this booking?`
-        }
+        tone={pendingAction?.type === "cancel" ? "danger" : "warn"}
+        title={pendingAction?.type === "confirm" ? `Confirm this booking?` : `Decline this booking?`}
         description={
           pendingAction?.type === "confirm"
             ? "This will confirm the guest's reservation. They will be notified of the confirmation."
-            : pendingAction?.type === "refund"
-            ? "This will mark the refund as completed. The guest's refund request will be resolved."
             : "This will decline the guest's reservation. They will be notified of the cancellation."
         }
-        confirmLabel={
-          pendingAction?.type === "confirm"
-            ? "Yes, confirm"
-            : pendingAction?.type === "refund"
-            ? "Yes, refund completed"
-            : "Yes, decline"
-        }
+        confirmLabel={pendingAction?.type === "confirm" ? "Yes, confirm" : "Yes, decline"}
         busy={busy}
         onConfirm={handleConfirm}
         onCancel={() => setPendingAction(null)}

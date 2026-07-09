@@ -674,8 +674,20 @@
   color: var(--color-text-primary);
 }
 
-.wlt-slip-close { color: var(--color-text-muted); flex-shrink: 0; }
-.wlt-slip-close:hover { color: var(--color-text-primary); }
+.wlt-slip-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: calc(-1 * var(--space-2)) calc(-1 * var(--space-2)) calc(-1 * var(--space-2)) 0;
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+  touch-action: manipulation;
+}
+.wlt-slip-close:hover { color: var(--color-text-primary); background: var(--color-surface-alt); }
+.wlt-slip-close:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 1px; }
 
 .wlt-slip-dots { display: flex; gap: 6px; }
 .wlt-slip-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--color-border); }
@@ -743,16 +755,20 @@
 .wlt-quick-amounts { display: flex; gap: var(--space-2); flex-wrap: wrap; }
 
 .wlt-quick-amounts button {
-  height: 34px;
-  padding: 0 var(--space-3);
+  height: 44px;
+  padding: 0 var(--space-4);
   border-radius: var(--radius-full);
   border: 1.5px solid var(--color-border);
   font-size: var(--text-xs);
   font-weight: 600;
   color: var(--color-text-secondary);
+  touch-action: manipulation;
+  transition: border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
 }
 
 .wlt-quick-amounts button:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.wlt-quick-amounts button:active { transform: scale(0.96); }
+.wlt-quick-amounts button:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
 
 .wlt-slip-actions { display: flex; gap: var(--space-3); margin-top: var(--space-1); }
 .wlt-slip-actions .btn-inline { flex: 1; height: 46px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
@@ -775,6 +791,7 @@
 
 .wlt-method-option.selected { border-color: var(--color-primary); background: var(--color-surface-alt); }
 .wlt-method-option input { position: absolute; opacity: 0; }
+.wlt-method-option:has(input:focus-visible) { outline: 2px solid var(--color-primary); outline-offset: 1px; }
 
 .wlt-method-icon {
   width: 34px;
@@ -811,13 +828,18 @@
   align-items: center;
   gap: var(--space-2);
   align-self: flex-start;
+  min-height: 44px;
+  padding: var(--space-2) var(--space-2);
+  margin-left: calc(-1 * var(--space-2));
+  border-radius: var(--radius-md);
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--color-primary);
-  padding: var(--space-2) 0;
+  touch-action: manipulation;
 }
 
 .wlt-add-method-btn:hover { text-decoration: underline; }
+.wlt-add-method-btn:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
 
 .wlt-kind-toggle {
   display: flex;
@@ -829,14 +851,17 @@
 
 .wlt-kind-toggle button {
   flex: 1;
-  height: 34px;
+  height: 44px;
   border-radius: var(--radius-md);
   font-size: var(--text-xs);
   font-weight: 600;
   color: var(--color-text-secondary);
+  touch-action: manipulation;
+  transition: background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .wlt-kind-toggle button.active { background: var(--color-surface); color: var(--color-primary); box-shadow: var(--shadow-sm); }
+.wlt-kind-toggle button:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
 
 /* ── Review step ── */
 
@@ -876,6 +901,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  animation: wltDonePop 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes wltDonePop {
+  from { transform: scale(0.6); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }
 
 .wlt-done-title {
@@ -884,6 +915,141 @@
   font-weight: 700;
   color: var(--color-text-primary);
 }
+
+/* ════════════════════════════════════════════════════════════════
+   REFUND FLOW MODAL — Receipt → Processing → Success, opened from the
+   Bookings page's "Refund Completed" action via ?refund=<bookingId>.
+   Same visual language as the withdrawal slip, single column (no rail
+   needed — it's a linear three-step flow, not a form with branches).
+   ════════════════════════════════════════════════════════════════ */
+
+.wlt-refund-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 460px;
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: var(--space-5);
+  animation: modalPop 180ms ease-out;
+}
+
+.wlt-refund-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-8) var(--space-4);
+  text-align: center;
+}
+
+.wlt-refund-loading p { font-size: var(--text-sm); color: var(--color-text-secondary); }
+.wlt-refund-loading svg { color: var(--color-error); }
+
+.wlt-refund-spinner {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  animation: wltSpin 800ms linear infinite;
+}
+
+@keyframes wltSpin { to { transform: rotate(360deg); } }
+
+.wlt-receipt { display: flex; flex-direction: column; gap: var(--space-4); }
+
+.wlt-receipt-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wlt-receipt-note {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin-top: calc(var(--space-4) * -1);
+}
+
+.wlt-receipt-body {
+  border: 1.5px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.wlt-receipt-row { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
+
+.wlt-receipt-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.wlt-receipt-value {
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  text-align: right;
+  font-weight: 500;
+}
+
+.wlt-receipt-method { display: inline-flex; align-items: center; gap: 5px; }
+
+.wlt-receipt-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4);
+  background: var(--color-panel);
+  color: var(--color-text-on-panel);
+  border-radius: var(--radius-md);
+}
+
+.wlt-receipt-total span { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.75; }
+
+.wlt-receipt-total strong {
+  font-family: var(--font-heading);
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.wlt-refund-success { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); text-align: center; padding: var(--space-3) 0; }
+
+.wlt-manual-fallback {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-error-light);
+  border-radius: var(--radius-md);
+}
+
+.wlt-manual-fallback .wlt-field-error { align-items: flex-start; line-height: 1.5; }
+
+.wlt-manual-ack {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.wlt-manual-ack input { margin-top: 2px; flex-shrink: 0; }
 
 /* ════════════════════════════════════════════════════════════════
    RESPONSIVE — deliberately different layouts per breakpoint
@@ -995,4 +1161,15 @@
   .wlt-content-grid { grid-template-columns: 2fr 1fr; gap: var(--space-5); }
   .wlt-hero { padding: var(--space-8) var(--space-6); }
   .wlt-passbook { padding: var(--space-6); }
+}
+/* ─── Reduced motion ─────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .wlt-slip,
+  .wlt-refund-card,
+  .wlt-done-badge,
+  .skeleton-pulse,
+  .skeleton-line {
+    animation: none;
+  }
 }

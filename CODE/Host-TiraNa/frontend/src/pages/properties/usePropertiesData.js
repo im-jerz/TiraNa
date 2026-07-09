@@ -5,11 +5,13 @@ import {
   deleteProperty as apiDeleteProperty,
 } from "../../api/properties";
 import { MOCK_PROPERTIES } from "../../data/mockProperties";
+import useSilentPoll from "../../utils/useSilentPoll";
 
 // Backend is live — see backend/app/blueprints/properties/.
 // Flip back to `true` only if you need to work on the UI without
 // a running Flask server.
 const USE_MOCK = false;
+const POLL_INTERVAL_MS = 20_000;
 
 export default function usePropertiesData() {
   const [properties, setProperties] = useState([]);
@@ -37,6 +39,16 @@ export default function usePropertiesData() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Background refresh: keeps counts like "upcoming bookings" current
+  // (e.g. right after a guest books) without a full reload/spinner.
+  const silentRefresh = useCallback(async () => {
+    if (USE_MOCK) return;
+    const res = await getProperties();
+    setProperties(res.data?.properties ?? []);
+  }, []);
+
+  useSilentPoll(silentRefresh, POLL_INTERVAL_MS);
 
   const toggleStatus = useCallback(async (property) => {
     const nextStatus = property.status === "active" ? "inactive" : "active";

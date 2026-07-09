@@ -8,6 +8,9 @@ import {
   retryWithdrawal,
   addPayoutMethod,
 } from "../../api/wallet";
+import useSilentPoll from "../../utils/useSilentPoll";
+
+const POLL_INTERVAL_MS = 20_000;
 
 export default function useWalletData() {
   const [wallet, setWallet] = useState(null);
@@ -46,6 +49,17 @@ export default function useWalletData() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Background refresh: new bookings/refunds change the balance and
+  // transaction list, so keep them current without a manual reload.
+  const silentRefresh = useCallback(async () => {
+    const [w, t, wd] = await Promise.all([getWallet(), getTransactions(), getWithdrawals()]);
+    setWallet(w);
+    setTransactions(t);
+    setWithdrawals(wd);
+  }, []);
+
+  useSilentPoll(silentRefresh, POLL_INTERVAL_MS);
 
   const requestWithdrawal = useCallback(async ({ amount, methodId }) => {
     const result = await submitWithdrawal({ amount, methodId });

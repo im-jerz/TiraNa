@@ -332,39 +332,13 @@ router.patch('/:id/status', async (req, res) => {
   }
 })
 
-router.patch('/:id/refund-completed', async (req, res) => {
-  try {
-    const { id } = req.params
-    const { property_ids } = req.body
-
-    if (!property_ids || property_ids.length === 0) {
-      return res.status(400).json({ error: 'property_ids is required to verify ownership' })
-    }
-
-    const result = await pool.query(
-      `UPDATE bookings SET status = 'refund_completed'
-       WHERE id = $1 AND property_id = ANY($2) AND status = 'refund_requested'
-       RETURNING id, status`,
-      [id, property_ids]
-    )
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Booking not found or refund not applicable' })
-    }
-
-    await pool.query(
-      `DELETE FROM wallets WHERE booking_id = $1`,
-      [id]
-    )
-
-    sendHostNotificationAndEmail(id, 'refund_completed').catch(err => console.error('Notification error:', err))
-
-    res.json({ message: 'Refund completed successfully', data: result.rows[0] })
-  } catch (err) {
-    console.error('Complete refund error:', err)
-    res.status(500).json({ error: 'Internal server error' })
-  }
-})
+// NOTE: PATCH /:id/refund-completed used to complete a refund immediately.
+// That's now a two-step flow — see routes/hostRefund.js:
+//   GET  /api/host/refund-receipt/:bookingId       (preview, nothing sent yet)
+//   POST /api/host/refund-receipt/:bookingId/send  (actually processes it,
+//                                                    via PayMongo for online
+//                                                    payments)
+// which is what the Bookings page's "Refund Completed" button now opens.
 
 
 /**
@@ -624,5 +598,7 @@ router.get('/wallet/transactions', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' })
   }
 })
+
+export { sendHostNotificationAndEmail }
 
 export default router

@@ -259,9 +259,20 @@ router.post('/confirm', authMiddleware, async (req, res) => {
 
     const targetBookingId = booking_id || payment.rows[0].booking_id
 
+    // Fetch the actual PayMongo Payment resource id from the checkout
+    // session. The session id itself isn't refundable — the Refunds API
+    // needs the underlying payment_id (see routes/hostRefund.js).
+    let paymongoPaymentId = null
+    try {
+      const session = await paymongoApi(`/checkout_sessions/${session_id}`)
+      paymongoPaymentId = session?.data?.attributes?.payments?.[0]?.id ?? null
+    } catch (err) {
+      console.error('Could not fetch PayMongo payment id for session', session_id, err.message)
+    }
+
     await pool.query(
-      `UPDATE payment_transactions SET status = 'paid' WHERE id = $1`,
-      [payment.rows[0].id]
+      `UPDATE payment_transactions SET status = 'paid', paymongo_payment_id = $2 WHERE id = $1`,
+      [payment.rows[0].id, paymongoPaymentId]
     )
 
     await pool.query(
