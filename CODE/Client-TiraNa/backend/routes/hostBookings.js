@@ -4,6 +4,27 @@ import pool from '../db.js'
 
 const router = Router()
 
+const HOST_API_URL = (process.env.HOST_API_URL || 'http://localhost:8000').replace(/\/$/, '')
+const COMMISSION_RATE = 0.13
+
+/**
+ * Resolve which host owns a property, straight from the Host (Flask) backend.
+ * Used to credit the correct host's wallet on booking approval — works for
+ * both 'online' and 'cash' bookings since it doesn't depend on a
+ * payment_transactions row existing.
+ */
+async function getHostIdForProperty(propertyId) {
+  try {
+    const resp = await fetch(`${HOST_API_URL}/api/internal/property-host/${propertyId}`)
+    if (!resp.ok) return null
+    const payload = await resp.json()
+    return payload?.host_id ?? null
+  } catch {
+    return null
+  }
+}
+
+
 const smtpAuth = process.env.SMTP_USER
   ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
   : undefined
@@ -274,12 +295,32 @@ router.patch('/:id/status', async (req, res) => {
     const result = await pool.query(
       `UPDATE bookings SET status = $1
        WHERE id = $2 AND property_id = ANY($3) AND status = 'pending'
-       RETURNING id, status`,
+       RETURNING id, status, property_id, total_price`,
       [status, id, property_ids]
     )
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Booking not found or cannot be updated' })
+    }
+
+    const booking = result.rows[0]
+
+    // This is the ONLY place money enters the host's wallet: the moment the
+    // host approves the booking. Nothing is credited at checkout time, and
+    // nothing shows up in the wallet's balance or transaction history before
+    // this point (see GET /wallet/summary and /wallet/transactions below).
+    if (status === 'confirmed') {
+      const hostId = await getHostIdForProperty(booking.property_id)
+      if (hostId) {
+        const hostEarning = Number(booking.total_price) * (1 - COMMISSION_RATE)
+        await pool.query(
+          `INSERT INTO wallets (host_id, booking_id, amount, type, description)
+           VALUES ($1, $2, $3, 'earning', 'Booking approved')`,
+          [hostId, id, hostEarning]
+        )
+      } else {
+        console.error(`Wallet credit skipped: could not resolve host for property ${booking.property_id}`)
+      }
     }
 
     sendHostNotificationAndEmail(id, status).catch(err => console.error('Notification error:', err))
@@ -443,6 +484,143 @@ router.get('/revenue', async (req, res) => {
     })
   } catch (err) {
     console.error('Revenue fetch error:', err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+/**
+ * GET /api/host/wallet/summary
+ *
+ * Wallet balance breakdown for the Host wallet page (host_flow.md §8.1).
+ * Only ever sums rows from `wallets` — and a row only exists once a
+ * booking has been approved by the host (see PATCH /:id/status above) and
+ * hasn't since been refunded (refund-completed DELETEs the row).
+ *
+ * Buckets:
+ *   pending_balance   — approved, stay hasn't happened yet (check_out in the future)
+ *   available_balance — approved and the stay has passed (or explicitly 'completed')
+ *   on_hold_balance   — guest has requested a refund, resolution pending
+ *   total_balance     — sum of all of the above
+ *
+ * Query params: property_ids — comma-separated (required)
+ */
+router.get('/wallet/summary', async (req, res) => {
+  try {
+    const { property_ids } = req.query
+
+    if (!property_ids) {
+      return res.status(400).json({ error: 'property_ids is required' })
+    }
+
+    const ids = property_ids.split(',').map(id => id.trim()).filter(Boolean)
+    if (ids.length === 0) {
+      return res.status(400).json({ error: 'At least one property_id is required' })
+    }
+
+    const result = await pool.query(`
+      SELECT
+        COALESCE(SUM(w.amount), 0) AS total_balance,
+        COALESCE(SUM(w.amount) FILTER (
+          WHERE b.status = 'confirmed' AND b.check_out > now()
+        ), 0) AS pending_balance,
+        COALESCE(SUM(w.amount) FILTER (
+          WHERE (b.status = 'confirmed' AND b.check_out <= now()) OR b.status = 'completed'
+        ), 0) AS available_balance,
+        COALESCE(SUM(w.amount) FILTER (
+          WHERE b.status = 'refund_requested'
+        ), 0) AS on_hold_balance
+      FROM wallets w
+      JOIN bookings b ON b.id = w.booking_id
+      WHERE b.property_id = ANY($1)
+    `, [ids])
+
+    const row = result.rows[0]
+
+    res.json({
+      data: {
+        total_balance: parseFloat(row.total_balance),
+        pending_balance: parseFloat(row.pending_balance),
+        available_balance: parseFloat(row.available_balance),
+        on_hold_balance: parseFloat(row.on_hold_balance),
+      }
+    })
+  } catch (err) {
+    console.error('Wallet summary error:', err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+/**
+ * GET /api/host/wallet/transactions
+ *
+ * Ledger entries for the Host wallet page (host_flow.md §8.2). Same rule
+ * as above: a booking only appears here once approved, and disappears
+ * entirely if later refunded.
+ *
+ * Query params:
+ *   property_ids — comma-separated (required)
+ *   start, end   — YYYY-MM-DD, optional, filters on wallets.created_at
+ */
+router.get('/wallet/transactions', async (req, res) => {
+  try {
+    const { property_ids, start, end } = req.query
+
+    if (!property_ids) {
+      return res.status(400).json({ error: 'property_ids is required' })
+    }
+
+    const ids = property_ids.split(',').map(id => id.trim()).filter(Boolean)
+    if (ids.length === 0) {
+      return res.status(400).json({ error: 'At least one property_id is required' })
+    }
+
+    let query = `
+      SELECT
+        w.id, w.booking_id, w.amount, w.type, w.description, w.created_at,
+        b.property_id, b.status AS booking_status, b.check_in, b.check_out, b.total_price
+      FROM wallets w
+      JOIN bookings b ON b.id = w.booking_id
+      WHERE b.property_id = ANY($1)
+    `
+    const params = [ids]
+
+    if (start) {
+      params.push(start)
+      query += ` AND w.created_at >= $${params.length}`
+    }
+    if (end) {
+      params.push(end)
+      query += ` AND w.created_at <= $${params.length}`
+    }
+    query += ` ORDER BY w.created_at DESC`
+
+    const result = await pool.query(query, params)
+
+    const now = new Date()
+    const data = result.rows.map(r => {
+      let bucket = 'available'
+      if (r.booking_status === 'refund_requested') bucket = 'on_hold'
+      else if (r.booking_status === 'confirmed' && new Date(r.check_out) > now) bucket = 'pending'
+
+      return {
+        id: r.id,
+        booking_id: r.booking_id,
+        property_id: r.property_id,
+        booking_status: r.booking_status,
+        bucket,
+        type: r.type,
+        description: r.description,
+        amount: parseFloat(r.amount),
+        total_price: parseFloat(r.total_price),
+        check_in: r.check_in,
+        check_out: r.check_out,
+        created_at: r.created_at,
+      }
+    })
+
+    res.json({ data })
+  } catch (err) {
+    console.error('Wallet transactions error:', err)
     res.status(500).json({ error: 'Internal server error' })
   }
 })

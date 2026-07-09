@@ -32,7 +32,12 @@ export default function useWalletData() {
       setTransactions(t);
       setWithdrawals(wd);
     } catch (err) {
-      setError(err?.message ?? "Couldn't load your wallet. Please try again.");
+      setError(
+        err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        err?.message ||
+        "Couldn't load your wallet. Please try again."
+      );
     } finally {
       setLoading(false);
     }

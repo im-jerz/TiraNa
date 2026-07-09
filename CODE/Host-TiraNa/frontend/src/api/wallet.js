@@ -3,80 +3,153 @@
  *
  * Wallet & Financial Management API — Host-TiraNa
  *
- * FRONTEND-ONLY STAGE: no backend endpoint exists yet (see host_flow.md §8).
- * State (saved payout methods + withdrawal requests) is layered on top of
- * the shaped mock data and persisted to localStorage, so the flow feels
- * real across reloads. Swap the bodies of these functions for
- * axiosInstance calls once /api/host/wallet* is live — call sites and
- * return shapes are already written to match the documented endpoints.
+ * §8.1 balances and §8.2 transaction history are REAL, sourced from
+ * Client-TiraNa's `wallets` table:
+ *   GET {CLIENT_API_URL}/api/host/wallet/summary
+ *   GET {CLIENT_API_URL}/api/host/wallet/transactions
+ * (see Client-TiraNa/backend/routes/hostBookings.js)
+ *
+ * A booking only ever appears here once the host approves it — see the
+ * 'confirmed' branch of PATCH /:id/status on the client backend. Nothing
+ * is credited at checkout time, so pending/unapproved bookings never show
+ * up in the balance or the transaction history.
+ *
+ * §8.3 withdrawals are FRONTEND-ONLY for now (another teammate is building
+ * the real withdrawal backend) — saved payout methods and withdrawal
+ * history stay local, persisted to localStorage so the flow still feels
+ * real across reloads.
  */
 
-import {
-  MOCK_WALLET_SUMMARY,
-  MOCK_PAYOUT_METHODS,
-  MOCK_TRANSACTIONS,
-  MOCK_WITHDRAWALS,
-} from "../data/mockWallet";
+import axiosInstance from "./axiosInstance";
+import clientApi from "./clientApi";
+import { MOCK_PAYOUT_METHODS, MOCK_WITHDRAWALS } from "../data/mockWallet";
 
-const STATE_KEY = "tirana_wallet_state_v1";
+const STATE_KEY = "tirana_wallet_withdrawals_v1";
 const MIN_WITHDRAWAL = 500;
-const NETWORK_DELAY = 550;
 
-function wait(ms = NETWORK_DELAY) {
-  return new Promise((res) => setTimeout(res, ms));
-}
-
-function loadState() {
+function loadMockState() {
   try {
     const raw = localStorage.getItem(STATE_KEY);
     if (!raw) throw new Error("empty");
     const parsed = JSON.parse(raw);
     return {
-      summary: parsed.summary ?? MOCK_WALLET_SUMMARY,
       methods: parsed.methods ?? MOCK_PAYOUT_METHODS,
-      transactions: parsed.transactions ?? MOCK_TRANSACTIONS,
       withdrawals: parsed.withdrawals ?? MOCK_WITHDRAWALS,
     };
   } catch {
     return {
-      summary: { ...MOCK_WALLET_SUMMARY },
       methods: MOCK_PAYOUT_METHODS.map((m) => ({ ...m })),
-      transactions: MOCK_TRANSACTIONS.map((t) => ({ ...t })),
       withdrawals: MOCK_WITHDRAWALS.map((w) => ({ ...w })),
     };
   }
 }
 
-function persist(state) {
+function persistMockState(state) {
   localStorage.setItem(STATE_KEY, JSON.stringify(state));
 }
 
-/* ─── Fee schedule ──────────────────────────────────────────────
-   Flat, transparent fees kept in one place so the review step and
-   the confirmation step never disagree with each other. */
+/* ─── Fee schedule (still used by the §8.3 withdrawal modal) ────── */
 export function computeFee(amount, methodKind) {
   if (!amount || amount <= 0) return 0;
   if (methodKind === "bank") return amount >= 10000 ? 0 : 25;
   return 15; // gcash / maya
 }
 
-/* ─── 8.1 Wallet overview ───────────────────────────────────────── */
+export { MIN_WITHDRAWAL };
 
-export async function getWallet() {
-  await wait();
-  const { summary } = loadState();
-  return { ...summary };
+/* ─── Host properties → { ids, propertyMap } ──────────────────────
+   Same pattern RevenuePage.jsx uses: fetch host properties from the
+   Flask backend for id → title/type, then fetch the actual booking-
+   derived data straight from the Client backend. */
+
+async function getHostPropertyMap() {
+  const { data } = await axiosInstance.get("/api/host/properties");
+  const properties = data?.data?.properties ?? [];
+  const map = {};
+  properties.forEach((p) => {
+    map[String(p.property_id)] = { title: p.title, property_type: p.property_type };
+  });
+  return { ids: properties.map((p) => String(p.property_id)), propertyMap: map };
 }
 
+/* ─── 8.1 Wallet overview (REAL) ─────────────────────────────────── */
+
+export async function getWallet() {
+  const { ids } = await getHostPropertyMap();
+
+  const empty = {
+    total_balance: 0,
+    pending_balance: 0,
+    available_balance: 0,
+    on_hold_balance: 0,
+  };
+
+  const summary = ids.length
+    ? (await clientApi.get("/api/host/wallet/summary", { params: { property_ids: ids.join(",") } })).data
+        ?.data ?? empty
+    : empty;
+
+  // total_withdrawn / last_withdrawal_date are placeholders sourced from
+  // the local mock withdrawal ledger until the real withdrawal backend
+  // exists — they never affect the real balances above.
+  const { withdrawals } = loadMockState();
+  const totalWithdrawn = withdrawals
+    .filter((w) => w.status !== "failed")
+    .reduce((sum, w) => sum + w.amount, 0);
+
+  return {
+    ...summary,
+    total_withdrawn: totalWithdrawn,
+    last_withdrawal_date: withdrawals[0]?.date ?? null,
+  };
+}
+
+/* ─── 8.2 Transaction history (REAL) ────────────────────────────── */
+
+export async function getTransactions() {
+  const { ids, propertyMap } = await getHostPropertyMap();
+  if (ids.length === 0) return [];
+
+  const { data } = await clientApi.get("/api/host/wallet/transactions", {
+    params: { property_ids: ids.join(",") },
+  });
+  const rows = data?.data ?? [];
+
+  // Rows come back newest-first; walk backwards to build a running
+  // balance (the list already only contains approved, non-refunded
+  // bookings, so the running balance naturally lands on total_balance).
+  let running = rows.reduce((sum, r) => sum + r.amount, 0);
+
+  return rows.map((r) => {
+    const prop = propertyMap[String(r.property_id)];
+    const label = prop?.title ?? `Property #${r.property_id}`;
+    const entry = {
+      id: r.id,
+      booking_id: r.booking_id,
+      date: r.created_at,
+      type: "booking_payment",
+      bucket: r.bucket, // 'pending' | 'available' | 'on_hold'
+      property_title: label,
+      description: `Booking payment — ${label}`,
+      amount: r.amount,
+      check_in: r.check_in,
+      check_out: r.check_out,
+      running_balance: running,
+    };
+    running -= r.amount;
+    return entry;
+  });
+}
+
+/* ─── 8.3 Payout methods (mock — frontend only) ─────────────────── */
+
 export async function getPayoutMethods() {
-  await wait(300);
-  const { methods } = loadState();
+  const { methods } = loadMockState();
   return methods;
 }
 
 export async function addPayoutMethod(input) {
-  await wait(400);
-  const state = loadState();
+  const state = loadMockState();
   const method =
     input.kind === "bank"
       ? {
@@ -97,37 +170,22 @@ export async function addPayoutMethod(input) {
           is_default: state.methods.length === 0,
         };
   state.methods = [...state.methods, method];
-  persist(state);
+  persistMockState(state);
   return method;
 }
 
-/* ─── 8.2 Transaction history ───────────────────────────────────── */
-
-export async function getTransactions() {
-  await wait();
-  const { transactions } = loadState();
-  return transactions;
-}
-
-/* ─── 8.3 Withdrawal flow ────────────────────────────────────────── */
-
-export { MIN_WITHDRAWAL };
+/* ─── 8.3 Withdrawal flow (mock — frontend only, per teammate build) ── */
 
 export async function getWithdrawals() {
-  await wait(400);
-  const { withdrawals } = loadState();
+  const { withdrawals } = loadMockState();
   return withdrawals;
 }
 
 export async function submitWithdrawal({ amount, methodId }) {
-  await wait(900);
-  const state = loadState();
+  const state = loadMockState();
 
   if (amount < MIN_WITHDRAWAL) {
     throw new Error(`Minimum withdrawal is ₱${MIN_WITHDRAWAL.toLocaleString("en-PH")}.`);
-  }
-  if (amount > state.summary.available_balance) {
-    throw new Error("Amount exceeds your available balance.");
   }
   const method = state.methods.find((m) => m.id === methodId);
   if (!method) throw new Error("Select a payout method to continue.");
@@ -149,31 +207,15 @@ export async function submitWithdrawal({ amount, methodId }) {
   };
 
   state.withdrawals = [withdrawal, ...state.withdrawals];
-  state.summary.available_balance -= amount;
-  state.summary.total_withdrawn += amount;
-  state.summary.last_withdrawal_date = now;
-  state.transactions = [
-    {
-      id: `txn-${Date.now()}`,
-      date: now,
-      type: "withdrawal",
-      description: `Withdrawal to ${label}`,
-      amount: -amount,
-      running_balance: state.summary.total_balance,
-    },
-    ...state.transactions,
-  ];
-
-  persist(state);
+  persistMockState(state);
   return { withdrawal, fee, net: amount - fee };
 }
 
 export async function retryWithdrawal(withdrawalId) {
-  await wait(700);
-  const state = loadState();
+  const state = loadMockState();
   state.withdrawals = state.withdrawals.map((w) =>
     w.id === withdrawalId ? { ...w, status: "pending", date: new Date().toISOString() } : w
   );
-  persist(state);
+  persistMockState(state);
   return state.withdrawals.find((w) => w.id === withdrawalId);
 }

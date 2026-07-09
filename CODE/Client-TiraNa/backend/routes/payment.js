@@ -171,16 +171,15 @@ router.post('/create-checkout', authMiddleware, async (req, res) => {
       [booking_id, req.user.id, sessionId, host_id || null, amount]
     )
 
+    // NOTE: the host's wallet is intentionally NOT credited here.
+    // Money only enters the host's wallet once they approve the booking
+    // (see the 'confirmed' branch of PATCH /:id/status in hostBookings.js).
+    // A guest paying at checkout does not guarantee the host will accept —
+    // crediting here would let unapproved/pending bookings show up as
+    // balance and in the wallet's transaction history, which is the bug
+    // this change fixes.
     const commission = Number(amount) * 0.13
     const hostEarning = Number(amount) - commission
-
-    if (host_id) {
-      await pool.query(
-        `INSERT INTO wallets (host_id, booking_id, amount, type, description)
-         VALUES ($1, $2, $3, 'earning', 'Online payment received')`,
-        [host_id, booking_id, hostEarning]
-      )
-    }
 
     const guestResult = await pool.query(
       `SELECT u.username, u.email, pi.first_name, pi.last_name
