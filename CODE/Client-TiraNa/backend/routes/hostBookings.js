@@ -495,17 +495,18 @@ router.get('/wallet/summary', async (req, res) => {
       SELECT
         COALESCE(SUM(w.amount), 0) AS total_balance,
         COALESCE(SUM(w.amount) FILTER (
-          WHERE b.status = 'confirmed' AND b.check_out > now()
+          WHERE b.status = 'confirmed' AND b.check_out > now() AND w.type = 'earning'
         ), 0) AS pending_balance,
         COALESCE(SUM(w.amount) FILTER (
-          WHERE (b.status = 'confirmed' AND b.check_out <= now()) OR b.status = 'completed'
+          WHERE ((b.status = 'confirmed' AND b.check_out <= now()) OR b.status = 'completed') AND w.type = 'earning'
         ), 0) AS available_balance,
         COALESCE(SUM(w.amount) FILTER (
-          WHERE b.status = 'refund_requested'
+          WHERE b.status = 'refund_requested' AND w.type = 'earning'
         ), 0) AS on_hold_balance
       FROM wallets w
       JOIN bookings b ON b.id = w.booking_id
       WHERE b.property_id = ANY($1)
+        AND b.status != 'refund_completed'
     `, [ids])
 
     const row = result.rows[0]
@@ -573,7 +574,8 @@ router.get('/wallet/transactions', async (req, res) => {
     const now = new Date()
     const data = result.rows.map(r => {
       let bucket = 'available'
-      if (r.booking_status === 'refund_requested') bucket = 'on_hold'
+      if (r.type === 'refund') bucket = 'refund'
+      else if (r.booking_status === 'refund_requested') bucket = 'on_hold'
       else if (r.booking_status === 'confirmed' && new Date(r.check_out) > now) bucket = 'pending'
 
       return {

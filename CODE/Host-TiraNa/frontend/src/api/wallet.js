@@ -115,22 +115,25 @@ export async function getTransactions() {
   });
   const rows = data?.data ?? [];
 
-  // Rows come back newest-first; walk backwards to build a running
-  // balance (the list already only contains approved, non-refunded
-  // bookings, so the running balance naturally lands on total_balance).
+  // Rows come back newest-first. Both 'earning' and 'refund' rows are
+  // included — refund rows have a negative amount so they naturally reduce
+  // the running balance and appear as a debit in the transaction history.
   let running = rows.reduce((sum, r) => sum + r.amount, 0);
 
   return rows.map((r) => {
     const prop = propertyMap[String(r.property_id)];
     const label = prop?.title ?? `Property #${r.property_id}`;
+    const isRefund = r.type === "refund";
     const entry = {
       id: r.id,
       booking_id: r.booking_id,
       date: r.created_at,
-      type: "booking_payment",
-      bucket: r.bucket, // 'pending' | 'available' | 'on_hold'
+      type: isRefund ? "refund" : "booking_payment",
+      bucket: r.bucket, // 'pending' | 'available' | 'on_hold' | 'refund'
       property_title: label,
-      description: `Booking payment — ${label}`,
+      description: isRefund
+        ? `Refund issued — ${label}`
+        : `Booking payment — ${label}`,
       amount: r.amount,
       check_in: r.check_in,
       check_out: r.check_out,

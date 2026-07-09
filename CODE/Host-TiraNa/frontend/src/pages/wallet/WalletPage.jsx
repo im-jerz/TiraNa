@@ -45,12 +45,14 @@ const TX_FILTERS = [
   { key: "pending", label: "Reserved" },
   { key: "available", label: "Available" },
   { key: "on_hold", label: "On hold" },
+  { key: "refund", label: "Refunds" },
 ];
 
 const BUCKET_META = {
   pending: { label: "Reserved", tone: "adjust" },
   available: { label: "Available", tone: "credit" },
   on_hold: { label: "On hold", tone: "debit" },
+  refund: { label: "Refund", tone: "debit" },
 };
 
 function classify(tx) {
