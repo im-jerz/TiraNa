@@ -159,17 +159,6 @@ async def public_stats(
     )
 
 
-@app.get("/api/client-uploads/{path:path}")
-async def proxy_client_upload(path: str):
-    client_url = settings.CLIENT_API_BASE_URL.rstrip("/")
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        resp = await client.get(f"{client_url}/{path}", headers={"Accept": "*/*"})
-        if resp.status_code != 200:
-            raise HTTPException(status_code=resp.status_code, detail="File not found")
-        content_type = resp.headers.get("content-type", "application/octet-stream")
-        return StreamingResponse(iter([resp.content]), media_type=content_type)
-
-
 @app.get("/api/host-uploads/{path:path}")
 async def proxy_host_upload(path: str):
     host_url = settings.HOST_API_BASE_URL.rstrip("/")

@@ -14,6 +14,7 @@ import hostRefundRoutes from './routes/hostRefund.js';
 import hostReviewRoutes from './routes/hostReviews.js';
 import savedPropertiesRoutes from './routes/savedProperties.js';
 import paymentRoutes from './routes/payment.js';
+import adminRoutes from './routes/admin.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,6 +37,8 @@ app.use('/api/host', hostRefundRoutes);
 app.use('/api/host', hostReviewRoutes);
 app.use('/api/saved-properties', savedPropertiesRoutes);
 app.use('/api/payment', paymentRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/reviews', adminRoutes);
 
 async function cleanupOldCodes() {
   try {

@@ -211,22 +211,17 @@ async def get_host_verifications(
     client_verifications = []
 
     if not type or type == "host":
-        host_status = status
-        if status == "approved":
-            host_status = "active"
-        elif status == "rejected":
-            host_status = "inactive"
         host_verifications = await host_api_client.get_verifications(
-            status=host_status, skip=skip, limit=limit
+            status=status, skip=skip, limit=limit
         )
-        admin_base = "http://localhost:5002"
+        host_base = "http://localhost:5001"
         for v in host_verifications:
             v["id"] = str(v["id"])
             v["type"] = "host"
             if v.get("id_url") and v["id_url"].startswith("/uploads/"):
-                v["id_url"] = f"{admin_base}/api/host-uploads{v['id_url']}"
+                v["id_url"] = f"{host_base}{v['id_url']}"
             if v.get("selfie_url") and v["selfie_url"].startswith("/uploads/"):
-                v["selfie_url"] = f"{admin_base}/api/host-uploads{v['selfie_url']}"
+                v["selfie_url"] = f"{host_base}{v['selfie_url']}"
 
     if not type or type == "guest":
         client_status = ""
@@ -239,13 +234,13 @@ async def get_host_verifications(
         client_verifications = await client_api_client.get_verifications(
             status=client_status, skip=skip, limit=limit
         )
-        admin_base = f"http://localhost:5002"
+        client_base = f"http://localhost:5000"
         for v in client_verifications:
             v["type"] = "guest"
             if v.get("id_url") and v["id_url"].startswith("/uploads/"):
-                v["id_url"] = f"{admin_base}/api/client-uploads{v['id_url']}"
+                v["id_url"] = f"{client_base}{v['id_url']}"
             if v.get("id_back_url") and v["id_back_url"].startswith("/uploads/"):
-                v["id_back_url"] = f"{admin_base}/api/client-uploads{v['id_back_url']}"
+                v["id_back_url"] = f"{client_base}{v['id_back_url']}"
 
     merged = host_verifications + client_verifications
     merged.sort(key=lambda v: v.get("created_at") or "", reverse=True)

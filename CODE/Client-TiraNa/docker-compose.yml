@@ -25,6 +25,9 @@ services:
     depends_on:
       cockroachdb:
         condition: service_healthy
+    networks:
+      - default
+      - client-net
 
   cockroachdb:
     image: cockroachdb/cockroach:v23.2.11
@@ -43,3 +46,8 @@ services:
 
 volumes:
   cockroach_data:
+
+networks:
+  client-net:
+    external: true
+    name: client-tirana_tirana-network

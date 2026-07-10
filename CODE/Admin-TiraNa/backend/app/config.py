@@ -27,7 +27,7 @@ class Settings(BaseSettings):
 
     INTERNAL_API_KEY: str = "tirana-internal-secret-key"
 
-    HOST_API_BASE_URL: str = "http://tirana-backend:5001"
+    HOST_API_BASE_URL: str = "http://tirana-backend:5000"
     CLIENT_API_BASE_URL: str = "http://client-tirana-backend-1:5000"
 
     model_config = {

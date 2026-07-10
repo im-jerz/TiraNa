@@ -176,7 +176,7 @@ class ClientAPIClient:
 
     async def get_reviews(self, skip: int = 0, limit: int = 50) -> List[Dict]:
         params = {"skip": skip, "limit": limit}
-        result = await self._get("/api/reviews", params)
+        result = await self._get("/api/admin/reviews", params)
         data = self._unwrap(result)
         if data and isinstance(data, dict):
             reviews = data.get("reviews", [])
@@ -186,11 +186,11 @@ class ClientAPIClient:
         return []
 
     async def hide_review(self, review_id: int) -> bool:
-        result = await self._post(f"/api/reviews/{review_id}/hide")
+        result = await self._post(f"/api/admin/reviews/{review_id}/hide")
         return result is not None
 
     async def show_review(self, review_id: int) -> bool:
-        result = await self._post(f"/api/reviews/{review_id}/show")
+        result = await self._post(f"/api/admin/reviews/{review_id}/show")
         return result is not None
 
 
