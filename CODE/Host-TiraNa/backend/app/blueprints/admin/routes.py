@@ -67,31 +67,19 @@ def list_verifications():
     skip = request.args.get("skip", 0, type=int)
     limit = request.args.get("limit", 50, type=int)
 
-    hosts_with_docs = (
-        db.session.query(Host, HostProfile)
-        .outerjoin(HostProfile, Host.id == HostProfile.host_id)
-        .order_by(Host.created_at.desc())
-        .all()
+    query = db.session.query(Host, HostProfile).outerjoin(
+        HostProfile, Host.id == HostProfile.host_id
     )
 
+    if status_filter:
+        query = query.filter(Host.status == status_filter)
+
+    total = query.count()
+    rows = query.order_by(Host.created_at.desc()).offset(skip).limit(limit).all()
+
     verifications = []
-    for host, profile in hosts_with_docs:
+    for host, profile in rows:
         docs = HostKycDocument.query.filter_by(host_id=host.id).all()
-        if not docs:
-            continue
-
-        doc_statuses = [d.status for d in docs]
-
-        if all(s == "approved" for s in doc_statuses):
-            overall_status = "approved"
-        elif any(s == "rejected" for s in doc_statuses):
-            overall_status = "rejected"
-        else:
-            overall_status = "pending"
-
-        if status_filter and overall_status != status_filter:
-            continue
-
         doc_map = {d.document_type: d for d in docs}
 
         verifications.append({
@@ -100,16 +88,14 @@ def list_verifications():
             "name": profile.full_name if profile else host.email.split("@")[0],
             "email": host.email,
             "type": "host",
-            "status": overall_status,
+            "status": host.status,
+            "email_verified": bool(host.email_verified),
             "id_card_url": doc_map.get("id_card").document_url if doc_map.get("id_card") else "",
             "selfie_url": doc_map.get("selfie_with_id").document_url if doc_map.get("selfie_with_id") else "",
             "review_notes": next((d.review_notes for d in docs if d.review_notes), ""),
             "submitted_at": min((d.submitted_at for d in docs if d.submitted_at), default=None),
             "reviewed_at": next((d.reviewed_at for d in docs if d.reviewed_at), None),
         })
-
-    total = len(verifications)
-    verifications = verifications[skip:skip + limit]
 
     return success_response(data={"verifications": verifications, "total": total})
 
@@ -120,19 +106,19 @@ def approve_verification(host_id):
     if not host:
         return error_response("Host not found.", status=404)
 
+    host.status = "active"
+    host.email_verified = 1
+
     docs = HostKycDocument.query.filter_by(host_id=host_id).all()
     for doc in docs:
         doc.status = "approved"
         doc.reviewed_at = datetime.utcnow()
 
-    host.email_verified = 1
-    host.status = "active"
-
     name = host.profile.full_name if host.profile else host.email
     _send_approval_email(host.email, name)
 
     db.session.commit()
-    return success_response(message="Verification approved.")
+    return success_response(message="Host verified.")
 
 
 @admin_bp.route("/verifications/<int:host_id>/reject", methods=["POST"])
@@ -144,12 +130,19 @@ def reject_verification(host_id):
     data = request.get_json() or {}
     reason = data.get("reason", "Your verification was rejected.")
 
+    docs = HostKycDocument.query.filter_by(host_id=host_id).all()
+    for doc in docs:
+        doc.status = "rejected"
+        doc.review_notes = reason
+        doc.reviewed_at = datetime.utcnow()
+
     name = host.profile.full_name if host.profile else host.email
     _send_rejection_email(host.email, name, reason)
 
-    db.session.delete(host)
+    host.status = "inactive"
+
     db.session.commit()
-    return success_response(message="Verification rejected and account deleted.")
+    return success_response(message="Host rejected.")
 
 
 def _send_approval_email(email, name):
