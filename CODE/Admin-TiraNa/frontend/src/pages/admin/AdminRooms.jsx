@@ -1,24 +1,41 @@
-import { useState } from 'react'
-
-const MOCK_ROOMS = [
-  { id: 1, name: 'Beachfront Villa - Master Suite', host_name: 'Maria Santos', price_per_night: 4500, status: 'active' },
-  { id: 2, name: 'Beachfront Villa - Guest Room', host_name: 'Maria Santos', price_per_night: 2500, status: 'active' },
-  { id: 3, name: 'Mountain Cabin - Loft', host_name: 'Ana Mendoza', price_per_night: 2800, status: 'hidden' },
-  { id: 4, name: 'City Condo - Studio', host_name: 'Ana Mendoza', price_per_night: 3200, status: 'pending' },
-]
+import { useState, useEffect, useCallback } from 'react'
+import { getRooms, updateRoomStatus } from '../../api/admin'
 
 export default function AdminRooms() {
-  const [rooms, setRooms] = useState(MOCK_ROOMS)
-  const [filter, setFilter] = useState({ status: '' })
+  const [rooms, setRooms] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState({ status: '', search: '' })
   const [actionLoading, setActionLoading] = useState(false)
-  const [detailRoom, setDetailRoom] = useState(null)
 
-  const filteredRooms = rooms.filter(r => !filter.status || r.status === filter.status)
+  const fetchRooms = useCallback(async () => {
+    setLoading(true)
+    try {
+      const data = await getRooms({ status: filter.status, search: filter.search, limit: 100 })
+      setRooms(data.rooms || [])
+    } catch (err) {
+      console.error('Failed to fetch rooms:', err)
+      setRooms([])
+    } finally {
+      setLoading(false)
+    }
+  }, [filter.status, filter.search])
 
-  const handleToggleStatus = (room) => {
+  useEffect(() => {
+    const timer = setTimeout(() => fetchRooms(), 300)
+    return () => clearTimeout(timer)
+  }, [fetchRooms])
+
+  const handleToggleStatus = async (room) => {
     setActionLoading(true)
-    setRooms(prev => prev.map(r => r.id === room.id ? { ...r, status: r.status === 'hidden' ? 'active' : 'hidden' } : r))
-    setActionLoading(false)
+    try {
+      const newStatus = room.status === 'inactive' ? 'active' : 'inactive'
+      await updateRoomStatus(room.id, newStatus)
+      setRooms(prev => prev.map(r => r.id === room.id ? { ...r, status: newStatus } : r))
+    } catch (err) {
+      console.error('Failed to update room status:', err)
+    } finally {
+      setActionLoading(false)
+    }
   }
 
   return (
@@ -28,11 +45,17 @@ export default function AdminRooms() {
           <h1 className="page-title">Rooms & Properties</h1>
         </div>
         <div className="page-actions">
+          <input
+            className="filter-input"
+            placeholder="Search by title or host..."
+            value={filter.search}
+            onChange={e => setFilter({ ...filter, search: e.target.value })}
+          />
           <select className="filter-select" value={filter.status} onChange={e => setFilter({ ...filter, status: e.target.value })}>
             <option value="">All Status</option>
             <option value="active">Active</option>
-            <option value="hidden">Hidden</option>
-            <option value="pending">Pending</option>
+            <option value="inactive">Inactive</option>
+            <option value="suspended">Suspended</option>
           </select>
         </div>
       </div>
@@ -43,44 +66,52 @@ export default function AdminRooms() {
             <tr>
               <th>Room</th>
               <th>Host</th>
+              <th>Location</th>
               <th>Price</th>
               <th>Status</th>
               <th style={{ textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {filteredRooms.length === 0 ? (
+            {loading ? (
               <tr>
-                <td colSpan={5}>
+                <td colSpan={6}>
+                  <div className="empty-state">
+                    <p>Loading rooms...</p>
+                  </div>
+                </td>
+              </tr>
+            ) : rooms.length === 0 ? (
+              <tr>
+                <td colSpan={6}>
                   <div className="empty-state">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
                     <p>No rooms found matching your selection.</p>
                   </div>
                 </td>
               </tr>
-            ) : filteredRooms.map(room => (
+            ) : rooms.map(room => (
               <tr key={room.id}>
                 <td>
                   <div className="td-main" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    {room.name}
-                    {room.status === 'hidden' && (
-                      <span title="Hidden from guests" style={{ display: 'inline-flex', color: '#ef4444' }}>
-                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
-                      </span>
+                    {room.cover_photo && (
+                      <img src={room.cover_photo} alt="" style={{ width: '36px', height: '36px', borderRadius: '6px', objectFit: 'cover' }} />
                     )}
+                    {room.name}
                   </div>
                 </td>
                 <td className="td-muted">{room.host_name}</td>
-                <td className="td-amount">₱{Number(room.price_per_night).toLocaleString()}</td>
+                <td className="td-muted">{room.location || '-'}</td>
+                <td className="td-amount">{'\u20B1'}{Number(room.price_per_night).toLocaleString()}</td>
                 <td><span className={`badge badge-${room.status}`}>{room.status}</span></td>
                 <td>
                   <div className="td-actions">
                     <button
-                      className={`btn btn-sm ${room.status === 'hidden' ? 'btn-brand' : 'btn-ghost'}`}
+                      className={`btn btn-sm ${room.status === 'inactive' ? 'btn-brand' : 'btn-ghost'}`}
                       onClick={() => handleToggleStatus(room)}
                       disabled={actionLoading}
                     >
-                      {room.status === 'hidden' ? 'Show' : 'Hide'}
+                      {room.status === 'inactive' ? 'Activate' : 'Deactivate'}
                     </button>
                   </div>
                 </td>

@@ -8,6 +8,7 @@ from flask_mail import Message
 from sqlalchemy import func
 from app.blueprints.admin import admin_bp
 from app.models.host import Host, HostProfile, HostKycDocument
+from app.models.property import Property, PropertyLocation, PropertyImage
 from app.extensions import db, mail
 from app.utils.response import success_response, error_response
 
@@ -233,3 +234,78 @@ def _send_rejection_email(email, name, reason):
         mail.send(msg)
     except Exception as e:
         current_app.logger.error("Failed to send rejection email to %s: %s", email, e)
+
+
+@admin_bp.route("/properties", methods=["GET"])
+def list_properties():
+    status = request.args.get("status", "").strip()
+    search = request.args.get("search", "").strip()
+    skip = request.args.get("skip", 0, type=int)
+    limit = request.args.get("limit", 50, type=int)
+
+    query = db.session.query(Property, Host, HostProfile).join(
+        Host, Property.host_id == Host.id
+    ).outerjoin(
+        HostProfile, Host.id == HostProfile.host_id
+    )
+
+    if status:
+        query = query.filter(Property.status == status)
+
+    if search:
+        like_pattern = f"%{search}%"
+        query = query.filter(
+            db.or_(
+                Property.title.ilike(like_pattern),
+                Host.email.ilike(like_pattern),
+                HostProfile.full_name.ilike(like_pattern),
+            )
+        )
+
+    total = query.count()
+    rows = query.order_by(Property.created_at.desc()).offset(skip).limit(limit).all()
+
+    properties = []
+    for prop, host, profile in rows:
+        cover = PropertyImage.query.filter_by(property_id=prop.id, is_cover=1).first()
+        if not cover:
+            cover = PropertyImage.query.filter_by(property_id=prop.id).order_by(PropertyImage.display_order).first()
+
+        loc = PropertyLocation.query.filter_by(property_id=prop.id).first()
+
+        properties.append({
+            "id": prop.id,
+            "name": prop.title,
+            "host_name": profile.full_name if profile else host.email.split("@")[0],
+            "host_email": host.email,
+            "price_per_night": float(prop.base_price) if prop.base_price else 0,
+            "status": prop.status,
+            "property_type": prop.property_type,
+            "max_guests": prop.max_guests,
+            "bedrooms": prop.bedrooms,
+            "beds": prop.beds,
+            "bathrooms": float(prop.bathrooms) if prop.bathrooms else 0,
+            "location": f"{loc.city}, {loc.province}" if loc else "",
+            "cover_photo": cover.image_url if cover else None,
+            "created_at": prop.created_at.isoformat() if prop.created_at else None,
+        })
+
+    return success_response(data={"properties": properties, "total": total})
+
+
+@admin_bp.route("/properties/<int:property_id>/status", methods=["POST"])
+def update_property_status(property_id):
+    prop = Property.query.get(property_id)
+    if not prop:
+        return error_response("Property not found.", status=404)
+
+    data = request.get_json() or {}
+    new_status = data.get("status", "active")
+
+    if new_status not in ("active", "inactive", "suspended"):
+        return error_response("Invalid status.", status=400)
+
+    prop.status = new_status
+    db.session.commit()
+
+    return success_response(message=f"Property status updated to {new_status}.")

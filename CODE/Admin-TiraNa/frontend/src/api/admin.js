@@ -66,3 +66,17 @@ export async function rejectVerification(verificationId, reason = '') {
     body: JSON.stringify({ reason }),
   })
 }
+
+export async function getRooms({ status = '', search = '', skip = 0, limit = 50 } = {}) {
+  const params = new URLSearchParams({ skip, limit })
+  if (status) params.set('status', status)
+  if (search) params.set('search', search)
+  return api(`/admin/rooms/?${params}`)
+}
+
+export async function updateRoomStatus(roomId, status) {
+  return api(`/admin/rooms/${roomId}/status`, {
+    method: 'POST',
+    body: JSON.stringify({ status }),
+  })
+}

@@ -108,33 +108,23 @@ class HostAPIClient:
 
     # ─── Rooms ─────────────────────────────────────────────────
 
-    async def get_rooms(self, status: str = "", skip: int = 0, limit: int = 50) -> List[Dict]:
+    async def get_rooms(self, status: str = "", search: str = "", skip: int = 0, limit: int = 50) -> List[Dict]:
         params = {"skip": skip, "limit": limit}
         if status:
             params["status"] = status
-        result = await self._get("/api/admin/rooms", params)
+        if search:
+            params["search"] = search
+        result = await self._get("/api/admin/properties", params)
         data = self._unwrap(result)
-        return data.get("rooms", []) if data else []
+        return data.get("properties", []) if data else []
 
     async def get_room(self, room_id: int) -> Optional[Dict]:
-        result = await self._get(f"/api/admin/rooms/{room_id}")
+        result = await self._get(f"/api/admin/properties/{room_id}")
         data = self._unwrap(result)
         return data.get("room") if data else None
 
-    async def hide_room(self, room_id: int) -> bool:
-        result = await self._post(f"/api/admin/rooms/{room_id}/hide")
-        return result is not None
-
-    async def show_room(self, room_id: int) -> bool:
-        result = await self._post(f"/api/admin/rooms/{room_id}/show")
-        return result is not None
-
-    async def approve_room(self, room_id: int) -> bool:
-        result = await self._post(f"/api/admin/rooms/{room_id}/approve")
-        return result is not None
-
-    async def reject_room(self, room_id: int, reason: str = "") -> bool:
-        result = await self._post(f"/api/admin/rooms/{room_id}/reject", {"reason": reason})
+    async def update_room_status(self, room_id: int, status: str) -> bool:
+        result = await self._post(f"/api/admin/properties/{room_id}/status", {"status": status})
         return result is not None
 
     # ─── Bookings ──────────────────────────────────────────────
