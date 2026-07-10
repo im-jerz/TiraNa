@@ -1,28 +1,43 @@
-import { useState } from 'react'
-
-const MOCK_REVIEWS = [
-  { id: 1, rating: 5, user_name: 'Juan Dela Cruz', comment: 'Amazing place!', is_hidden: false, created_at: '2024-06-20' },
-  { id: 2, rating: 4, user_name: 'Pedro Penduko', comment: 'Great location.', is_hidden: false, created_at: '2024-06-22' },
-  { id: 3, rating: 2, user_name: 'Carlos Garcia', comment: 'Not as described.', is_hidden: true, created_at: '2024-06-25' },
-]
+import { useState, useEffect, useCallback } from 'react'
+import { getReviews, toggleReviewVisibility } from '../../api/client'
 
 export default function AdminReviews() {
-  const [reviews, setReviews] = useState(MOCK_REVIEWS)
+  const [reviews, setReviews] = useState([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [filterHidden, setFilterHidden] = useState('')
   const [acting, setActing] = useState(false)
   const [detailModal, setDetailModal] = useState(null)
 
-  const filteredReviews = reviews.filter(r => {
-    return !search ||
-      (r.user_name && r.user_name.toLowerCase().includes(search.toLowerCase())) ||
-      (r.comment && r.comment.toLowerCase().includes(search.toLowerCase()))
-  })
+  const fetchReviews = useCallback(async () => {
+    setLoading(true)
+    try {
+      const result = await getReviews({ search, hidden: filterHidden, limit: 100 })
+      setReviews(result.data || [])
+    } catch (err) {
+      console.error('Failed to fetch reviews:', err)
+      setReviews([])
+    } finally {
+      setLoading(false)
+    }
+  }, [search, filterHidden])
 
-  const handleToggleHide = (review) => {
+  useEffect(() => {
+    const timer = setTimeout(() => fetchReviews(), 300)
+    return () => clearTimeout(timer)
+  }, [fetchReviews])
+
+  const handleToggleHide = async (review) => {
     setActing(true)
-    setReviews(prev => prev.map(r => r.id === review.id ? { ...r, is_hidden: !r.is_hidden } : r))
-    setDetailModal(null)
-    setActing(false)
+    try {
+      await toggleReviewVisibility(review.id)
+      setReviews(prev => prev.map(r => r.id === review.id ? { ...r, is_hidden: !r.is_hidden } : r))
+      setDetailModal(null)
+    } catch (err) {
+      console.error('Failed to toggle review visibility:', err)
+    } finally {
+      setActing(false)
+    }
   }
 
   return (
@@ -30,12 +45,19 @@ export default function AdminReviews() {
       <div className="page-header">
         <h1 className="page-title">Reviews Moderation</h1>
         <div className="page-actions">
+          <select value={filterHidden} onChange={(e) => setFilterHidden(e.target.value)} className="filter-select">
+            <option value="">All Reviews</option>
+            <option value="false">Visible</option>
+            <option value="true">Hidden</option>
+          </select>
           <input type="text" placeholder="Search by reviewer or comment..." value={search} onChange={(e) => setSearch(e.target.value)} className="filter-input" />
         </div>
       </div>
 
       <div className="table-container">
-        {filteredReviews.length === 0 ? (
+        {loading ? (
+          <div className="empty-state"><p>Loading reviews...</p></div>
+        ) : reviews.length === 0 ? (
           <div className="empty-state">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
             <p>No reviews found matching your search.</p>
@@ -54,13 +76,13 @@ export default function AdminReviews() {
                 </tr>
               </thead>
               <tbody>
-                {filteredReviews.map((r) => (
+                {reviews.map((r) => (
                   <tr key={r.id}>
                     <td><span className="td-main" style={{color:'var(--brand)'}}>{r.rating}</span></td>
                     <td className="td-main">{r.user_name || 'Anonymous'}</td>
-                    <td style={{maxWidth:240}}><span className="td-muted" style={{display:'block',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{r.comment || '—'}</span></td>
+                    <td style={{maxWidth:240}}><span className="td-muted" style={{display:'block',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{r.review_text || '—'}</span></td>
                     <td><span className={`badge ${r.is_hidden ? 'badge-dismissed' : 'badge-active'}`}>{r.is_hidden ? 'Hidden' : 'Active'}</span></td>
-                    <td className="td-muted">{new Date(r.created_at).toLocaleDateString()}</td>
+                    <td className="td-muted">{r.created_at ? new Date(r.created_at).toLocaleDateString() : '-'}</td>
                     <td>
                       <div className="td-actions">
                         <button onClick={() => setDetailModal(r)} className="btn btn-ghost btn-sm">View & Moderate</button>
@@ -71,7 +93,7 @@ export default function AdminReviews() {
               </tbody>
             </table>
             <div className="pagination">
-              <div className="pagination-info">{filteredReviews.length} review(s)</div>
+              <div className="pagination-info">{reviews.length} review(s)</div>
             </div>
           </>
         )}
@@ -91,7 +113,7 @@ export default function AdminReviews() {
                 </div>
                 <div>
                   <p style={{fontWeight:700,color:'var(--dark)',fontSize:16}}>{detailModal.user_name}</p>
-                  <p style={{fontSize:12,color:'#6b7280'}}>{new Date(detailModal.created_at).toLocaleString()}</p>
+                  <p style={{fontSize:12,color:'#6b7280'}}>{detailModal.created_at ? new Date(detailModal.created_at).toLocaleString() : '-'}</p>
                 </div>
               </div>
               <div style={{display:'flex',alignItems:'center',gap:6,background:'#fff',padding:'6px 12px',borderRadius:8,border:'1px solid rgba(203,41,87,0.2)'}}>
@@ -104,7 +126,7 @@ export default function AdminReviews() {
             <div style={{marginBottom:16}}>
               <p style={{fontSize:10,fontWeight:900,color:'#9ca3af',textTransform:'uppercase',letterSpacing:'0.15em',marginBottom:6}}>Review Comment</p>
               <p style={{color:'var(--dark)',lineHeight:1.6,fontStyle:'italic',background:'#fff',padding:14,borderRadius:10,border:'1px solid var(--gray-light)'}}>
-                "{detailModal.comment || 'No written comment provided.'}"
+                "{detailModal.review_text || 'No written comment provided.'}"
               </p>
             </div>
             <div style={{padding:14,borderRadius:10,border:'1px solid var(--gray-light)',display:'flex',alignItems:'center',justifyContent:'space-between',background:'#fff',marginBottom:16}}>

@@ -1,5 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getVerifications, approveVerification, rejectVerification } from '../../api/admin'
+import {
+  getVerifications as getHostVerifications,
+  approveVerification as approveHostVerification,
+  rejectVerification as rejectHostVerification,
+} from '../../api/host'
+import {
+  getVerifications as getClientVerifications,
+  approveVerification as approveClientVerification,
+  rejectVerification as rejectClientVerification,
+} from '../../api/client'
 
 export default function AdminVerifications() {
   const [verifications, setVerifications] = useState([])
@@ -13,8 +22,17 @@ export default function AdminVerifications() {
   const fetchVerifications = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await getVerifications({ status: filter.status, limit: 100 })
-      setVerifications(data.verifications || [])
+      const [hostData, clientData] = await Promise.all([
+        getHostVerifications({ status: filter.status, limit: 100 }).catch(() => []),
+        getClientVerifications({ status: filter.status, limit: 100 }).catch(() => []),
+      ])
+      const merged = [...hostData, ...clientData]
+      merged.sort((a, b) => {
+        const da = a.submitted_at || a.created_at || ''
+        const db = b.submitted_at || b.created_at || ''
+        return db.localeCompare(da)
+      })
+      setVerifications(merged)
     } catch (err) {
       console.error('Failed to fetch verifications:', err)
       setVerifications([])
@@ -35,7 +53,11 @@ export default function AdminVerifications() {
   const handleApprove = async (id) => {
     setActionLoading(true)
     try {
-      await approveVerification(id)
+      if (selected?.type === 'host' || confirmApprove?.type === 'host') {
+        await approveHostVerification(id)
+      } else {
+        await approveClientVerification(id)
+      }
       setVerifications(prev => prev.map(v =>
         (v.id === id || v.user_id === id) ? { ...v, status: 'approved' } : v
       ))
@@ -52,7 +74,11 @@ export default function AdminVerifications() {
     if (!rejectReason) return
     setActionLoading(true)
     try {
-      await rejectVerification(id, rejectReason)
+      if (selected?.type === 'host') {
+        await rejectHostVerification(id, rejectReason)
+      } else {
+        await rejectClientVerification(id, rejectReason)
+      }
       setVerifications(prev => prev.map(v =>
         (v.id === id || v.user_id === id) ? { ...v, status: 'rejected', review_notes: rejectReason } : v
       ))

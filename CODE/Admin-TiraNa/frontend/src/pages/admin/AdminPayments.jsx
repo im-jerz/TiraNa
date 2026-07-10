@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { getPayments, getRevenueStats } from '../../api/client'
 
 const MOCK_PAYMENTS = [
   { id: 5001, payer_name: 'Juan Dela Cruz', amount: 13500, method: 'gcash', status: 'completed', created_at: '2024-06-10', booking_external_id: 'BK-1001' },
@@ -9,8 +10,9 @@ const MOCK_PAYMENTS = [
 const MOCK_REVENUE = { total_revenue: 284500, total_refunded: 12000 }
 
 export default function AdminPayments() {
-  const [payments, setPayments] = useState(MOCK_PAYMENTS)
-  const [revenue] = useState(MOCK_REVENUE)
+  const [payments, setPayments] = useState([])
+  const [revenue, setRevenue] = useState({ total_revenue: 0, total_refunded: 0 })
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [refundModal, setRefundModal] = useState(null)
@@ -19,11 +21,29 @@ export default function AdminPayments() {
   const [acting, setActing] = useState(false)
   const [detailModal, setDetailModal] = useState(null)
 
-  const filteredPayments = payments.filter(p => {
-    const matchesSearch = !search || (p.payer_name && p.payer_name.toLowerCase().includes(search.toLowerCase()))
-    const matchesStatus = !statusFilter || p.status === statusFilter
-    return matchesSearch && matchesStatus
-  })
+  const fetchPayments = useCallback(async () => {
+    setLoading(true)
+    try {
+      const [paymentsData, revenueData] = await Promise.all([
+        getPayments({ status: statusFilter, search, limit: 100 }).catch(() => []),
+        getRevenueStats().catch(() => ({ total_revenue: 0, total_refunded: 0 })),
+      ])
+      setPayments(paymentsData)
+      setRevenue(revenueData)
+    } catch (err) {
+      console.error('Failed to fetch payments:', err)
+      setPayments([])
+    } finally {
+      setLoading(false)
+    }
+  }, [statusFilter, search])
+
+  useEffect(() => {
+    const timer = setTimeout(() => fetchPayments(), 300)
+    return () => clearTimeout(timer)
+  }, [fetchPayments])
+
+  const filteredPayments = payments
 
   const handleRefund = () => {
     if (!refundModal || !refundAmount || !refundReason.trim()) return
@@ -71,7 +91,11 @@ export default function AdminPayments() {
       )}
 
       <div className="table-container">
-        {filteredPayments.length === 0 ? (
+        {loading ? (
+          <div className="empty-state">
+            <p>Loading payments...</p>
+          </div>
+        ) : filteredPayments.length === 0 ? (
           <div className="empty-state">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
             <p>{search || statusFilter ? 'No payments match your search.' : 'No payments found.'}</p>

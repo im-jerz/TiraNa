@@ -107,6 +107,7 @@ CREATE TABLE IF NOT EXISTS reviews (
   communication INT DEFAULT NULL,
   location INT DEFAULT NULL,
   value INT DEFAULT NULL,
+  is_hidden BOOL DEFAULT false,
   UNIQUE (booking_id),
   INDEX idx_reviews_property (property_id, created_at DESC),
   INDEX idx_reviews_user (user_id, created_at DESC)

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getRooms, updateRoomStatus } from '../../api/admin'
+import { getProperties, updatePropertyStatus } from '../../api/host'
 
 export default function AdminRooms() {
   const [rooms, setRooms] = useState([])
@@ -10,8 +10,8 @@ export default function AdminRooms() {
   const fetchRooms = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await getRooms({ status: filter.status, search: filter.search, limit: 100 })
-      setRooms(data.rooms || [])
+      const properties = await getProperties({ status: filter.status, search: filter.search, limit: 100 })
+      setRooms(properties)
     } catch (err) {
       console.error('Failed to fetch rooms:', err)
       setRooms([])
@@ -29,7 +29,7 @@ export default function AdminRooms() {
     setActionLoading(true)
     try {
       const newStatus = room.status === 'inactive' ? 'active' : 'inactive'
-      await updateRoomStatus(room.id, newStatus)
+      await updatePropertyStatus(room.id, newStatus)
       setRooms(prev => prev.map(r => r.id === room.id ? { ...r, status: newStatus } : r))
     } catch (err) {
       console.error('Failed to update room status:', err)

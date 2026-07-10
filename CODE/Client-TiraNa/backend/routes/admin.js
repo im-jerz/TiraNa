@@ -228,6 +228,347 @@ router.post('/verifications/:userId/reject', async (req, res) => {
   }
 })
 
+router.get('/bookings', async (req, res) => {
+  try {
+    const status = req.query.status || ''
+    const search = req.query.search || ''
+    const skip = parseInt(req.query.skip) || 0
+    const limit = parseInt(req.query.limit) || 50
+
+    let query = `
+      SELECT
+        b.id, b.property_id, b.check_in, b.check_out,
+        b.adults, b.children, b.infants,
+        b.total_price, b.payment_method, b.status, b.created_at,
+        u.id AS user_id, u.username AS guest_name, u.email AS guest_email
+      FROM bookings b
+      JOIN client_users u ON u.id = b.user_id
+    `
+    const params = []
+    let paramIndex = 1
+
+    if (status) {
+      query += ` WHERE b.status = $${paramIndex}`
+      params.push(status)
+      paramIndex++
+    }
+
+    if (search) {
+      const searchOp = search ? ` AND` : ` WHERE`
+      query += `${searchOp} (u.username ILIKE $${paramIndex} OR u.email ILIKE $${paramIndex})`
+      params.push(`%${search}%`)
+      paramIndex++
+    }
+
+    query += ` ORDER BY b.created_at DESC`
+    query += ` OFFSET $${paramIndex} LIMIT $${paramIndex + 1}`
+    params.push(skip, limit)
+
+    const result = await pool.query(query, params)
+
+    const bookings = result.rows.map(row => ({
+      id: row.id,
+      listing_id: row.property_id,
+      listing_title: null,
+      guest_name: row.guest_name,
+      guest_email: row.guest_email,
+      check_in: row.check_in,
+      check_out: row.check_out,
+      nights: Math.round((new Date(row.check_out) - new Date(row.check_in)) / (86400000)),
+      total_price: parseFloat(row.total_price),
+      payment_method: row.payment_method,
+      status: row.status,
+      created_at: row.created_at,
+    }))
+
+    res.json({ data: bookings })
+  } catch (err) {
+    console.error('Admin list bookings error:', err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+router.get('/bookings/count', async (req, res) => {
+  try {
+    const status = req.query.status || ''
+
+    let query = `SELECT COUNT(*) AS count FROM bookings`
+    const params = []
+
+    if (status) {
+      query += ` WHERE status = $1`
+      params.push(status)
+    }
+
+    const result = await pool.query(query, params)
+    res.json({ count: parseInt(result.rows[0].count) || 0 })
+  } catch (err) {
+    console.error('Admin booking count error:', err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+router.get('/bookings/trend', async (req, res) => {
+  try {
+    const period = req.query.period || 'monthly'
+
+    let dateTrunc
+    if (period === 'daily') {
+      dateTrunc = "date_trunc('day', created_at)"
+    } else if (period === 'weekly') {
+      dateTrunc = "date_trunc('week', created_at)"
+    } else {
+      dateTrunc = "date_trunc('month', created_at)"
+    }
+
+    const result = await pool.query(`
+      SELECT ${dateTrunc} AS period, COUNT(*) AS value
+      FROM bookings
+      GROUP BY period
+      ORDER BY period ASC
+      LIMIT 12
+    `)
+
+    const data = result.rows.map(row => ({
+      label: new Date(row.period).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+      value: parseInt(row.value),
+    }))
+
+    res.json({ data })
+  } catch (err) {
+    console.error('Admin booking trend error:', err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+router.get('/payments', async (req, res) => {
+  try {
+    const status = req.query.status || ''
+    const search = req.query.search || ''
+    const skip = parseInt(req.query.skip) || 0
+    const limit = parseInt(req.query.limit) || 50
+
+    let query = `
+      SELECT
+        pt.id, pt.booking_id, pt.user_id, pt.amount,
+        pt.payment_method, pt.status, pt.created_at,
+        u.username AS payer_name
+      FROM payment_transactions pt
+      JOIN client_users u ON u.id = pt.user_id
+    `
+    const params = []
+    let paramIndex = 1
+
+    if (status) {
+      query += ` WHERE pt.status = $${paramIndex}`
+      params.push(status)
+      paramIndex++
+    }
+
+    if (search) {
+      const searchOp = status ? ` AND` : ` WHERE`
+      query += `${searchOp} u.username ILIKE $${paramIndex}`
+      params.push(`%${search}%`)
+      paramIndex++
+    }
+
+    query += ` ORDER BY pt.created_at DESC`
+    query += ` OFFSET $${paramIndex} LIMIT $${paramIndex + 1}`
+    params.push(skip, limit)
+
+    const result = await pool.query(query, params)
+
+    const payments = result.rows.map(row => ({
+      id: row.id,
+      payer_name: row.payer_name,
+      amount: parseFloat(row.amount),
+      method: row.payment_method,
+      status: row.status,
+      booking_id: row.booking_id,
+      created_at: row.created_at,
+    }))
+
+    res.json({ data: payments })
+  } catch (err) {
+    console.error('Admin list payments error:', err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+router.get('/payments/count', async (req, res) => {
+  try {
+    const status = req.query.status || ''
+
+    let query = `SELECT COUNT(*) AS count FROM payment_transactions`
+    const params = []
+
+    if (status) {
+      query += ` WHERE status = $1`
+      params.push(status)
+    }
+
+    const result = await pool.query(query, params)
+    res.json({ count: parseInt(result.rows[0].count) || 0 })
+  } catch (err) {
+    console.error('Admin payment count error:', err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+router.get('/payments/revenue', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        COALESCE(SUM(CASE WHEN status = 'completed' THEN amount ELSE 0 END), 0) AS total_revenue,
+        COALESCE(SUM(CASE WHEN status = 'refunded' THEN amount ELSE 0 END), 0) AS total_refunded
+      FROM payment_transactions
+    `)
+
+    res.json({
+      total_revenue: parseFloat(result.rows[0].total_revenue),
+      total_refunded: parseFloat(result.rows[0].total_refunded),
+    })
+  } catch (err) {
+    console.error('Admin revenue stats error:', err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+router.get('/revenue/trend', async (req, res) => {
+  try {
+    const period = req.query.period || 'monthly'
+
+    let dateTrunc
+    if (period === 'daily') {
+      dateTrunc = "date_trunc('day', created_at)"
+    } else if (period === 'weekly') {
+      dateTrunc = "date_trunc('week', created_at)"
+    } else {
+      dateTrunc = "date_trunc('month', created_at)"
+    }
+
+    const result = await pool.query(`
+      SELECT ${dateTrunc} AS period,
+             COALESCE(SUM(amount), 0) AS value
+      FROM payment_transactions
+      WHERE status = 'completed'
+      GROUP BY period
+      ORDER BY period ASC
+      LIMIT 12
+    `)
+
+    const data = result.rows.map(row => ({
+      label: new Date(row.period).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+      value: parseFloat(row.value),
+    }))
+
+    res.json({ data })
+  } catch (err) {
+    console.error('Admin revenue trend error:', err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+router.get('/reviews', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1
+    const limit = parseInt(req.query.limit) || 50
+    const offset = (page - 1) * limit
+    const search = req.query.search || ''
+    const hidden = req.query.hidden || ''
+
+    let query = `
+      SELECT
+        r.id, r.user_id, r.property_id, r.rating, r.review_text,
+        r.created_at, r.accuracy, r.check_in, r.cleanliness,
+        r.communication, r.location, r.value,
+        COALESCE(p.first_name, '') AS first_name,
+        COALESCE(p.last_name, '') AS last_name,
+        COALESCE(p.avatar_url, '') AS avatar_url,
+        COALESCE(r.is_hidden, false) AS is_hidden
+      FROM reviews r
+      LEFT JOIN personal_information p ON p.user_id = r.user_id
+    `
+    const params = []
+    let paramIndex = 1
+    let hasWhere = false
+
+    if (hidden === 'true') {
+      query += ` WHERE r.is_hidden = true`
+      hasWhere = true
+    } else if (hidden === 'false') {
+      query += ` WHERE r.is_hidden = false OR r.is_hidden IS NULL`
+      hasWhere = true
+    }
+
+    if (search) {
+      const op = hasWhere ? ' AND' : ' WHERE'
+      query += `${op} (r.review_text ILIKE $${paramIndex} OR p.first_name ILIKE $${paramIndex} OR p.last_name ILIKE $${paramIndex})`
+      params.push(`%${search}%`)
+      paramIndex++
+    }
+
+    const countResult = await pool.query(
+      query.replace(/SELECT[\s\S]*?FROM/, 'SELECT COUNT(*) AS total FROM'),
+      params
+    )
+    const total = parseInt(countResult.rows[0].total) || 0
+
+    query += ` ORDER BY r.created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`
+    params.push(limit, offset)
+
+    const result = await pool.query(query, params)
+
+    const reviews = result.rows.map(row => ({
+      id: row.id,
+      user_id: row.user_id,
+      property_id: row.property_id,
+      rating: parseFloat(row.rating),
+      review_text: row.review_text,
+      created_at: row.created_at,
+      accuracy: row.accuracy,
+      check_in: row.check_in,
+      cleanliness: row.cleanliness,
+      communication: row.communication,
+      location: row.location,
+      value: row.value,
+      user_name: [row.first_name, row.last_name].filter(Boolean).join(' ') || 'Anonymous',
+      avatar_url: row.avatar_url,
+      is_hidden: row.is_hidden,
+    }))
+
+    res.json({ data: reviews, total, page, limit })
+  } catch (err) {
+    console.error('Admin list reviews error:', err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+router.post('/reviews/:id/toggle-hide', async (req, res) => {
+  try {
+    const { id } = req.params
+
+    const existing = await pool.query(
+      `SELECT id, is_hidden FROM reviews WHERE id = $1`,
+      [id]
+    )
+    if (existing.rows.length === 0) {
+      return res.status(404).json({ error: 'Review not found' })
+    }
+
+    const current = existing.rows[0].is_hidden || false
+    await pool.query(
+      `UPDATE reviews SET is_hidden = $1 WHERE id = $2`,
+      [!current, id]
+    )
+
+    res.json({ message: `Review ${current ? 'shown' : 'hidden'} successfully.`, is_hidden: !current })
+  } catch (err) {
+    console.error('Admin toggle review hide error:', err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
 async function sendApprovalEmail(email, name) {
   const html = `
     <div style="max-width:480px;margin:0 auto;font-family:Helvetica,Arial,sans-serif;color:#111;">

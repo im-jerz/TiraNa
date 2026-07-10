@@ -302,3 +302,20 @@ def update_property_status(property_id):
     db.session.commit()
 
     return success_response(message=f"Property status updated to {new_status}.")
+
+
+@admin_bp.route("/stats", methods=["GET"])
+def stats():
+    total_hosts = Host.query.count()
+    active_hosts = Host.query.filter(Host.status == "active").count()
+    total_properties = Property.query.count()
+    active_properties = Property.query.filter(Property.status == "active").count()
+
+    return success_response(data={
+        "total_hosts": total_hosts,
+        "active_hosts": active_hosts,
+        "total_properties": total_properties,
+        "active_properties": active_properties,
+        "total_bookings": 0,
+        "total_revenue": 0,
+    })

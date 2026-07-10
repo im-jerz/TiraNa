@@ -1,36 +1,49 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-
-const mockStats = {
-  total_users: 1247,
-  active_listings: 389,
-  total_bookings: 2156,
-  revenue_this_month: 284500,
-  verified_users: 892,
-  unverified_users: 355,
-  open_support_tickets: 12,
-  pending_withdrawals: 8,
-  revenue_trend: [
-    { label: 'Jan', value: 180000 },
-    { label: 'Feb', value: 220000 },
-    { label: 'Mar', value: 195000 },
-    { label: 'Apr', value: 250000 },
-    { label: 'May', value: 284500 },
-    { label: 'Jun', value: 310000 },
-  ],
-  booking_trend: [
-    { label: 'Jan', value: 180 },
-    { label: 'Feb', value: 220 },
-    { label: 'Mar', value: 195 },
-    { label: 'Apr', value: 310 },
-    { label: 'May', value: 340 },
-    { label: 'Jun', value: 380 },
-  ],
-}
+import { getDashboardStats } from '../../api/client'
 
 export default function DashboardHome() {
-  const [stats] = useState(mockStats)
+  const [stats, setStats] = useState({
+    total_users: 0,
+    active_listings: 0,
+    total_bookings: 0,
+    revenue_this_month: 0,
+    verified_users: 0,
+    unverified_users: 0,
+    open_support_tickets: 0,
+    pending_withdrawals: 0,
+    revenue_trend: [],
+    booking_trend: [],
+  })
   const [period, setPeriod] = useState('monthly')
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const data = await getDashboardStats(period).catch(() => null)
+        if (data) {
+          setStats({
+            total_users: data.total_users || 0,
+            active_listings: data.active_listings || 0,
+            total_bookings: data.total_bookings || 0,
+            revenue_this_month: data.revenue_this_month || 0,
+            verified_users: data.verified_users || 0,
+            unverified_users: data.unverified_users || 0,
+            open_support_tickets: data.open_support_tickets || 0,
+            pending_withdrawals: data.pending_withdrawals || 0,
+            revenue_trend: data.revenue_trend || [],
+            booking_trend: data.booking_trend || [],
+          })
+        }
+      } catch (err) {
+        console.error('Failed to fetch dashboard stats:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchStats()
+  }, [period])
 
   const verifiedPercentage = stats.total_users > 0 ? Math.round((stats.verified_users / stats.total_users) * 100) : 0;
 
@@ -67,7 +80,7 @@ export default function DashboardHome() {
       <div className="page-header">
         <div>
           <h1 className="page-title">System Overview</h1>
-          <p className="page-subtitle">Platform performance and health metrics.</p>
+          <p className="page-subtitle">{loading ? 'Loading...' : 'Platform performance and health metrics.'}</p>
         </div>
         <div className="page-actions">
           <div className="period-picker">

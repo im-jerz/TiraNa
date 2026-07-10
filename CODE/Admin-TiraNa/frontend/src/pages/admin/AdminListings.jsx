@@ -1,14 +1,21 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { getProperties, updatePropertyStatus } from '../../api/host'
 
-const MOCK_LISTINGS = [
-  { id: 1, title: 'Beachfront Villa in Batangas', host_email: 'maria@email.com', host_id: 2, price_per_night: 4500, status: 'approved', location: 'Batangas', description: 'Beautiful beachfront villa', photo_url: '' },
-  { id: 2, title: 'Mountain View Cabin', host_email: 'ana@email.com', host_id: 4, price_per_night: 2800, status: 'pending', location: 'Baguio', description: 'Cozy cabin', photo_url: '' },
-  { id: 3, title: 'City Center Condo', host_email: 'maria@email.com', host_id: 2, price_per_night: 3200, status: 'pending', location: 'Makati', description: 'Modern condo', photo_url: '' },
-  { id: 4, title: 'Tropical Island Retreat', host_email: 'ana@email.com', host_id: 4, price_per_night: 6500, status: 'rejected', location: 'Palawan', description: 'Island getaway', photo_url: '' },
-]
+const STATUS_MAP = {
+  active: 'approved',
+  inactive: 'pending',
+  suspended: 'suspended',
+}
+
+const REVERSE_STATUS = {
+  approve: 'active',
+  reject: 'inactive',
+  suspend: 'suspended',
+}
 
 export default function AdminListings() {
-  const [listings, setListings] = useState(MOCK_LISTINGS)
+  const [listings, setListings] = useState([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [actionModal, setActionModal] = useState(null)
@@ -17,25 +24,47 @@ export default function AdminListings() {
   const [acting, setActing] = useState(false)
   const [detailListing, setDetailListing] = useState(null)
 
+  const fetchListings = useCallback(async () => {
+    setLoading(true)
+    try {
+      const properties = await getProperties({ search, limit: 100 })
+      setListings(properties)
+    } catch (err) {
+      console.error('Failed to fetch listings:', err)
+      setListings([])
+    } finally {
+      setLoading(false)
+    }
+  }, [search])
+
+  useEffect(() => {
+    const timer = setTimeout(() => fetchListings(), 300)
+    return () => clearTimeout(timer)
+  }, [fetchListings])
+
   const filteredListings = listings.filter(l => {
-    const matchesSearch = l.title.toLowerCase().includes(search.toLowerCase()) || (l.host_email && l.host_email.toLowerCase().includes(search.toLowerCase()))
-    const matchesStatus = !statusFilter || l.status === statusFilter
+    const displayStatus = STATUS_MAP[l.status] || l.status
+    const matchesSearch = (l.name || '').toLowerCase().includes(search.toLowerCase()) || (l.host_email || '').toLowerCase().includes(search.toLowerCase())
+    const matchesStatus = !statusFilter || displayStatus === statusFilter
     return matchesSearch && matchesStatus
   })
 
-  const handleAction = () => {
+  const handleAction = async () => {
     if (!actionModal) return
     setActing(true)
-    setListings(prev => prev.map(l => {
-      if (l.id !== actionModal.id) return l
-      if (actionType === 'approve') return { ...l, status: 'approved' }
-      if (actionType === 'reject') return { ...l, status: 'rejected' }
-      if (actionType === 'suspend') return { ...l, status: 'suspended' }
-      return l
-    }))
-    setActionModal(null)
-    setActionReason('')
-    setActing(false)
+    try {
+      const newStatus = REVERSE_STATUS[actionType]
+      await updatePropertyStatus(actionModal.id, newStatus)
+      setListings(prev => prev.map(l =>
+        l.id === actionModal.id ? { ...l, status: newStatus } : l
+      ))
+    } catch (err) {
+      console.error('Failed to update listing status:', err)
+    } finally {
+      setActionModal(null)
+      setActionReason('')
+      setActing(false)
+    }
   }
 
   const openAction = (listing, type) => {
@@ -61,7 +90,9 @@ export default function AdminListings() {
       </div>
 
       <div className="table-container">
-        {filteredListings.length === 0 ? (
+        {loading ? (
+          <div className="empty-state"><p>Loading listings...</p></div>
+        ) : filteredListings.length === 0 ? (
           <div className="empty-state">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
             <p>No listings found matching your criteria.</p>
@@ -80,29 +111,32 @@ export default function AdminListings() {
                 </tr>
               </thead>
               <tbody>
-                {filteredListings.map((l) => (
-                  <tr key={l.id}>
-                    <td className="td-id">#{l.id}</td>
-                    <td><div className="td-main">{l.title}</div></td>
-                    <td className="td-muted">{l.host_email || '—'}</td>
-                    <td className="td-amount">{l.price_per_night ? `₱${Number(l.price_per_night).toLocaleString()}` : '—'}</td>
-                    <td><span className={`badge badge-${l.status}`}>{l.status}</span></td>
-                    <td>
-                      <div className="td-actions">
-                        <button onClick={() => setDetailListing(l)} className="btn btn-ghost btn-sm">View</button>
-                        {l.status === 'pending' && (
-                          <>
-                            <button onClick={() => openAction(l, 'approve')} className="btn btn-brand btn-sm">Approve</button>
-                            <button onClick={() => openAction(l, 'reject')} className="btn btn-ghost btn-sm">Reject</button>
-                          </>
-                        )}
-                        {(l.status === 'approved' || l.status === 'pending') && (
-                          <button onClick={() => openAction(l, 'suspend')} className="btn btn-danger btn-sm">Suspend</button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {filteredListings.map((l) => {
+                  const displayStatus = STATUS_MAP[l.status] || l.status
+                  return (
+                    <tr key={l.id}>
+                      <td className="td-id">#{l.id}</td>
+                      <td><div className="td-main">{l.name || l.title}</div></td>
+                      <td className="td-muted">{l.host_email || l.host_name || '—'}</td>
+                      <td className="td-amount">{l.price_per_night ? `₱${Number(l.price_per_night).toLocaleString()}` : '—'}</td>
+                      <td><span className={`badge badge-${displayStatus}`}>{displayStatus}</span></td>
+                      <td>
+                        <div className="td-actions">
+                          <button onClick={() => setDetailListing(l)} className="btn btn-ghost btn-sm">View</button>
+                          {displayStatus === 'pending' && (
+                            <>
+                              <button onClick={() => openAction(l, 'approve')} className="btn btn-brand btn-sm">Approve</button>
+                              <button onClick={() => openAction(l, 'reject')} className="btn btn-ghost btn-sm">Reject</button>
+                            </>
+                          )}
+                          {(displayStatus === 'approved' || displayStatus === 'pending') && (
+                            <button onClick={() => openAction(l, 'suspend')} className="btn btn-danger btn-sm">Suspend</button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
             <div className="pagination">
@@ -120,42 +154,35 @@ export default function AdminListings() {
               <button onClick={() => setDetailListing(null)} className="modal-close">&times;</button>
             </div>
             <div style={{aspectRatio:'16/9',width:'100%',borderRadius:12,overflow:'hidden',background:'#f3f4f6',border:'1px solid var(--gray-light)',marginBottom:16}}>
-              {detailListing.photo_url ? (
-                <img src={detailListing.photo_url} style={{width:'100%',height:'100%',objectFit:'cover'}} alt={detailListing.title} />
+              {detailListing.cover_photo ? (
+                <img src={detailListing.cover_photo} style={{width:'100%',height:'100%',objectFit:'cover'}} alt={detailListing.name || detailListing.title} />
               ) : (
                 <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',color:'#9ca3af',fontWeight:700}}>No Preview Image</div>
               )}
             </div>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:16}}>
               <div>
-                <h2 style={{fontSize:20,fontWeight:900,color:'var(--dark)',marginBottom:4}}>{detailListing.title}</h2>
+                <h2 style={{fontSize:20,fontWeight:900,color:'var(--dark)',marginBottom:4}}>{detailListing.name || detailListing.title}</h2>
                 <p style={{fontSize:13,color:'#6b7280',fontWeight:500,display:'flex',alignItems:'center',gap:4}}>
                   <svg width={16} height={16} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                   {detailListing.location || 'Location not specified'}
                 </p>
               </div>
-              <span className={`badge badge-${detailListing.status}`}>{detailListing.status}</span>
+              <span className={`badge badge-${STATUS_MAP[detailListing.status] || detailListing.status}`}>{STATUS_MAP[detailListing.status] || detailListing.status}</span>
             </div>
             <div className="info-grid">
               <div className="info-item">
                 <p>Host Information</p>
-                <p>{detailListing.host_email}</p>
-                <p className="td-sub">ID: #{detailListing.host_id}</p>
+                <p>{detailListing.host_email || detailListing.host_name || '—'}</p>
               </div>
               <div className="info-item">
                 <p>Pricing</p>
                 <p style={{color:'var(--brand)',fontSize:20}}>₱{Number(detailListing.price_per_night).toLocaleString()}</p>
               </div>
             </div>
-            <div style={{marginBottom:16}}>
-              <p style={{fontSize:10,fontWeight:900,color:'#9ca3af',textTransform:'uppercase',letterSpacing:'0.15em',marginBottom:6}}>Description</p>
-              <p style={{fontSize:13,color:'#6b7280',lineHeight:1.6,background:'#fff',padding:14,borderRadius:10,border:'1px solid var(--gray-light)'}}>
-                {detailListing.description || 'No description provided.'}
-              </p>
-            </div>
             <div className="modal-footer">
               <button onClick={() => setDetailListing(null)} className="btn btn-ghost">Close</button>
-              {detailListing.status === 'pending' && (
+              {(STATUS_MAP[detailListing.status] || detailListing.status) === 'pending' && (
                 <button onClick={() => { setDetailListing(null); openAction(detailListing, 'approve'); }} className="btn btn-brand">Approve Listing</button>
               )}
             </div>
@@ -173,7 +200,7 @@ export default function AdminListings() {
             <p style={{fontSize:13,color:'#6b7280',marginBottom:16}}>
               You are about to <strong>{actionType}</strong> the listing:
               <br />
-              <span style={{color:'var(--dark)',fontWeight:700}}>"{actionModal.title}"</span>
+              <span style={{color:'var(--dark)',fontWeight:700}}>"{actionModal.name || actionModal.title}"</span>
             </p>
             {(actionType === 'reject' || actionType === 'suspend') && (
               <div className="form-group">

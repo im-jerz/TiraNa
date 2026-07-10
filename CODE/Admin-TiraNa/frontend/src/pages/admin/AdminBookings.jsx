@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { getBookings } from '../../api/client'
 
 const MOCK_BOOKINGS = [
   { id: 1001, listing_title: 'Beachfront Villa', guest_name: 'Juan Dela Cruz', guest_email: 'juan@email.com', check_in: '2024-06-15', check_out: '2024-06-18', total_price: 13500, status: 'confirmed', nights: 3, listing_id: 1 },
@@ -7,7 +8,8 @@ const MOCK_BOOKINGS = [
 ]
 
 export default function AdminBookings() {
-  const [bookings, setBookings] = useState(MOCK_BOOKINGS)
+  const [bookings, setBookings] = useState([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [cancelModal, setCancelModal] = useState(null)
@@ -15,14 +17,25 @@ export default function AdminBookings() {
   const [acting, setActing] = useState(false)
   const [detailModal, setDetailModal] = useState(null)
 
-  const filteredBookings = bookings.filter(b => {
-    const matchesSearch = !search ||
-      (b.listing_title && b.listing_title.toLowerCase().includes(search.toLowerCase())) ||
-      (b.guest_name && b.guest_name.toLowerCase().includes(search.toLowerCase())) ||
-      (b.guest_email && b.guest_email.toLowerCase().includes(search.toLowerCase()))
-    const matchesStatus = !statusFilter || b.status === statusFilter
-    return matchesSearch && matchesStatus
-  })
+  const fetchBookings = useCallback(async () => {
+    setLoading(true)
+    try {
+      const data = await getBookings({ status: statusFilter, search, limit: 100 })
+      setBookings(data)
+    } catch (err) {
+      console.error('Failed to fetch bookings:', err)
+      setBookings([])
+    } finally {
+      setLoading(false)
+    }
+  }, [statusFilter, search])
+
+  useEffect(() => {
+    const timer = setTimeout(() => fetchBookings(), 300)
+    return () => clearTimeout(timer)
+  }, [fetchBookings])
+
+  const filteredBookings = bookings
 
   const handleCancel = () => {
     if (!cancelModal || !cancelReason.trim()) return
@@ -68,7 +81,11 @@ export default function AdminBookings() {
       </div>
 
       <div className="table-container">
-        {filteredBookings.length === 0 ? (
+        {loading ? (
+          <div className="empty-state">
+            <p>Loading bookings...</p>
+          </div>
+        ) : filteredBookings.length === 0 ? (
           <div className="empty-state">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
             <p>{search || statusFilter ? 'No bookings match your filters.' : 'No bookings found.'}</p>

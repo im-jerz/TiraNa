@@ -172,24 +172,27 @@ class ClientAPIClient:
 
     # ─── Reviews ───────────────────────────────────────────────
 
-    async def get_reviews(self, skip: int = 0, limit: int = 50) -> List[Dict]:
+    async def get_reviews(self, skip: int = 0, limit: int = 50, hidden: str = "", search: str = "") -> List[Dict]:
         params = {"skip": skip, "limit": limit}
-        result = await self._get("/api/reviews", params)
+        if hidden:
+            params["hidden"] = hidden
+        if search:
+            params["search"] = search
+        result = await self._get("/api/admin/reviews", params)
         data = self._unwrap(result)
         if data and isinstance(data, dict):
-            reviews = data.get("reviews", [])
-            if not reviews and "data" in data:
-                reviews = data.get("data", {}).get("reviews", [])
-            return reviews
+            return data.get("data", [])
         return []
 
-    async def hide_review(self, review_id: int) -> bool:
-        result = await self._post(f"/api/reviews/{review_id}/hide")
+    async def toggle_review_visibility(self, review_id: int) -> bool:
+        result = await self._post(f"/api/admin/reviews/{review_id}/toggle-hide")
         return result is not None
 
+    async def hide_review(self, review_id: int) -> bool:
+        return await self.toggle_review_visibility(review_id)
+
     async def show_review(self, review_id: int) -> bool:
-        result = await self._post(f"/api/reviews/{review_id}/show")
-        return result is not None
+        return await self.toggle_review_visibility(review_id)
 
 
 # Singleton instance
