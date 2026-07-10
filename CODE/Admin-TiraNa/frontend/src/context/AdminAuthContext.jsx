@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback } from 'react'
+import { adminLogin, verifyOtp } from '../api/admin'
 
-const API_URL = import.meta.env.VITE_API_URL || ''
 const AdminAuthContext = createContext(null)
 
 export function AdminAuthProvider({ children }) {
@@ -9,31 +9,14 @@ export function AdminAuthProvider({ children }) {
     return stored ? JSON.parse(stored) : null
   })
   const [token, setToken] = useState(() => localStorage.getItem('admin_token'))
+  const [pendingOtp, setPendingOtp] = useState(null)
 
-  const login = useCallback(async (username, password) => {
-    let res
-    try {
-      res = await fetch(`${API_URL}/admin/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      })
-    } catch (fetchErr) {
-      throw new Error('Cannot connect to server. Please check your connection and try again.')
-    }
+  const login = useCallback(async (email, password) => {
+    const data = await adminLogin(email, password)
 
-    let data
-    try {
-      data = await res.json()
-    } catch {
-      throw new Error('Invalid response from server.')
-    }
-
-    if (!res.ok) throw new Error(data.detail || 'Login failed')
-
-    // If OTP is required, don't set tokens yet
     if (data.requires_otp) {
-        return data
+      setPendingOtp({ email: data.admin.email, tempToken: data.temp_token, admin: data.admin })
+      return { requiresOtp: true }
     }
 
     localStorage.setItem('admin_token', data.access_token)
@@ -43,43 +26,33 @@ export function AdminAuthProvider({ children }) {
     return data
   }, [])
 
-  const verifyOtp = useCallback(async (email, code, tempToken) => {
-    let res
-    try {
-      res = await fetch(`${API_URL}/admin/auth/verify-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, code, temp_token: tempToken }),
-      })
-    } catch (fetchErr) {
-      throw new Error('Cannot connect to server. Please check your connection and try again.')
-    }
+  const verify = useCallback(async (code) => {
+    if (!pendingOtp) throw new Error('No pending verification')
 
-    let data
-    try {
-      data = await res.json()
-    } catch {
-      throw new Error('Invalid response from server.')
-    }
-
-    if (!res.ok) throw new Error(data.detail || 'OTP Verification failed')
+    const data = await verifyOtp(pendingOtp.email, code, pendingOtp.tempToken)
 
     localStorage.setItem('admin_token', data.access_token)
     localStorage.setItem('admin', JSON.stringify(data.admin))
     setToken(data.access_token)
     setAdmin(data.admin)
+    setPendingOtp(null)
     return data
-  }, [])
+  }, [pendingOtp])
 
   const logout = useCallback(() => {
     localStorage.removeItem('admin_token')
     localStorage.removeItem('admin')
     setToken(null)
     setAdmin(null)
+    setPendingOtp(null)
   }, [])
 
+  const isAuthenticated = !!token
+
   return (
-    <AdminAuthContext.Provider value={{ admin, token, isAuthenticated: !!token, login, verifyOtp, logout }}>
+    <AdminAuthContext.Provider
+      value={{ admin, token, isAuthenticated, pendingOtp, login, verify, logout }}
+    >
       {children}
     </AdminAuthContext.Provider>
   )

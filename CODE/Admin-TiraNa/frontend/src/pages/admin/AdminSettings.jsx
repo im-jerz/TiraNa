@@ -1,5 +1,15 @@
-import { useState, useEffect, useCallback } from 'react'
-import { getSettings, updateSetting } from '../../api/admin'
+import { useState } from 'react'
+
+const MOCK_SETTINGS = [
+  { key: 'platform_name', value: 'TiraNa', description: 'Platform display name' },
+  { key: 'support_email', value: 'support@tirana.ph', description: 'Support email' },
+  { key: 'commission_percentage', value: '10', description: 'Commission percentage' },
+  { key: 'min_payout_amount', value: '500', description: 'Minimum payout' },
+  { key: 'max_refund_days', value: '30', description: 'Max refund days' },
+  { key: 'paymongo_secret_key', value: 'sk_test_abc123', description: 'PayMongo secret key' },
+  { key: 'paymongo_public_key', value: 'pk_test_xyz789', description: 'PayMongo public key' },
+  { key: 'paymongo_webhook_secret', value: 'whsec_test123', description: 'PayMongo webhook secret' },
+]
 
 const SETTING_CONFIG = {
   platform_name: {
@@ -67,8 +77,7 @@ const SECTIONS = [
 ]
 
 export default function AdminSettings() {
-  const [settings, setSettings] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [settings, setSettings] = useState(MOCK_SETTINGS)
   const [error, setError] = useState('')
   const [editKey, setEditKey] = useState(null)
   const [editValue, setEditValue] = useState('')
@@ -76,15 +85,6 @@ export default function AdminSettings() {
   const [success, setSuccess] = useState('')
   const [showSecrets, setShowSecrets] = useState({})
   const [validationError, setValidationError] = useState('')
-
-  const fetchSettings = useCallback(async () => {
-    setLoading(true)
-    try { setSettings(await getSettings()) }
-    catch (err) { setError(err.message) }
-    setLoading(false)
-  }, [])
-
-  useEffect(() => { fetchSettings() }, [fetchSettings])
 
   const validate = (key, value) => {
     const config = SETTING_CONFIG[key]
@@ -105,7 +105,7 @@ export default function AdminSettings() {
     return ''
   }
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!editKey) return
 
     const valErr = validate(editKey, editValue)
@@ -116,14 +116,10 @@ export default function AdminSettings() {
 
     setSaving(true)
     setValidationError('')
-    try {
-      const setting = settings.find((s) => s.key === editKey)
-      await updateSetting(editKey, editValue, setting?.description)
-      setEditKey(null)
-      setSuccess('Setting saved successfully')
-      setTimeout(() => setSuccess(''), 3000)
-      fetchSettings()
-    } catch (err) { setError(err.message) }
+    setSettings(prev => prev.map(s => s.key === editKey ? { ...s, value: editValue } : s))
+    setEditKey(null)
+    setSuccess('Setting saved successfully')
+    setTimeout(() => setSuccess(''), 3000)
     setSaving(false)
   }
 
@@ -159,75 +155,48 @@ export default function AdminSettings() {
       {error && <div className="alert-strip alert-danger" style={{marginBottom:16}}><div className="alert-strip-content"><p>Error</p><p>{error}</p></div></div>}
       {success && <div className="alert-strip alert-success" style={{marginBottom:16}}><div className="alert-strip-content"><p>Success</p><p>{success}</p></div></div>}
 
-      {loading ? (
-        <div className="loader"><div className="spin" /></div>
-      ) : (
-        <div>
-          {groupedSettings.map((section) => (
-            <div key={section.id} className="settings-section">
-              <div className="settings-section-header">
-                <div className="settings-section-icon">
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d={section.icon} />
-                  </svg>
-                </div>
-                <h2 className="settings-section-title">{section.label}</h2>
+      <div>
+        {groupedSettings.map((section) => (
+          <div key={section.id} className="settings-section">
+            <div className="settings-section-header">
+              <div className="settings-section-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d={section.icon} />
+                </svg>
               </div>
-              {section.settings.map((s) => {
-                const config = SETTING_CONFIG[s.key] || {}
-                const isEditing = editKey === s.key
-                const isPassword = config.type === 'password'
+              <h2 className="settings-section-title">{section.label}</h2>
+            </div>
+            {section.settings.map((s) => {
+              const config = SETTING_CONFIG[s.key] || {}
+              const isEditing = editKey === s.key
+              const isPassword = config.type === 'password'
 
-                return (
-                  <div key={s.key} className="settings-row">
-                    <div style={{flex:1,minWidth:0}}>
-                      <div className="settings-row-label">{config.label || s.key}</div>
-                      {s.description && <div style={{fontSize:11,color:'#9ca3af',marginTop:2}}>{s.description}</div>}
-                    </div>
-                    {isEditing ? (
-                      <div className="settings-row-actions" style={{flexWrap:'wrap',justifyContent:'flex-end'}}>
-                        <div style={{position:'relative'}}>
-                          <input
-                            type={isPassword && !showSecrets[s.key] ? 'password' : 'text'}
-                            value={editValue}
-                            onChange={(e) => { setEditValue(e.target.value); setValidationError('') }}
-                            min={config.min}
-                            max={config.max}
-                            placeholder={config.placeholder}
-                            className="form-input"
-                            style={{width:200}}
-                          />
-                          {isPassword && (
-                            <button
-                              type="button"
-                              onClick={() => toggleSecret(s.key)}
-                              style={{position:'absolute',right:6,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',color:'#6b7280',padding:4}}
-                            >
-                              <svg width={16} height={16} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                {showSecrets[s.key] ? (
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                                ) : (
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                )}
-                              </svg>
-                            </button>
-                          )}
-                          {validationError && <div className="form-error show">{validationError}</div>}
-                        </div>
-                        <button onClick={handleSave} disabled={saving} className="btn btn-brand btn-sm">{saving ? 'Saving...' : 'Save'}</button>
-                        <button onClick={() => { setEditKey(null); setValidationError('') }} className="btn btn-ghost btn-sm">Cancel</button>
-                      </div>
-                    ) : (
-                      <div className="settings-row-actions">
-                        <span className="settings-row-value">{getDisplayValue(s)}</span>
-                        {isPassword && s.value && (
+              return (
+                <div key={s.key} className="settings-row">
+                  <div style={{flex:1,minWidth:0}}>
+                    <div className="settings-row-label">{config.label || s.key}</div>
+                    {s.description && <div style={{fontSize:11,color:'#9ca3af',marginTop:2}}>{s.description}</div>}
+                  </div>
+                  {isEditing ? (
+                    <div className="settings-row-actions" style={{flexWrap:'wrap',justifyContent:'flex-end'}}>
+                      <div style={{position:'relative'}}>
+                        <input
+                          type={isPassword && !showSecrets[s.key] ? 'password' : 'text'}
+                          value={editValue}
+                          onChange={(e) => { setEditValue(e.target.value); setValidationError('') }}
+                          min={config.min}
+                          max={config.max}
+                          placeholder={config.placeholder}
+                          className="form-input"
+                          style={{width:200}}
+                        />
+                        {isPassword && (
                           <button
+                            type="button"
                             onClick={() => toggleSecret(s.key)}
-                            className="btn btn-ghost btn-sm"
-                            title={showSecrets[s.key] ? 'Hide' : 'Show'}
-                            style={{minWidth:0,padding:'5px 6px'}}
+                            style={{position:'absolute',right:6,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',color:'#6b7280',padding:4}}
                           >
-                            <svg width={14} height={14} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg width={16} height={16} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               {showSecrets[s.key] ? (
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
                               ) : (
@@ -236,21 +205,44 @@ export default function AdminSettings() {
                             </svg>
                           </button>
                         )}
-                        <button
-                          onClick={() => { setEditKey(s.key); setEditValue(s.value || ''); setValidationError('') }}
-                          className="btn btn-ghost btn-sm"
-                        >
-                          Edit
-                        </button>
+                        {validationError && <div className="form-error show">{validationError}</div>}
                       </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          ))}
-        </div>
-      )}
+                      <button onClick={handleSave} disabled={saving} className="btn btn-brand btn-sm">{saving ? 'Saving...' : 'Save'}</button>
+                      <button onClick={() => { setEditKey(null); setValidationError('') }} className="btn btn-ghost btn-sm">Cancel</button>
+                    </div>
+                  ) : (
+                    <div className="settings-row-actions">
+                      <span className="settings-row-value">{getDisplayValue(s)}</span>
+                      {isPassword && s.value && (
+                        <button
+                          onClick={() => toggleSecret(s.key)}
+                          className="btn btn-ghost btn-sm"
+                          title={showSecrets[s.key] ? 'Hide' : 'Show'}
+                          style={{minWidth:0,padding:'5px 6px'}}
+                        >
+                          <svg width={14} height={14} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            {showSecrets[s.key] ? (
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                            ) : (
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            )}
+                          </svg>
+                        </button>
+                      )}
+                      <button
+                        onClick={() => { setEditKey(s.key); setEditValue(s.value || ''); setValidationError('') }}
+                        className="btn btn-ghost btn-sm"
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

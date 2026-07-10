@@ -22,7 +22,7 @@ class ClientAPIClient:
         self.timeout = 8.0
         self.max_retries = 2
         self.headers = {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
 
     async def _request(self, method: str, endpoint: str, params: Optional[Dict] = None, data: Optional[Dict] = None) -> Optional[Dict]:
@@ -99,12 +99,10 @@ class ClientAPIClient:
 
     # ─── Verifications ─────────────────────────────────────────
 
-    async def get_verifications(self, status: str = "", type: str = "", skip: int = 0, limit: int = 50) -> List[Dict]:
+    async def get_verifications(self, status: str = "", skip: int = 0, limit: int = 50) -> List[Dict]:
         params = {"skip": skip, "limit": limit}
         if status:
             params["status"] = status
-        if type:
-            params["type"] = type
         result = await self._get("/api/admin/verifications", params)
         data = self._unwrap(result)
         return data.get("verifications", []) if data else []

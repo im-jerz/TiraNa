@@ -1,20 +1,18 @@
-import { useState, useEffect, useCallback } from 'react'
-import { getAuditLogs } from '../../api/admin'
+import { useState } from 'react'
+
+const MOCK_LOGS = [
+  { id: 1, action: 'APPROVE_LISTING', details: 'Approved listing Villa (#1)', admin_username: 'superadmin', created_at: '2024-06-25 14:30:00' },
+  { id: 2, action: 'CANCEL_BOOKING', details: 'Cancelled booking #1005', admin_username: 'admin_juan', created_at: '2024-06-24 10:15:00' },
+  { id: 3, action: 'REFUND_PAYMENT', details: 'Refunded P3200 for payment #5004', admin_username: 'admin_ana', created_at: '2024-06-23 16:45:00' },
+  { id: 4, action: 'DELETE_USER', details: 'Deleted user spam (#892)', admin_username: 'superadmin', created_at: '2024-06-22 09:00:00' },
+  { id: 5, action: 'UPDATE_SETTING', details: 'Updated commission 8% to 10%', admin_username: 'superadmin', created_at: '2024-06-20 11:30:00' },
+]
 
 export default function AdminAudit() {
-  const [logs, setLogs] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [logs] = useState(MOCK_LOGS)
   const [actionFilter, setActionFilter] = useState('')
 
-  const fetchLogs = useCallback(async () => {
-    setLoading(true)
-    try { setLogs(await getAuditLogs({ action: actionFilter })) }
-    catch (err) { setError(err.message) }
-    setLoading(false)
-  }, [actionFilter])
-
-  useEffect(() => { fetchLogs() }, [fetchLogs])
+  const filteredLogs = logs.filter(l => !actionFilter || l.action === actionFilter)
 
   const getActionStyle = (a) => {
     if (a.includes('DELETE') || a.includes('REJECT') || a.includes('CANCEL')) return {background:'#fee2e2',color:'#991b1b'}
@@ -50,18 +48,14 @@ export default function AdminAudit() {
         </div>
       </div>
 
-      {error && <div className="alert-strip alert-danger" style={{marginBottom:16}}><div className="alert-strip-content"><p>Error</p><p>{error}</p></div></div>}
-
-      {loading ? (
-        <div className="loader"><div className="spin" /></div>
-      ) : logs.length === 0 ? (
+      {filteredLogs.length === 0 ? (
         <div className="empty-state">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
           <p>No audit logs found.</p>
         </div>
       ) : (
         <div className="audit-list">
-          {logs.map((log) => (
+          {filteredLogs.map((log) => (
             <div key={log.id} className="audit-item">
               <span className="audit-action" style={getActionStyle(log.action)}>{log.action}</span>
               <span className="audit-details">{log.details}</span>

@@ -1,65 +1,85 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getHostVerifications, approveHostVerification, rejectHostVerification, approveGuestVerification, rejectGuestVerification } from '../../api/admin'
+import { getVerifications, approveVerification, rejectVerification } from '../../api/admin'
 
 export default function AdminVerifications() {
   const [verifications, setVerifications] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
   const [filter, setFilter] = useState({ status: '', type: '' })
   const [selected, setSelected] = useState(null)
   const [rejectReason, setRejectReason] = useState('')
   const [actionLoading, setActionLoading] = useState(false)
   const [confirmApprove, setConfirmApprove] = useState(null)
 
-  const fetchData = useCallback(async () => {
+  const fetchVerifications = useCallback(async () => {
     setLoading(true)
-    setError('')
     try {
-      const data = await getHostVerifications(filter)
-      setVerifications(data)
+      const data = await getVerifications({ status: filter.status, limit: 100 })
+      setVerifications(data.verifications || [])
     } catch (err) {
-      setError(err.message)
+      console.error('Failed to fetch verifications:', err)
+      setVerifications([])
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
-  }, [filter])
+  }, [filter.status])
 
   useEffect(() => {
-    fetchData()
-  }, [fetchData])
+    fetchVerifications()
+  }, [fetchVerifications])
+
+  const filteredVerifications = verifications.filter(v => {
+    if (!filter.type) return true
+    return v.type === filter.type
+  })
 
   const handleApprove = async (id) => {
     setActionLoading(true)
     try {
-      if (selected?.type === 'guest') {
-        await approveGuestVerification(id)
-      } else {
-        await approveHostVerification(id)
-      }
-      fetchData()
+      await approveVerification(id)
+      setVerifications(prev => prev.map(v =>
+        (v.id === id || v.user_id === id) ? { ...v, status: 'approved' } : v
+      ))
       setSelected(null)
       setConfirmApprove(null)
     } catch (err) {
-      setError(err.message)
+      console.error('Failed to approve:', err)
+    } finally {
+      setActionLoading(false)
     }
-    setActionLoading(false)
   }
 
   const handleReject = async (id) => {
     if (!rejectReason) return
     setActionLoading(true)
     try {
-      if (selected?.type === 'guest') {
-        await rejectGuestVerification(id, rejectReason)
-      } else {
-        await rejectHostVerification(id, rejectReason)
-      }
-      fetchData()
+      await rejectVerification(id, rejectReason)
+      setVerifications(prev => prev.map(v =>
+        (v.id === id || v.user_id === id) ? { ...v, status: 'rejected', review_notes: rejectReason } : v
+      ))
       setSelected(null)
       setRejectReason('')
     } catch (err) {
-      setError(err.message)
+      console.error('Failed to reject:', err)
+    } finally {
+      setActionLoading(false)
     }
-    setActionLoading(false)
+  }
+
+  const getDocumentUrl = (v) => {
+    if (v.type === 'host') {
+      return v.document_url || ''
+    }
+    return v.id_front_url || ''
+  }
+
+  const getBackUrl = (v) => {
+    if (v.type === 'host') return ''
+    return v.id_back_url || ''
+  }
+
+  const getSelfieUrl = (v) => {
+    if (v.type === 'host') return v.document_url || ''
+    return ''
   }
 
   return (
@@ -69,15 +89,6 @@ export default function AdminVerifications() {
           <h1 className="page-title">Account Verifications</h1>
         </div>
       </div>
-
-      {error && (
-        <div className="alert-strip alert-danger" style={{ marginBottom: '16px' }}>
-          <div className="alert-strip-icon">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          </div>
-          <div className="alert-strip-content"><p>{error}</p></div>
-        </div>
-      )}
 
       <div className="table-container">
         <div className="table-filters">
@@ -90,7 +101,7 @@ export default function AdminVerifications() {
           <select className="filter-select" value={filter.type} onChange={e => setFilter({ ...filter, type: e.target.value })}>
             <option value="">All Types</option>
             <option value="host">Hosts</option>
-            <option value="guest">Guests</option>
+            <option value="client">Clients</option>
           </select>
         </div>
         <table>
@@ -108,10 +119,12 @@ export default function AdminVerifications() {
             {loading ? (
               <tr>
                 <td colSpan={6}>
-                  <div className="loader"><div className="spin"></div></div>
+                  <div className="empty-state">
+                    <p>Loading verifications...</p>
+                  </div>
                 </td>
               </tr>
-            ) : verifications.length === 0 ? (
+            ) : filteredVerifications.length === 0 ? (
               <tr>
                 <td colSpan={6}>
                   <div className="empty-state">
@@ -120,13 +133,13 @@ export default function AdminVerifications() {
                   </div>
                 </td>
               </tr>
-            ) : verifications.map(v => (
+            ) : filteredVerifications.map(v => (
               <tr key={v.id}>
                 <td className="td-main">{v.name}</td>
                 <td className="td-muted">{v.email}</td>
                 <td><span className={`badge badge-${v.type === 'host' ? 'active' : 'completed'}`}>{v.type}</span></td>
                 <td><span className={`badge badge-${v.status}`}>{v.status}</span></td>
-                <td className="td-muted">{new Date(v.created_at).toLocaleDateString()}</td>
+                <td className="td-muted">{v.submitted_at ? new Date(v.submitted_at).toLocaleDateString() : '-'}</td>
                 <td>
                   <div className="td-actions">
                     <button className="btn btn-ghost btn-sm" onClick={() => setSelected(v)}>Review</button>
@@ -151,6 +164,7 @@ export default function AdminVerifications() {
                 <div className="user-avatar-lg">{selected.name?.[0] || 'U'}</div>
                 <div className="user-avatar-name">{selected.name}</div>
                 <div className="user-avatar-email">{selected.email}</div>
+                <span className={`badge badge-${selected.type === 'host' ? 'active' : 'completed'}`}>{selected.type}</span>
                 <span className={`badge badge-${selected.status}`}>{selected.status}</span>
               </div>
 
@@ -160,76 +174,70 @@ export default function AdminVerifications() {
                   <p><span className={`badge badge-${selected.type === 'host' ? 'active' : 'completed'}`}>{selected.type}</span></p>
                 </div>
                 <div className="info-item">
-                  <p>Phone Number</p>
-                  <p>{selected.phone || 'N/A'}</p>
-                </div>
-                <div className="info-item">
-                  <p>Joined Date</p>
-                  <p>{new Date(selected.created_at).toLocaleDateString()}</p>
+                  <p>Submitted</p>
+                  <p>{selected.submitted_at ? new Date(selected.submitted_at).toLocaleDateString() : '-'}</p>
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                {selected.type === 'guest' ? (
-                  <>
-                    <div className="doc-preview">
-                      <div className="doc-icon">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                      </div>
-                      <div>
-                        <p style={{ fontWeight: 700, fontSize: '13px', color: 'var(--dark)' }}>ID Front</p>
-                        {selected.id_url ? (
-                          <a href={selected.id_url} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: 'var(--brand)' }}>View Document →</a>
-                        ) : (
-                          <p style={{ fontSize: '12px', color: '#9ca3af' }}>Not uploaded</p>
-                        )}
-                      </div>
+              {selected.type === 'host' ? (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                  <div className="doc-preview">
+                    <div className="doc-icon">
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                     </div>
-                    <div className="doc-preview">
-                      <div className="doc-icon">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                      </div>
-                      <div>
-                        <p style={{ fontWeight: 700, fontSize: '13px', color: 'var(--dark)' }}>ID Back</p>
-                        {selected.id_back_url ? (
-                          <a href={selected.id_back_url} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: 'var(--brand)' }}>View Document →</a>
-                        ) : (
-                          <p style={{ fontSize: '12px', color: '#9ca3af' }}>Not uploaded</p>
-                        )}
-                      </div>
+                    <div>
+                      <p style={{ fontWeight: 700, fontSize: '13px', color: 'var(--dark)' }}>ID Card</p>
+                      {selected.id_card_url ? (
+                        <a href={selected.id_card_url} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: 'var(--brand)' }}>View Document</a>
+                      ) : (
+                        <p style={{ fontSize: '12px', color: '#9ca3af' }}>Not uploaded</p>
+                      )}
                     </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="doc-preview">
-                      <div className="doc-icon">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                      </div>
-                      <div>
-                        <p style={{ fontWeight: 700, fontSize: '13px', color: 'var(--dark)' }}>ID Document</p>
-                        {selected.id_url ? (
-                          <a href={selected.id_url} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: 'var(--brand)' }}>View Document →</a>
-                        ) : (
-                          <p style={{ fontSize: '12px', color: '#9ca3af' }}>Not uploaded</p>
-                        )}
-                      </div>
+                  </div>
+                  <div className="doc-preview">
+                    <div className="doc-icon">
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                     </div>
-                    <div className="doc-preview">
-                      <div className="doc-icon">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                      </div>
-                      <div>
-                        <p style={{ fontWeight: 700, fontSize: '13px', color: 'var(--dark)' }}>Verification Selfie</p>
-                        {selected.selfie_url ? (
-                          <a href={selected.selfie_url} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: 'var(--brand)' }}>View Selfie →</a>
-                        ) : (
-                          <p style={{ fontSize: '12px', color: '#9ca3af' }}>Not uploaded</p>
-                        )}
-                      </div>
+                    <div>
+                      <p style={{ fontWeight: 700, fontSize: '13px', color: 'var(--dark)' }}>Selfie with ID</p>
+                      {selected.selfie_url ? (
+                        <a href={selected.selfie_url} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: 'var(--brand)' }}>View Document</a>
+                      ) : (
+                        <p style={{ fontSize: '12px', color: '#9ca3af' }}>Not uploaded</p>
+                      )}
                     </div>
-                  </>
-                )}
-              </div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                  <div className="doc-preview">
+                    <div className="doc-icon">
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    </div>
+                    <div>
+                      <p style={{ fontWeight: 700, fontSize: '13px', color: 'var(--dark)' }}>ID Front</p>
+                      {selected.id_front_url ? (
+                        <a href={selected.id_front_url} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: 'var(--brand)' }}>View Document</a>
+                      ) : (
+                        <p style={{ fontSize: '12px', color: '#9ca3af' }}>Not uploaded</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="doc-preview">
+                    <div className="doc-icon">
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    </div>
+                    <div>
+                      <p style={{ fontWeight: 700, fontSize: '13px', color: 'var(--dark)' }}>ID Back</p>
+                      {selected.id_back_url ? (
+                        <a href={selected.id_back_url} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: 'var(--brand)' }}>View Document</a>
+                      ) : (
+                        <p style={{ fontSize: '12px', color: '#9ca3af' }}>Not uploaded</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {selected.status === 'pending' ? (
                 <>
@@ -245,7 +253,7 @@ export default function AdminVerifications() {
                   <div className="modal-footer">
                     <button
                       className="btn btn-ghost"
-                      onClick={() => handleReject(selected.id)}
+                      onClick={() => handleReject(selected.id || selected.user_id)}
                       disabled={actionLoading || !rejectReason.trim()}
                     >
                       {actionLoading && rejectReason ? 'Rejecting...' : 'Reject'}
@@ -260,12 +268,13 @@ export default function AdminVerifications() {
                   </div>
                 </>
               ) : (
-                <div className={`alert-strip ${(selected.status === 'approved' || selected.status === 'active') ? 'alert-success' : 'alert-danger'}`}>
+                <div className={`alert-strip ${selected.status === 'approved' ? 'alert-success' : 'alert-danger'}`}>
                   <div className="alert-strip-icon">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                   </div>
                   <div className="alert-strip-content">
                     <p>Final Status: {selected.status}</p>
+                    {selected.review_notes && <p>Reason: {selected.review_notes}</p>}
                   </div>
                 </div>
               )}
@@ -301,7 +310,7 @@ export default function AdminVerifications() {
             </button>
             <button
               className="btn btn-brand"
-              onClick={() => handleApprove(confirmApprove?.id)}
+              onClick={() => handleApprove(confirmApprove?.id || confirmApprove?.user_id)}
               disabled={actionLoading}
             >
               {actionLoading ? 'Approving...' : 'Yes, Approve'}

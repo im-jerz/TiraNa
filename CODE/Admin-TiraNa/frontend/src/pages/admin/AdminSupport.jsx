@@ -1,24 +1,18 @@
-import { useState, useEffect, useCallback } from 'react'
-import { getTickets, updateTicket } from '../../api/admin'
+import { useState, useEffect } from 'react'
+
+const MOCK_TICKETS = [
+  { id: 101, subject: 'Cannot access booking', requester_name: 'Juan Dela Cruz', requester_email: 'juan@email.com', category: 'Technical', priority: 'high', status: 'open', assigned_to: '', description: 'Cannot view booking details.', created_at: '2024-06-25' },
+  { id: 102, subject: 'Refund request', requester_name: 'Pedro Penduko', requester_email: 'pedro@email.com', category: 'Billing', priority: 'medium', status: 'in-progress', assigned_to: 'Admin Ana', description: 'Havent received refund.', created_at: '2024-06-24' },
+  { id: 103, subject: 'Host not responding', requester_name: 'Carlos Garcia', requester_email: 'carlos@email.com', category: 'General', priority: 'low', status: 'resolved', assigned_to: 'Admin Juan', resolution: 'Host notified.', created_at: '2024-06-20' },
+]
 
 export default function AdminSupport() {
-  const [tickets, setTickets] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [tickets, setTickets] = useState(MOCK_TICKETS)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [priorityFilter, setPriorityFilter] = useState('')
   const [selected, setSelected] = useState(null)
   const [update, setUpdate] = useState({})
-
-  const fetchTickets = useCallback(async () => {
-    setLoading(true)
-    try { setTickets(await getTickets({ search, status: statusFilter, priority: priorityFilter })) }
-    catch (err) { setError(err.message) }
-    setLoading(false)
-  }, [search, statusFilter, priorityFilter])
-
-  useEffect(() => { fetchTickets() }, [fetchTickets])
 
   useEffect(() => {
     if (selected) {
@@ -26,12 +20,19 @@ export default function AdminSupport() {
     }
   }, [selected])
 
-  const handleUpdate = async () => {
-    try {
-      await updateTicket(selected.id, update)
-      setSelected(null)
-      fetchTickets()
-    } catch (err) { setError(err.message) }
+  const filteredTickets = tickets.filter(t => {
+    const matchesSearch = !search ||
+      t.subject.toLowerCase().includes(search.toLowerCase()) ||
+      (t.requester_name && t.requester_name.toLowerCase().includes(search.toLowerCase())) ||
+      (t.requester_email && t.requester_email.toLowerCase().includes(search.toLowerCase()))
+    const matchesStatus = !statusFilter || t.status === statusFilter
+    const matchesPriority = !priorityFilter || t.priority === priorityFilter
+    return matchesSearch && matchesStatus && matchesPriority
+  })
+
+  const handleUpdate = () => {
+    setTickets(prev => prev.map(t => t.id === selected.id ? { ...t, ...update } : t))
+    setSelected(null)
   }
 
   return (
@@ -57,16 +58,8 @@ export default function AdminSupport() {
         </div>
       </div>
 
-      {error && (
-        <div className="alert-strip alert-danger" style={{ marginBottom: 16 }}>
-          <div className="alert-strip-content"><p>{error}</p></div>
-        </div>
-      )}
-
       <div className="table-container">
-        {loading ? (
-          <div className="loader"><div className="spin" /></div>
-        ) : tickets.length === 0 ? (
+        {filteredTickets.length === 0 ? (
           <div className="empty-state">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
             <p>No tickets found.</p>
@@ -87,7 +80,7 @@ export default function AdminSupport() {
               </tr>
             </thead>
             <tbody>
-              {tickets.map((t) => (
+              {filteredTickets.map((t) => (
                 <tr key={t.id} style={{ cursor: 'pointer' }} onClick={() => setSelected(t)}>
                   <td className="td-id">#{t.id}</td>
                   <td><div className="td-main">{t.subject}</div></td>

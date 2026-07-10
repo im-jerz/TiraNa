@@ -23,7 +23,7 @@ class HostAPIClient:
         self.timeout = 8.0
         self.max_retries = 2
         self.headers = {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
 
     async def _request(self, method: str, endpoint: str, params: Optional[Dict] = None, data: Optional[Dict] = None) -> Optional[Dict]:
@@ -214,17 +214,12 @@ class HostAPIClient:
         data = self._unwrap(result)
         return data.get("verifications", []) if data else []
 
-    async def get_verification(self, verification_id: int) -> Optional[Dict]:
-        result = await self._get(f"/api/admin/verifications/{verification_id}")
-        data = self._unwrap(result)
-        return data.get("verification") if data else None
-
     async def approve_verification(self, verification_id: int) -> bool:
         result = await self._post(f"/api/admin/verifications/{verification_id}/approve")
         return result is not None
 
-    async def reject_verification(self, verification_id: int) -> bool:
-        result = await self._post(f"/api/admin/verifications/{verification_id}/reject")
+    async def reject_verification(self, verification_id: int, reason: str = "") -> bool:
+        result = await self._post(f"/api/admin/verifications/{verification_id}/reject", {"reason": reason})
         return result is not None
 
     # ─── Hosts & Guests ────────────────────────────────────────

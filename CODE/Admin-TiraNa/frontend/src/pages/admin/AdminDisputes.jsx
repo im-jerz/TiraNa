@@ -1,22 +1,15 @@
-import { useState, useEffect, useCallback } from 'react'
-import { getDisputes, updateDispute } from '../../api/admin'
+import { useState, useEffect } from 'react'
+
+const MOCK_DISPUTES = [
+  { id: 1, filed_by: 'Juan Dela Cruz', filed_by_email: 'juan@email.com', reason: 'Host cancelled last minute', booking_external_id: 'BK-1001', status: 'open', created_at: '2024-06-26', evidence: 'Screenshots' },
+  { id: 2, filed_by: 'Pedro Penduko', filed_by_email: 'pedro@email.com', reason: 'Property not as advertised', booking_external_id: 'BK-1002', status: 'in-review', created_at: '2024-06-23' },
+]
 
 export default function AdminDisputes() {
-  const [disputes, setDisputes] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [disputes, setDisputes] = useState(MOCK_DISPUTES)
   const [statusFilter, setStatusFilter] = useState('')
   const [selected, setSelected] = useState(null)
   const [update, setUpdate] = useState({})
-
-  const fetchDisputes = useCallback(async () => {
-    setLoading(true)
-    try { setDisputes(await getDisputes({ status: statusFilter })) }
-    catch (err) { setError(err.message) }
-    setLoading(false)
-  }, [statusFilter])
-
-  useEffect(() => { fetchDisputes() }, [fetchDisputes])
 
   useEffect(() => {
     if (selected) {
@@ -24,12 +17,11 @@ export default function AdminDisputes() {
     }
   }, [selected])
 
-  const handleUpdate = async () => {
-    try {
-      await updateDispute(selected.id, update)
-      setSelected(null)
-      fetchDisputes()
-    } catch (err) { setError(err.message) }
+  const filteredDisputes = disputes.filter(d => !statusFilter || d.status === statusFilter)
+
+  const handleUpdate = () => {
+    setDisputes(prev => prev.map(d => d.id === selected.id ? { ...d, ...update } : d))
+    setSelected(null)
   }
 
   return (
@@ -47,16 +39,8 @@ export default function AdminDisputes() {
         </div>
       </div>
 
-      {error && (
-        <div className="alert-strip alert-danger" style={{ marginBottom: 16 }}>
-          <div className="alert-strip-content"><p>{error}</p></div>
-        </div>
-      )}
-
       <div className="table-container">
-        {loading ? (
-          <div className="loader"><div className="spin" /></div>
-        ) : disputes.length === 0 ? (
+        {filteredDisputes.length === 0 ? (
           <div className="empty-state">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             <p>No disputes found.</p>
@@ -75,7 +59,7 @@ export default function AdminDisputes() {
               </tr>
             </thead>
             <tbody>
-              {disputes.map((d) => (
+              {filteredDisputes.map((d) => (
                 <tr key={d.id} style={{ cursor: 'pointer' }} onClick={() => setSelected(d)}>
                   <td className="td-id">{d.id}</td>
                   <td className="td-muted">{d.filed_by}</td>

@@ -1,43 +1,23 @@
-import { useState, useEffect, useCallback } from 'react'
-import { getHostRooms, hideHostRoom, showHostRoom } from '../../api/admin'
+import { useState } from 'react'
+
+const MOCK_ROOMS = [
+  { id: 1, name: 'Beachfront Villa - Master Suite', host_name: 'Maria Santos', price_per_night: 4500, status: 'active' },
+  { id: 2, name: 'Beachfront Villa - Guest Room', host_name: 'Maria Santos', price_per_night: 2500, status: 'active' },
+  { id: 3, name: 'Mountain Cabin - Loft', host_name: 'Ana Mendoza', price_per_night: 2800, status: 'hidden' },
+  { id: 4, name: 'City Condo - Studio', host_name: 'Ana Mendoza', price_per_night: 3200, status: 'pending' },
+]
 
 export default function AdminRooms() {
-  const [rooms, setRooms] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [rooms, setRooms] = useState(MOCK_ROOMS)
   const [filter, setFilter] = useState({ status: '' })
   const [actionLoading, setActionLoading] = useState(false)
   const [detailRoom, setDetailRoom] = useState(null)
 
-  const fetchData = useCallback(async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const data = await getHostRooms(filter)
-      setRooms(data)
-    } catch (err) {
-      setError(err.message)
-    }
-    setLoading(false)
-  }, [filter])
+  const filteredRooms = rooms.filter(r => !filter.status || r.status === filter.status)
 
-  useEffect(() => {
-    fetchData()
-  }, [fetchData])
-
-  const handleToggleStatus = async (room) => {
-    const action = room.status === 'hidden' ? 'show' : 'hide'
+  const handleToggleStatus = (room) => {
     setActionLoading(true)
-    try {
-      if (action === 'show') {
-        await showHostRoom(room.id)
-      } else {
-        await hideHostRoom(room.id)
-      }
-      fetchData()
-    } catch (err) {
-      setError(err.message)
-    }
+    setRooms(prev => prev.map(r => r.id === room.id ? { ...r, status: r.status === 'hidden' ? 'active' : 'hidden' } : r))
     setActionLoading(false)
   }
 
@@ -57,15 +37,6 @@ export default function AdminRooms() {
         </div>
       </div>
 
-      {error && (
-        <div className="alert-strip alert-danger" style={{ marginBottom: '16px' }}>
-          <div className="alert-strip-icon">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          </div>
-          <div className="alert-strip-content"><p>{error}</p></div>
-        </div>
-      )}
-
       <div className="table-container">
         <table>
           <thead>
@@ -78,13 +49,7 @@ export default function AdminRooms() {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={5}>
-                  <div className="loader"><div className="spin"></div></div>
-                </td>
-              </tr>
-            ) : rooms.length === 0 ? (
+            {filteredRooms.length === 0 ? (
               <tr>
                 <td colSpan={5}>
                   <div className="empty-state">
@@ -93,7 +58,7 @@ export default function AdminRooms() {
                   </div>
                 </td>
               </tr>
-            ) : rooms.map(room => (
+            ) : filteredRooms.map(room => (
               <tr key={room.id}>
                 <td>
                   <div className="td-main" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

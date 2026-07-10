@@ -1,65 +1,50 @@
-import { useState, useCallback, useEffect } from 'react'
-import { getBookings, cancelBooking, exportBookings } from '../../api/admin'
-import { useDebounce } from '../../hooks/useDebounce'
+import { useState } from 'react'
+
+const MOCK_BOOKINGS = [
+  { id: 1001, listing_title: 'Beachfront Villa', guest_name: 'Juan Dela Cruz', guest_email: 'juan@email.com', check_in: '2024-06-15', check_out: '2024-06-18', total_price: 13500, status: 'confirmed', nights: 3, listing_id: 1 },
+  { id: 1002, listing_title: 'Mountain View Cabin', guest_name: 'Pedro Penduko', guest_email: 'pedro@email.com', check_in: '2024-06-20', check_out: '2024-06-22', total_price: 5600, status: 'completed', nights: 2, listing_id: 2 },
+  { id: 1003, listing_title: 'City Center Condo', guest_name: 'Carlos Garcia', guest_email: 'carlos@email.com', check_in: '2024-07-01', check_out: '2024-07-03', total_price: 6400, status: 'confirmed', nights: 2, listing_id: 3 },
+]
 
 export default function AdminBookings() {
-  const [bookings, setBookings] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [bookings, setBookings] = useState(MOCK_BOOKINGS)
   const [search, setSearch] = useState('')
-  const debouncedSearch = useDebounce(search, 500)
   const [statusFilter, setStatusFilter] = useState('')
   const [cancelModal, setCancelModal] = useState(null)
   const [cancelReason, setCancelReason] = useState('')
   const [acting, setActing] = useState(false)
-  const [exporting, setExporting] = useState(false)
   const [detailModal, setDetailModal] = useState(null)
 
-  const fetchBookings = useCallback(async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const data = await getBookings({ search: debouncedSearch, status: statusFilter })
-      setBookings(data)
-    } catch (err) {
-      setError(err.message)
-    }
-    setLoading(false)
-  }, [debouncedSearch, statusFilter])
+  const filteredBookings = bookings.filter(b => {
+    const matchesSearch = !search ||
+      (b.listing_title && b.listing_title.toLowerCase().includes(search.toLowerCase())) ||
+      (b.guest_name && b.guest_name.toLowerCase().includes(search.toLowerCase())) ||
+      (b.guest_email && b.guest_email.toLowerCase().includes(search.toLowerCase()))
+    const matchesStatus = !statusFilter || b.status === statusFilter
+    return matchesSearch && matchesStatus
+  })
 
-  useEffect(() => {
-    fetchBookings()
-  }, [fetchBookings])
-
-  const handleCancel = async () => {
+  const handleCancel = () => {
     if (!cancelModal || !cancelReason.trim()) return
     setActing(true)
-    try {
-      await cancelBooking(cancelModal.id, cancelReason)
-      setCancelModal(null)
-      setCancelReason('')
-      fetchBookings()
-    } catch (err) {
-      setError(err.message)
-    }
+    setBookings(prev => prev.map(b => b.id === cancelModal.id ? { ...b, status: 'cancelled', cancellation_reason: cancelReason } : b))
+    setCancelModal(null)
+    setCancelReason('')
     setActing(false)
   }
 
-  const handleExport = async () => {
-    setExporting(true)
-    try {
-      const blob = await exportBookings({ search: debouncedSearch, status: statusFilter })
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `bookings_export_${new Date().toISOString().split('T')[0]}.csv`
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-    } catch (err) {
-      setError(err.message)
-    }
-    setExporting(false)
+  const handleExport = () => {
+    const headers = ['ID', 'Listing', 'Guest', 'Check-in', 'Check-out', 'Total', 'Status']
+    const rows = filteredBookings.map(b => [b.id, b.listing_title, b.guest_name, b.check_in, b.check_out, b.total_price, b.status])
+    const csv = [headers, ...rows].map(r => r.join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `bookings_export_${new Date().toISOString().split('T')[0]}.csv`
+    document.body.appendChild(a)
+    a.click()
+    window.URL.revokeObjectURL(url)
   }
 
   return (
@@ -67,9 +52,9 @@ export default function AdminBookings() {
       <div className="page-header">
         <h1 className="page-title">Booking Management</h1>
         <div className="page-actions">
-          <button className="btn btn-ghost btn-sm" onClick={handleExport} disabled={exporting}>
+          <button className="btn btn-ghost btn-sm" onClick={handleExport}>
             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-            {exporting ? 'Exporting...' : 'Export CSV'}
+            Export CSV
           </button>
           <select className="filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="">All Status</option>
@@ -82,16 +67,8 @@ export default function AdminBookings() {
         </div>
       </div>
 
-      {error && (
-        <div className="alert-strip alert-danger" style={{ marginBottom: 16 }}>
-          <div className="alert-strip-content"><p>{error}</p></div>
-        </div>
-      )}
-
       <div className="table-container">
-        {loading ? (
-          <div className="loader"><div className="spin" /></div>
-        ) : bookings.length === 0 ? (
+        {filteredBookings.length === 0 ? (
           <div className="empty-state">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
             <p>{search || statusFilter ? 'No bookings match your filters.' : 'No bookings found.'}</p>
@@ -112,7 +89,7 @@ export default function AdminBookings() {
                 </tr>
               </thead>
               <tbody>
-                {bookings.map((b) => (
+                {filteredBookings.map((b) => (
                   <tr key={b.id}>
                     <td className="td-id">#{b.id}</td>
                     <td><div className="td-main">{b.listing_title || '—'}</div></td>

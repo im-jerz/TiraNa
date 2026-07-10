@@ -1,53 +1,37 @@
-import { useState, useEffect, useCallback } from 'react'
-import { getPayments, refundPayment, getRevenueStats } from '../../api/admin'
-import { useDebounce } from '../../hooks/useDebounce'
+import { useState } from 'react'
+
+const MOCK_PAYMENTS = [
+  { id: 5001, payer_name: 'Juan Dela Cruz', amount: 13500, method: 'gcash', status: 'completed', created_at: '2024-06-10', booking_external_id: 'BK-1001' },
+  { id: 5002, payer_name: 'Pedro Penduko', amount: 5600, method: 'card', status: 'completed', created_at: '2024-06-18', booking_external_id: 'BK-1002' },
+  { id: 5003, payer_name: 'Carlos Garcia', amount: 6400, method: 'gcash', status: 'pending', created_at: '2024-06-28', booking_external_id: 'BK-1003' },
+]
+
+const MOCK_REVENUE = { total_revenue: 284500, total_refunded: 12000 }
 
 export default function AdminPayments() {
-  const [payments, setPayments] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [payments, setPayments] = useState(MOCK_PAYMENTS)
+  const [revenue] = useState(MOCK_REVENUE)
   const [search, setSearch] = useState('')
-  const debouncedSearch = useDebounce(search, 500)
   const [statusFilter, setStatusFilter] = useState('')
-  const [revenue, setRevenue] = useState(null)
   const [refundModal, setRefundModal] = useState(null)
   const [refundAmount, setRefundAmount] = useState('')
   const [refundReason, setRefundReason] = useState('')
   const [acting, setActing] = useState(false)
   const [detailModal, setDetailModal] = useState(null)
 
-  const fetchData = useCallback(async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const [p, r] = await Promise.all([
-        getPayments({ search: debouncedSearch, status: statusFilter }),
-        getRevenueStats(),
-      ])
-      setPayments(p)
-      setRevenue(r)
-    } catch (err) {
-      setError(err.message)
-    }
-    setLoading(false)
-  }, [debouncedSearch, statusFilter])
+  const filteredPayments = payments.filter(p => {
+    const matchesSearch = !search || (p.payer_name && p.payer_name.toLowerCase().includes(search.toLowerCase()))
+    const matchesStatus = !statusFilter || p.status === statusFilter
+    return matchesSearch && matchesStatus
+  })
 
-  useEffect(() => {
-    fetchData()
-  }, [fetchData])
-
-  const handleRefund = async () => {
+  const handleRefund = () => {
     if (!refundModal || !refundAmount || !refundReason.trim()) return
     setActing(true)
-    try {
-      await refundPayment(refundModal.id, parseFloat(refundAmount), refundReason)
-      setRefundModal(null)
-      setRefundAmount('')
-      setRefundReason('')
-      fetchData()
-    } catch (err) {
-      setError(err.message)
-    }
+    setPayments(prev => prev.map(p => p.id === refundModal.id ? { ...p, status: 'refunded', refund_reason: refundReason } : p))
+    setRefundModal(null)
+    setRefundAmount('')
+    setRefundReason('')
     setActing(false)
   }
 
@@ -86,16 +70,8 @@ export default function AdminPayments() {
         </div>
       )}
 
-      {error && (
-        <div className="alert-strip alert-danger" style={{ marginBottom: 16 }}>
-          <div className="alert-strip-content"><p>{error}</p></div>
-        </div>
-      )}
-
       <div className="table-container">
-        {loading ? (
-          <div className="loader"><div className="spin" /></div>
-        ) : payments.length === 0 ? (
+        {filteredPayments.length === 0 ? (
           <div className="empty-state">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
             <p>{search || statusFilter ? 'No payments match your search.' : 'No payments found.'}</p>
@@ -114,7 +90,7 @@ export default function AdminPayments() {
               </tr>
             </thead>
             <tbody>
-              {payments.map((p) => (
+              {filteredPayments.map((p) => (
                 <tr key={p.id}>
                   <td className="td-id">#{p.id}</td>
                   <td className="td-main">{p.payer_name || '—'}</td>

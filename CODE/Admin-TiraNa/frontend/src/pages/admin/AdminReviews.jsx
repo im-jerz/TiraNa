@@ -1,45 +1,27 @@
-import { useState, useEffect, useCallback } from 'react'
-import { getReviews, hideReview, showReview } from '../../api/admin'
-import { useDebounce } from '../../hooks/useDebounce'
+import { useState } from 'react'
+
+const MOCK_REVIEWS = [
+  { id: 1, rating: 5, user_name: 'Juan Dela Cruz', comment: 'Amazing place!', is_hidden: false, created_at: '2024-06-20' },
+  { id: 2, rating: 4, user_name: 'Pedro Penduko', comment: 'Great location.', is_hidden: false, created_at: '2024-06-22' },
+  { id: 3, rating: 2, user_name: 'Carlos Garcia', comment: 'Not as described.', is_hidden: true, created_at: '2024-06-25' },
+]
 
 export default function AdminReviews() {
-  const [reviews, setReviews] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [reviews, setReviews] = useState(MOCK_REVIEWS)
   const [search, setSearch] = useState('')
-  const debouncedSearch = useDebounce(search, 500)
   const [acting, setActing] = useState(false)
   const [detailModal, setDetailModal] = useState(null)
 
-  const fetchReviews = useCallback(async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const data = await getReviews({ search: debouncedSearch })
-      setReviews(data)
-    } catch (err) {
-      setError(err.message)
-    }
-    setLoading(false)
-  }, [debouncedSearch])
+  const filteredReviews = reviews.filter(r => {
+    return !search ||
+      (r.user_name && r.user_name.toLowerCase().includes(search.toLowerCase())) ||
+      (r.comment && r.comment.toLowerCase().includes(search.toLowerCase()))
+  })
 
-  useEffect(() => {
-    fetchReviews()
-  }, [fetchReviews])
-
-  const handleToggleHide = async (review) => {
+  const handleToggleHide = (review) => {
     setActing(true)
-    try {
-      if (review.is_hidden) {
-        await showReview(review.id)
-      } else {
-        await hideReview(review.id)
-      }
-      fetchReviews()
-      setDetailModal(null)
-    } catch (err) {
-      setError(err.message)
-    }
+    setReviews(prev => prev.map(r => r.id === review.id ? { ...r, is_hidden: !r.is_hidden } : r))
+    setDetailModal(null)
     setActing(false)
   }
 
@@ -52,12 +34,8 @@ export default function AdminReviews() {
         </div>
       </div>
 
-      {error && <div className="alert-strip alert-danger" style={{marginBottom:16}}><div className="alert-strip-content"><p>Error</p><p>{error}</p></div></div>}
-
       <div className="table-container">
-        {loading ? (
-          <div className="loader"><div className="spin" /></div>
-        ) : reviews.length === 0 ? (
+        {filteredReviews.length === 0 ? (
           <div className="empty-state">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
             <p>No reviews found matching your search.</p>
@@ -76,7 +54,7 @@ export default function AdminReviews() {
                 </tr>
               </thead>
               <tbody>
-                {reviews.map((r) => (
+                {filteredReviews.map((r) => (
                   <tr key={r.id}>
                     <td><span className="td-main" style={{color:'var(--brand)'}}>{r.rating}</span></td>
                     <td className="td-main">{r.user_name || 'Anonymous'}</td>
@@ -93,7 +71,7 @@ export default function AdminReviews() {
               </tbody>
             </table>
             <div className="pagination">
-              <div className="pagination-info">{reviews.length} review(s)</div>
+              <div className="pagination-info">{filteredReviews.length} review(s)</div>
             </div>
           </>
         )}

@@ -1,13 +1,15 @@
-import { useState, useEffect, useCallback } from 'react'
-import { getListings, approveListing, rejectListing, suspendListing } from '../../api/admin'
-import { useDebounce } from '../../hooks/useDebounce'
+import { useState } from 'react'
+
+const MOCK_LISTINGS = [
+  { id: 1, title: 'Beachfront Villa in Batangas', host_email: 'maria@email.com', host_id: 2, price_per_night: 4500, status: 'approved', location: 'Batangas', description: 'Beautiful beachfront villa', photo_url: '' },
+  { id: 2, title: 'Mountain View Cabin', host_email: 'ana@email.com', host_id: 4, price_per_night: 2800, status: 'pending', location: 'Baguio', description: 'Cozy cabin', photo_url: '' },
+  { id: 3, title: 'City Center Condo', host_email: 'maria@email.com', host_id: 2, price_per_night: 3200, status: 'pending', location: 'Makati', description: 'Modern condo', photo_url: '' },
+  { id: 4, title: 'Tropical Island Retreat', host_email: 'ana@email.com', host_id: 4, price_per_night: 6500, status: 'rejected', location: 'Palawan', description: 'Island getaway', photo_url: '' },
+]
 
 export default function AdminListings() {
-  const [listings, setListings] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [listings, setListings] = useState(MOCK_LISTINGS)
   const [search, setSearch] = useState('')
-  const debouncedSearch = useDebounce(search, 500)
   const [statusFilter, setStatusFilter] = useState('')
   const [actionModal, setActionModal] = useState(null)
   const [actionType, setActionType] = useState('')
@@ -15,33 +17,24 @@ export default function AdminListings() {
   const [acting, setActing] = useState(false)
   const [detailListing, setDetailListing] = useState(null)
 
-  const fetchListings = useCallback(async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const data = await getListings({ search: debouncedSearch, status: statusFilter })
-      setListings(data)
-    } catch (err) {
-      setError(err.message)
-    }
-    setLoading(false)
-  }, [debouncedSearch, statusFilter])
+  const filteredListings = listings.filter(l => {
+    const matchesSearch = l.title.toLowerCase().includes(search.toLowerCase()) || (l.host_email && l.host_email.toLowerCase().includes(search.toLowerCase()))
+    const matchesStatus = !statusFilter || l.status === statusFilter
+    return matchesSearch && matchesStatus
+  })
 
-  useEffect(() => { fetchListings() }, [fetchListings])
-
-  const handleAction = async () => {
+  const handleAction = () => {
     if (!actionModal) return
     setActing(true)
-    try {
-      if (actionType === 'approve') await approveListing(actionModal.id)
-      else if (actionType === 'reject') await rejectListing(actionModal.id, actionReason)
-      else if (actionType === 'suspend') await suspendListing(actionModal.id, actionReason)
-      setActionModal(null)
-      setActionReason('')
-      fetchListings()
-    } catch (err) {
-      setError(err.message)
-    }
+    setListings(prev => prev.map(l => {
+      if (l.id !== actionModal.id) return l
+      if (actionType === 'approve') return { ...l, status: 'approved' }
+      if (actionType === 'reject') return { ...l, status: 'rejected' }
+      if (actionType === 'suspend') return { ...l, status: 'suspended' }
+      return l
+    }))
+    setActionModal(null)
+    setActionReason('')
     setActing(false)
   }
 
@@ -67,12 +60,8 @@ export default function AdminListings() {
         </div>
       </div>
 
-      {error && <div className="alert-strip alert-danger" style={{marginBottom:16}}><div className="alert-strip-content"><p>Error</p><p>{error}</p></div></div>}
-
       <div className="table-container">
-        {loading ? (
-          <div className="loader"><div className="spin" /></div>
-        ) : listings.length === 0 ? (
+        {filteredListings.length === 0 ? (
           <div className="empty-state">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
             <p>No listings found matching your criteria.</p>
@@ -91,7 +80,7 @@ export default function AdminListings() {
                 </tr>
               </thead>
               <tbody>
-                {listings.map((l) => (
+                {filteredListings.map((l) => (
                   <tr key={l.id}>
                     <td className="td-id">#{l.id}</td>
                     <td><div className="td-main">{l.title}</div></td>
@@ -117,7 +106,7 @@ export default function AdminListings() {
               </tbody>
             </table>
             <div className="pagination">
-              <div className="pagination-info">{listings.length} listing(s)</div>
+              <div className="pagination-info">{filteredListings.length} listing(s)</div>
             </div>
           </>
         )}

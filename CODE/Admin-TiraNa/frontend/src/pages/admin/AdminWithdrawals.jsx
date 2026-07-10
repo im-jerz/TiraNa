@@ -1,36 +1,32 @@
-import { useState, useEffect, useCallback } from 'react'
-import { getWithdrawals, approveWithdrawal, rejectWithdrawal } from '../../api/admin'
+import { useState } from 'react'
+
+const MOCK_WITHDRAWALS = [
+  { id: 1, host_name: 'Maria Santos', amount: 45000, method: 'bank_transfer', status: 'pending', created_at: '2024-06-25' },
+  { id: 2, host_name: 'Ana Mendoza', amount: 32000, method: 'gcash', status: 'approved', created_at: '2024-06-20' },
+  { id: 3, host_name: 'Maria Santos', amount: 15000, method: 'bank_transfer', status: 'rejected', created_at: '2024-06-15' },
+]
 
 export default function AdminWithdrawals() {
-  const [withdrawals, setWithdrawals] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [withdrawals, setWithdrawals] = useState(MOCK_WITHDRAWALS)
   const [statusFilter, setStatusFilter] = useState('')
   const [rejectModal, setRejectModal] = useState(null)
   const [rejectReason, setRejectReason] = useState('')
   const [acting, setActing] = useState(false)
 
-  const fetchData = useCallback(async () => {
-    setLoading(true)
-    try { setWithdrawals(await getWithdrawals({ status: statusFilter })) }
-    catch (err) { setError(err.message) }
-    setLoading(false)
-  }, [statusFilter])
+  const filteredWithdrawals = withdrawals.filter(w => !statusFilter || w.status === statusFilter)
 
-  useEffect(() => { fetchData() }, [fetchData])
-
-  const handleApprove = async (id) => {
+  const handleApprove = (id) => {
     setActing(true)
-    try { await approveWithdrawal(id); fetchData() }
-    catch (err) { setError(err.message) }
+    setWithdrawals(prev => prev.map(w => w.id === id ? { ...w, status: 'approved' } : w))
     setActing(false)
   }
 
-  const handleReject = async () => {
+  const handleReject = () => {
     if (!rejectModal || !rejectReason.trim()) return
     setActing(true)
-    try { await rejectWithdrawal(rejectModal.id, rejectReason); setRejectModal(null); setRejectReason(''); fetchData() }
-    catch (err) { setError(err.message) }
+    setWithdrawals(prev => prev.map(w => w.id === rejectModal.id ? { ...w, status: 'rejected', reject_reason: rejectReason } : w))
+    setRejectModal(null)
+    setRejectReason('')
     setActing(false)
   }
 
@@ -48,12 +44,8 @@ export default function AdminWithdrawals() {
         </div>
       </div>
 
-      {error && <div className="alert-strip alert-danger" style={{marginBottom:16}}><div className="alert-strip-content"><p>Error</p><p>{error}</p></div></div>}
-
       <div className="table-container">
-        {loading ? (
-          <div className="loader"><div className="spin" /></div>
-        ) : withdrawals.length === 0 ? (
+        {filteredWithdrawals.length === 0 ? (
           <div className="empty-state">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             <p>No withdrawals found.</p>
@@ -73,7 +65,7 @@ export default function AdminWithdrawals() {
                 </tr>
               </thead>
               <tbody>
-                {withdrawals.map((w) => (
+                {filteredWithdrawals.map((w) => (
                   <tr key={w.id}>
                     <td className="td-id">{w.id}</td>
                     <td className="td-main">{w.host_name || '—'}</td>
@@ -96,7 +88,7 @@ export default function AdminWithdrawals() {
               </tbody>
             </table>
             <div className="pagination">
-              <div className="pagination-info">{withdrawals.length} withdrawal(s)</div>
+              <div className="pagination-info">{filteredWithdrawals.length} withdrawal(s)</div>
             </div>
           </>
         )}

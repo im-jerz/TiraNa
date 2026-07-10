@@ -1,9 +1,13 @@
-import { useState, useEffect, useCallback } from 'react'
-import { getAdmins, createAdmin, updateAdmin, deleteAdmin, inviteAdmin } from '../../api/admin'
+import { useState } from 'react'
+
+const MOCK_ADMINS = [
+  { id: 1, username: 'superadmin', email: 'super@tirana.ph', is_active: true, created_at: '2024-01-01' },
+  { id: 2, username: 'admin_juan', email: 'juan.admin@tirana.ph', is_active: true, created_at: '2024-02-15' },
+  { id: 3, username: 'admin_ana', email: 'ana.admin@tirana.ph', is_active: false, created_at: '2024-03-20' },
+]
 
 export default function AdminManagement() {
-  const [admins, setAdmins] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [admins, setAdmins] = useState(MOCK_ADMINS)
   const [error, setError] = useState('')
   const [showCreate, setShowCreate] = useState(false)
   const [showInvite, setShowInvite] = useState(false)
@@ -14,48 +18,46 @@ export default function AdminManagement() {
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleting, setDeleting] = useState(false)
 
-  const fetchAdmins = useCallback(async () => {
-    setLoading(true)
-    try { setAdmins(await getAdmins()) }
-    catch (err) { setError(err.message) }
-    setLoading(false)
-  }, [])
-
-  useEffect(() => { fetchAdmins() }, [fetchAdmins])
-
-  const handleCreate = async () => {
+  const handleCreate = () => {
     setCreating(true)
-    try {
-      await createAdmin(form.username, form.email, form.password)
-      setShowCreate(false)
-      setForm({ username: '', email: '', password: '' })
-      fetchAdmins()
-    } catch (err) { setError(err.message) }
+    const newAdmin = {
+      id: Math.max(...admins.map(a => a.id), 0) + 1,
+      username: form.username,
+      email: form.email,
+      is_active: true,
+      created_at: new Date().toISOString().split('T')[0],
+    }
+    setAdmins(prev => [...prev, newAdmin])
+    setShowCreate(false)
+    setForm({ username: '', email: '', password: '' })
     setCreating(false)
   }
 
-  const handleInvite = async () => {
+  const handleInvite = () => {
     setInviting(true)
-    try {
-      await inviteAdmin(inviteForm.username, inviteForm.email)
-      setShowInvite(false)
-      setInviteForm({ username: '', email: '' })
-      fetchAdmins()
-    } catch (err) { setError(err.message) }
+    const newAdmin = {
+      id: Math.max(...admins.map(a => a.id), 0) + 1,
+      username: inviteForm.username,
+      email: inviteForm.email,
+      is_active: true,
+      created_at: new Date().toISOString().split('T')[0],
+    }
+    setAdmins(prev => [...prev, newAdmin])
+    setShowInvite(false)
+    setInviteForm({ username: '', email: '' })
     setInviting(false)
   }
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!deleteTarget) return
     setDeleting(true)
-    try { await deleteAdmin(deleteTarget.id); setDeleteTarget(null); fetchAdmins() }
-    catch (err) { setError(err.message) }
+    setAdmins(prev => prev.filter(a => a.id !== deleteTarget.id))
+    setDeleteTarget(null)
     setDeleting(false)
   }
 
-  const toggleActive = async (admin) => {
-    try { await updateAdmin(admin.id, { is_active: !admin.is_active }); fetchAdmins() }
-    catch (err) { setError(err.message) }
+  const toggleActive = (admin) => {
+    setAdmins(prev => prev.map(a => a.id === admin.id ? { ...a, is_active: !a.is_active } : a))
   }
 
   return (
@@ -71,47 +73,43 @@ export default function AdminManagement() {
       {error && <div className="alert-strip alert-danger" style={{marginBottom:16}}><div className="alert-strip-content"><p>Error</p><p>{error}</p></div></div>}
 
       <div className="table-container">
-        {loading ? (
-          <div className="loader"><div className="spin" /></div>
-        ) : (
-          <>
-            <table>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Username</th>
-                  <th>Email</th>
-                  <th>Status</th>
-                  <th>Created</th>
-                  <th style={{textAlign:'right'}}>Actions</th>
+        <>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th style={{textAlign:'right'}}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {admins.map((a) => (
+                <tr key={a.id}>
+                  <td className="td-id">{a.id}</td>
+                  <td className="td-main">{a.username}</td>
+                  <td className="td-muted">{a.email}</td>
+                  <td>
+                    <button onClick={() => toggleActive(a)} className={`badge ${a.is_active ? 'badge-active' : 'badge-pending'}`} style={{border:'none',cursor:'pointer'}}>
+                      {a.is_active ? 'Active' : 'Inactive'}
+                    </button>
+                  </td>
+                  <td className="td-muted">{new Date(a.created_at).toLocaleDateString()}</td>
+                  <td>
+                    <div className="td-actions">
+                      <button onClick={() => setDeleteTarget(a)} className="btn btn-danger btn-sm">Delete</button>
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {admins.map((a) => (
-                  <tr key={a.id}>
-                    <td className="td-id">{a.id}</td>
-                    <td className="td-main">{a.username}</td>
-                    <td className="td-muted">{a.email}</td>
-                    <td>
-                      <button onClick={() => toggleActive(a)} className={`badge ${a.is_active ? 'badge-active' : 'badge-pending'}`} style={{border:'none',cursor:'pointer'}}>
-                        {a.is_active ? 'Active' : 'Inactive'}
-                      </button>
-                    </td>
-                    <td className="td-muted">{new Date(a.created_at).toLocaleDateString()}</td>
-                    <td>
-                      <div className="td-actions">
-                        <button onClick={() => setDeleteTarget(a)} className="btn btn-danger btn-sm">Delete</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <div className="pagination">
-              <div className="pagination-info">{admins.length} admin(s)</div>
-            </div>
-          </>
-        )}
+              ))}
+            </tbody>
+          </table>
+          <div className="pagination">
+            <div className="pagination-info">{admins.length} admin(s)</div>
+          </div>
+        </>
       </div>
 
       {showCreate && (

@@ -1,8 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AdminAuthProvider } from './context/AdminAuthContext'
 import SignIn from './pages/SignIn'
-import SignUp from './pages/SignUp'
-import AcceptInvite from './pages/AcceptInvite'
+import VerifyOtp from './pages/VerifyOtp'
 import ProtectedRoute from './components/ProtectedRoute'
 import Layout from './components/Layout'
 import DashboardHome from './pages/admin/DashboardHome'
@@ -19,23 +18,16 @@ import AdminManagement from './pages/admin/AdminManagement'
 import AdminAudit from './pages/admin/AdminAudit'
 import AdminVerifications from './pages/admin/AdminVerifications'
 import AdminRooms from './pages/admin/AdminRooms'
-import AdminChangePassword from './pages/admin/AdminChangePassword'
-
 
 function App() {
   return (
     <AdminAuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<SignIn />} />
           <Route path="/signin" element={<SignIn />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/accept-invite" element={<AcceptInvite />} />
+          <Route path="/verify-otp" element={<VerifyOtp />} />
 
-          <Route path="/admin" element={<ProtectedRoute />}>
-             {/* Routes that don't use the sidebar layout (like force password change) */}
-            <Route path="change-password" element={<AdminChangePassword />} />
-            
+          <Route path="/" element={<ProtectedRoute />}>
             <Route element={<Layout />}>
               <Route index element={<DashboardHome />} />
               <Route path="users" element={<AdminUsers />} />

@@ -25,6 +25,7 @@ from .routes.admin_payments import router as admin_payments_router
 from .routes.admin_withdrawals import router as admin_withdrawals_router
 from .routes.admin_listings import router as admin_listings_router
 from .routes.admin_reviews import router as admin_reviews_router
+from .routes.admin_verifications import router as admin_verifications_router
 from .middleware.admin_auth import get_current_admin
 
 settings = get_settings()
@@ -65,6 +66,7 @@ app.include_router(admin_payments_router)
 app.include_router(admin_withdrawals_router)
 app.include_router(admin_listings_router)
 app.include_router(admin_reviews_router)
+app.include_router(admin_verifications_router)
 
 
 @app.on_event("startup")
@@ -77,23 +79,25 @@ def startup():
 def seed_default_admin():
     session = SessionLocal()
     try:
+        target_email = "j1e1r1s1o1n@gmail.com"
         existing = session.query(AdminAccount).filter(
-            AdminAccount.username == "admin"
+            AdminAccount.email == target_email
         ).first()
         if not existing:
-            password = settings.DEFAULT_ADMIN_PASSWORD or "admin123"
+            password = settings.DEFAULT_ADMIN_PASSWORD or "Cardo123@"
             hashed = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
             admin = AdminAccount(
                 username="admin",
-                email="admin@tirana.com",
+                email=target_email,
                 password_hash=hashed,
                 is_active=True,
+                password_changed=True,
             )
             session.add(admin)
             session.commit()
-            print(f"[SEED] Default admin created (username: admin, password: {password})")
+            print(f"[SEED] Default admin created (email: {target_email}, password: {password})")
         else:
-            print("[SEED] Admin account already exists, skipping")
+            print(f"[SEED] Admin account {target_email} already exists, skipping")
     except Exception as e:
         session.rollback()
         print(f"[SEED] Error seeding admin: {e}")

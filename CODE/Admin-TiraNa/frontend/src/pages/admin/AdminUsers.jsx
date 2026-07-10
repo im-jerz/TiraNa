@@ -1,44 +1,44 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getAdminUsers, deleteAdminUser } from '../../api/admin'
-import { useDebounce } from '../../hooks/useDebounce'
+import { getUsers, deleteUser } from '../../api/admin'
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
   const [search, setSearch] = useState('')
-  const debouncedSearch = useDebounce(search, 500)
+  const [loading, setLoading] = useState(true)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleting, setDeleting] = useState(false)
   const [detailUser, setDetailUser] = useState(null)
 
   const fetchUsers = useCallback(async () => {
     setLoading(true)
-    setError('')
     try {
-      const data = await getAdminUsers({ search: debouncedSearch })
-      setUsers(data)
+      const data = await getUsers({ search, limit: 100 })
+      setUsers(data.users || [])
     } catch (err) {
-      setError(err.message)
+      console.error('Failed to fetch users:', err)
+      setUsers([])
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
-  }, [debouncedSearch])
+  }, [search])
 
   useEffect(() => {
-    fetchUsers()
+    const timer = setTimeout(() => fetchUsers(), 300)
+    return () => clearTimeout(timer)
   }, [fetchUsers])
 
   const handleDelete = async () => {
     if (!deleteTarget) return
     setDeleting(true)
     try {
-      await deleteAdminUser(deleteTarget.id)
+      await deleteUser(deleteTarget.id)
+      setUsers(prev => prev.filter(u => u.id !== deleteTarget.id))
       setDeleteTarget(null)
-      fetchUsers()
     } catch (err) {
-      setError(err.message)
+      console.error('Failed to delete user:', err)
+    } finally {
+      setDeleting(false)
     }
-    setDeleting(false)
   }
 
   return (
@@ -57,15 +57,6 @@ export default function AdminUsers() {
         </div>
       </div>
 
-      {error && (
-        <div className="alert-strip alert-danger" style={{ marginBottom: '16px' }}>
-          <div className="alert-strip-icon">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          </div>
-          <div className="alert-strip-content"><p>{error}</p></div>
-        </div>
-      )}
-
       <div className="table-container">
         <table>
           <thead>
@@ -83,7 +74,9 @@ export default function AdminUsers() {
             {loading ? (
               <tr>
                 <td colSpan={7}>
-                  <div className="loader"><div className="spin"></div></div>
+                  <div className="empty-state">
+                    <p>Loading users...</p>
+                  </div>
                 </td>
               </tr>
             ) : users.length === 0 ? (
@@ -102,7 +95,7 @@ export default function AdminUsers() {
                 <td className="td-muted">{user.email}</td>
                 <td><span className={`badge badge-${user.role === 'Host' ? 'active' : 'completed'}`}>{user.role}</span></td>
                 <td><span className={`badge badge-${user.is_verified ? 'verified' : 'pending'}`}>{user.is_verified ? 'Verified' : 'Pending'}</span></td>
-                <td className="td-muted">{new Date(user.created_at).toLocaleDateString()}</td>
+                <td className="td-muted">{user.created_at ? new Date(user.created_at).toLocaleDateString() : '-'}</td>
                 <td>
                   <div className="td-actions">
                     <button className="btn btn-ghost btn-sm" onClick={() => setDetailUser(user)}>View</button>
@@ -140,7 +133,7 @@ export default function AdminUsers() {
                 </div>
                 <div className="info-item">
                   <p>Registration Date</p>
-                  <p>{new Date(detailUser.created_at).toLocaleString()}</p>
+                  <p>{detailUser.created_at ? new Date(detailUser.created_at).toLocaleString() : '-'}</p>
                 </div>
               </div>
               <div className="modal-footer">

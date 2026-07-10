@@ -1,42 +1,36 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getDashboardStats } from '../../api/admin'
+
+const mockStats = {
+  total_users: 1247,
+  active_listings: 389,
+  total_bookings: 2156,
+  revenue_this_month: 284500,
+  verified_users: 892,
+  unverified_users: 355,
+  open_support_tickets: 12,
+  pending_withdrawals: 8,
+  revenue_trend: [
+    { label: 'Jan', value: 180000 },
+    { label: 'Feb', value: 220000 },
+    { label: 'Mar', value: 195000 },
+    { label: 'Apr', value: 250000 },
+    { label: 'May', value: 284500 },
+    { label: 'Jun', value: 310000 },
+  ],
+  booking_trend: [
+    { label: 'Jan', value: 180 },
+    { label: 'Feb', value: 220 },
+    { label: 'Mar', value: 195 },
+    { label: 'Apr', value: 310 },
+    { label: 'May', value: 340 },
+    { label: 'Jun', value: 380 },
+  ],
+}
 
 export default function DashboardHome() {
-  const [stats, setStats] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [stats] = useState(mockStats)
   const [period, setPeriod] = useState('monthly')
-
-  const fetchStats = useCallback(async () => {
-    setLoading(true)
-    try {
-      const data = await getDashboardStats({ period })
-      setStats(data)
-    } catch (err) {
-      setError(err.message)
-    }
-    setLoading(false)
-  }, [period])
-
-  useEffect(() => {
-    fetchStats()
-  }, [fetchStats])
-
-  if (loading) {
-    return <div className="loader"><div className="spin"></div></div>
-  }
-
-  if (error) {
-    return (
-      <div className="alert-strip alert-danger">
-        <div className="alert-strip-icon">
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-        </div>
-        <div className="alert-strip-content"><p>{error}</p></div>
-      </div>
-    )
-  }
 
   const verifiedPercentage = stats.total_users > 0 ? Math.round((stats.verified_users / stats.total_users) * 100) : 0;
 
