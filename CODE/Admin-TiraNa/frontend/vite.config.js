@@ -20,6 +20,16 @@ export default defineConfig({
         target: 'http://tira_backend:5002',
         changeOrigin: true,
       },
+      '/client-api': {
+        target: 'http://host.docker.internal:5000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/client-api/, ''),
+      },
+      '/host-api': {
+        target: 'http://host.docker.internal:5001',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/host-api/, ''),
+      },
     },
   },
 })

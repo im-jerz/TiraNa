@@ -1,4 +1,4 @@
-const HOST_API_URL = import.meta.env.VITE_HOST_API_URL || 'http://localhost:5001'
+const HOST_API_URL = import.meta.env.VITE_HOST_API_URL || (import.meta.env.DEV ? '/host-api' : 'http://localhost:5001')
 
 async function api(path, options = {}) {
   const headers = {

@@ -64,7 +64,9 @@ services:
     ports:
       - "5175:5175"
     environment:
-      - VITE_API_URL=http://localhost:5002
+      - VITE_API_URL=http://host.docker.internal:5002
+      - VITE_CLIENT_API_URL=http://host.docker.internal:5000
+      - VITE_HOST_API_URL=http://host.docker.internal:5001
     depends_on:
       - backend
     networks:

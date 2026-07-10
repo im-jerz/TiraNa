@@ -1,4 +1,4 @@
-const CLIENT_API_URL = import.meta.env.VITE_CLIENT_API_URL || 'http://localhost:5000'
+const CLIENT_API_URL = import.meta.env.VITE_CLIENT_API_URL || (import.meta.env.DEV ? '/client-api' : 'http://localhost:5000')
 
 async function api(path, options = {}) {
   const headers = {
