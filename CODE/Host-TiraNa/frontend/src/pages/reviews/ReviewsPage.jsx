@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   IconSearch,
   IconX,
@@ -174,7 +175,7 @@ function ReviewCardSkeleton() {
 
 /* ─── Review Card ─────────────────────────────────────────────── */
 
-function ReviewCard({ review, onReply }) {
+function ReviewCard({ review, onReply, isHighlighted }) {
   const [expanded, setExpanded] = useState(false);
   const isLong = review.review_text.length > 200;
   const displayText =
@@ -185,7 +186,10 @@ function ReviewCard({ review, onReply }) {
   const hasSubcats = Object.values(subcats).some((v) => v !== null && v !== undefined);
 
   return (
-    <article className={`rv-card${needsReply ? " rv-card--attention" : ""}`}>
+    <article
+      id={`review-${review.id}`}
+      className={`rv-card${needsReply ? " rv-card--attention" : ""}${isHighlighted ? " deep-link-highlight" : ""}`}
+    >
       {/* Card header */}
       <div className="rv-card-header">
         <div className="rv-card-guest">
@@ -522,12 +526,40 @@ function ReplyModal({ review, onClose, onSave }) {
 
 export default function ReviewsPage() {
   const { reviews, loading, error, reload, saveReply } = useReviewsData();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [search, setSearch] = useState("");
   const [filterProp, setFilterProp] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [sort, setSort] = useState("newest");
   const [replyTarget, setReplyTarget] = useState(null);
+
+  const highlightId = searchParams.get("highlight");
+  const scrolledRef = useRef(false);
+
+  // When arriving via a notification deep-link, clear any active filters
+  // so the highlighted review is guaranteed to be visible.
+  useEffect(() => {
+    if (highlightId) {
+      setFilterProp("all");
+      setFilterStatus("all");
+      setSearch("");
+    }
+  }, [highlightId]);
+
+  useEffect(() => {
+    if (!highlightId || loading || scrolledRef.current) return;
+    const el = document.getElementById(`review-${highlightId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      scrolledRef.current = true;
+      const t = window.setTimeout(() => {
+        searchParams.delete("highlight");
+        setSearchParams(searchParams, { replace: true });
+      }, 2500);
+      return () => window.clearTimeout(t);
+    }
+  }, [highlightId, loading, reviews, searchParams, setSearchParams]);
 
   // Derive unique property list dynamically from real data
   const propertyOptions = useMemo(() => {
@@ -730,7 +762,12 @@ export default function ReviewsPage() {
             ) : (
               <div className="rv-cards">
                 {filtered.map((r) => (
-                  <ReviewCard key={r.id} review={r} onReply={setReplyTarget} />
+                  <ReviewCard
+                    key={r.id}
+                    review={r}
+                    onReply={setReplyTarget}
+                    isHighlighted={String(r.id) === String(highlightId)}
+                  />
                 ))}
               </div>
             )}

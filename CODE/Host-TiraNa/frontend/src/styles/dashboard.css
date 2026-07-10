@@ -448,6 +448,13 @@
   font-weight: 700;
   font-size: var(--text-sm);
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.topbar-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .topbar-profile-name {
@@ -1895,4 +1902,293 @@
 
 @media (prefers-reduced-motion: reduce) {
   .skeleton-shimmer { animation: none; }
+}
+/* ────────────────────────────────────────────────────────────────
+   TOPBAR NOTIFICATION DROPDOWN
+   ──────────────────────────────────────────────────────────────── */
+
+.topbar-notif-wrapper {
+  position: relative;
+}
+
+.topbar-icon-btn--active {
+  background: var(--color-surface-alt);
+  color: var(--color-text-primary);
+}
+
+.topbar-notif-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 340px;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.14), 0 2px 8px rgba(0, 0, 0, 0.08);
+  z-index: var(--z-dropdown, 200);
+  overflow: hidden;
+  animation: ntf-drop-in 0.15s ease;
+}
+
+@keyframes ntf-drop-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.topbar-notif-dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-4) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.topbar-notif-dropdown-title {
+  font-family: var(--font-heading);
+  font-size: var(--text-sm);
+  font-weight: 800;
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+}
+
+.topbar-notif-dropdown-badge {
+  font-family: var(--font-heading);
+  font-size: 0.6rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-panel);
+  background: var(--color-accent);
+  border-radius: var(--radius-full);
+  padding: 2px 8px;
+}
+
+/* Scrollable list — shows 3 items (~72px each), scrollable to 5 */
+.topbar-notif-dropdown-list {
+  max-height: 216px; /* ~3 rows visible */
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.topbar-notif-dropdown-list::-webkit-scrollbar {
+  width: 4px;
+}
+.topbar-notif-dropdown-list::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+.topbar-notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  position: relative;
+}
+
+.topbar-notif-item:last-child {
+  border-bottom: none;
+}
+
+.topbar-notif-item:hover {
+  background: var(--color-surface-alt);
+}
+
+.topbar-notif-item--unread {
+  background: rgba(27, 42, 74, 0.03);
+}
+
+.topbar-notif-item--unread:hover {
+  background: rgba(27, 42, 74, 0.07);
+}
+
+/* Colored dot */
+.topbar-notif-item-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 6px;
+}
+
+.topbar-notif-item-dot--accent  { background: var(--color-accent); }
+.topbar-notif-item-dot--success { background: var(--color-success); }
+.topbar-notif-item-dot--danger  { background: var(--color-error); }
+.topbar-notif-item-dot--info    { background: #2563EB; }
+.topbar-notif-item-dot--gold    { background: #A37A20; }
+.topbar-notif-item-dot--muted   { background: var(--color-text-muted); }
+
+.topbar-notif-item-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.topbar-notif-item-title {
+  font-family: var(--font-heading);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  line-height: 1.35;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbar-notif-item:not(.topbar-notif-item--unread) .topbar-notif-item-title {
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.topbar-notif-item-sub {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.topbar-notif-item-time {
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+  font-family: var(--font-heading);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* See all footer */
+.topbar-notif-see-all {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-alt);
+  border: none;
+  border-top: 1px solid var(--color-border);
+  font-family: var(--font-heading);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--color-primary);
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.topbar-notif-see-all:hover {
+  background: var(--color-panel);
+  color: var(--color-accent);
+}
+
+/* Mobile: push dropdown to fill width */
+@media (max-width: 479px) {
+  .topbar-notif-dropdown {
+    position: fixed;
+    top: 60px;
+    left: var(--space-3);
+    right: var(--space-3);
+    width: auto;
+  }
+}/* ════════════════════════════════════════════════════════════════
+   NOTIFICATION TOAST — bottom-right slide-in alert
+   Slides in from the right, holds, slides back out to the right.
+   Separate from the existing action toast-stack (success/error banners).
+   ════════════════════════════════════════════════════════════════ */
+
+.notif-toast {
+  position: fixed;
+  bottom: var(--space-5);
+  right: var(--space-5);
+  z-index: var(--z-toast);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  max-width: 340px;
+  padding: var(--space-4);
+  background: var(--color-navy, #0F1A2E);
+  color: white;
+  border: 1px solid var(--color-gold, #C9A227);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+
+.notif-toast--in {
+  animation: notifToastIn 320ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.notif-toast--out {
+  animation: notifToastOut 380ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+@keyframes notifToastIn {
+  from { opacity: 0; transform: translateX(120%); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes notifToastOut {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(120%); }
+}
+
+.notif-toast-icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(201, 162, 39, 0.15);
+  color: var(--color-gold, #C9A227);
+}
+
+.notif-toast-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.notif-toast-title {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-gold, #C9A227);
+}
+
+.notif-toast-sub {
+  font-size: var(--text-xs);
+  color: rgba(255, 255, 255, 0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ────────────────────────────────────────────────────────────────
+   HIGHLIGHT — applied briefly to a booking/review card when the
+   page is opened via a notification deep-link (?highlight=<id>)
+   ──────────────────────────────────────────────────────────────── */
+
+.deep-link-highlight {
+  animation: deepLinkPulse 2200ms ease-out 1;
+  border-color: var(--color-gold, #C9A227) !important;
+}
+
+@keyframes deepLinkPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(201, 162, 39, 0.55); }
+  60%  { box-shadow: 0 0 0 10px rgba(201, 162, 39, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(201, 162, 39, 0); }
 }

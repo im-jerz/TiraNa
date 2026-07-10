@@ -1,12 +1,14 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   getHostPropertyIds,
   getBookings as apiGetBookings,
   getBookingStats as apiGetStats,
   confirmBooking as apiConfirmBooking,
   cancelBooking as apiCancelBooking,
-  completeRefund as apiCompleteRefund,
 } from "../../api/bookings";
+import useSilentPoll from "../../utils/useSilentPoll";
+
+const POLL_INTERVAL_MS = 15_000;
 
 export default function useBookingsData() {
   const [bookings, setBookings] = useState([]);
@@ -14,13 +16,17 @@ export default function useBookingsData() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [propertyIds, setPropertyIds] = useState([]);
+  const statusRef = useRef("all");
+  const propertyIdsRef = useRef([]);
 
   const loadBookings = useCallback(async (status) => {
+    statusRef.current = status ?? "all";
     setLoading(true);
     setError(null);
     try {
       const ids = await getHostPropertyIds();
       setPropertyIds(ids);
+      propertyIdsRef.current = ids;
 
       if (ids.length === 0) {
         setBookings([]);
@@ -89,6 +95,24 @@ export default function useBookingsData() {
     }
   }, [propertyIds, loadStats]);
 
+  // Background refresh: re-fetches with the current filter/property ids,
+  // but never touches `loading`/`error`, so a newly-arrived booking just
+  // appears in the list instead of requiring a manual page reload.
+  const silentRefresh = useCallback(async () => {
+    const ids = propertyIdsRef.current;
+    if (ids.length === 0) return;
+    const status = statusRef.current;
+    const params = {};
+    if (status && status !== "all") params.status = status;
+    const [res] = await Promise.all([
+      apiGetBookings(ids, params),
+      loadStats(ids),
+    ]);
+    setBookings(res.data ?? []);
+  }, [loadStats]);
+
+  useSilentPoll(silentRefresh, POLL_INTERVAL_MS);
+
   const confirm = useCallback(async (bookingId) => {
     await apiConfirmBooking(bookingId, propertyIds);
     setBookings((list) =>
@@ -105,14 +129,6 @@ export default function useBookingsData() {
     if (propertyIds.length > 0) loadStats(propertyIds);
   }, [propertyIds, loadStats]);
 
-  const completeRefund = useCallback(async (bookingId) => {
-    await apiCompleteRefund(bookingId, propertyIds);
-    setBookings((list) =>
-      list.map((b) => (b.id === bookingId ? { ...b, status: "refund_completed" } : b))
-    );
-    if (propertyIds.length > 0) loadStats(propertyIds);
-  }, [propertyIds, loadStats]);
-
   return {
     bookings,
     stats,
@@ -121,6 +137,5 @@ export default function useBookingsData() {
     reload: loadBookings,
     confirm,
     cancel,
-    completeRefund,
   };
 }

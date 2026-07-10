@@ -22,6 +22,8 @@ class Host(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     status = db.Column(db.String(30), nullable=False, default="awaiting_verification")
     email_verified = db.Column(db.Integer, nullable=False, default=0)  # 0/1
+    tfa_enabled = db.Column(db.Integer, nullable=False, default=0)     # 0/1 — added for §12.2
+    tfa_secret = db.Column(db.String(64))                              # TOTP base32 secret
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

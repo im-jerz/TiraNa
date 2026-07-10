@@ -58,6 +58,12 @@ def create_app(config_name: str = "development") -> Flask:
             os.path.join(current_app.instance_path, "uploads", "kyc", folder), filepath
         )
 
+    @app.route("/uploads/avatars/<int:host_id>/<path:filepath>")
+    def uploaded_avatar(host_id, filepath):
+        return send_from_directory(
+            os.path.join(current_app.instance_path, "uploads", "avatars", str(host_id)), filepath
+        )
+
     @jwt.token_in_blocklist_loader
     def check_if_token_revoked(jwt_header, jwt_payload):
         from app.blueprints.auth.routes import is_token_revoked

@@ -14,6 +14,7 @@ from app.models.property import (
     PropertyImage,
     AvailabilityCalendar,
 )
+from app.models.notification import Notification
 
 __all__ = [
     "Host",
@@ -28,4 +29,5 @@ __all__ = [
     "PropertyAmenity",
     "PropertyImage",
     "AvailabilityCalendar",
+    "Notification",
 ]

@@ -30,6 +30,18 @@ export default defineConfig({
         target: 'http://backend:5000',
         changeOrigin: true,
       },
+      '/api/notifications': {
+        target: 'http://backend:5000',
+        changeOrigin: true,
+      },
+      '/api/internal': {
+        target: 'http://backend:5000',
+        changeOrigin: true,
+      },
+      '/api/settings': {
+        target: 'http://backend:5000',
+        changeOrigin: true,
+      },
       '/uploads': {
         target: 'http://backend:5000',
         changeOrigin: true,

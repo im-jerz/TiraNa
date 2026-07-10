@@ -336,3 +336,76 @@ export const IconDownload = (p) => (
     <path d="M4 18v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1" />
   </svg>
 );
+
+export const IconCamera = (p) => (
+  <svg {...base} {...p}>
+    <path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z" />
+    <circle cx="12" cy="13.5" r="3.5" />
+  </svg>
+);
+
+export const IconLaptop = (p) => (
+  <svg {...base} {...p}>
+    <rect x="4" y="5" width="16" height="10.5" rx="1.2" />
+    <path d="M2.5 19.5h19M9.5 19.5 10 16h4l.5 3.5" />
+  </svg>
+);
+
+export const IconSmartphone = (p) => (
+  <svg {...base} {...p}>
+    <rect x="7" y="2.5" width="10" height="19" rx="2" />
+    <path d="M11 18.2h2" />
+  </svg>
+);
+
+export const IconLock = (p) => (
+  <svg {...base} {...p}>
+    <rect x="5" y="11" width="14" height="9.5" rx="1.5" />
+    <path d="M8 11V7.5a4 4 0 0 1 8 0V11" />
+    <path d="M12 14.7v2.4" />
+  </svg>
+);
+
+export const IconGlobe = (p) => (
+  <svg {...base} {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M3 12h18M12 3c2.4 2.5 3.6 5.6 3.6 9s-1.2 6.5-3.6 9c-2.4-2.5-3.6-5.6-3.6-9S9.6 5.5 12 3Z" />
+  </svg>
+);
+
+export const IconBank = (p) => (
+  <svg {...base} {...p}>
+    <path d="M3 10.5 12 4l9 6.5" />
+    <path d="M4.5 10.5v8.5M8.5 10.5v8.5M15.5 10.5v8.5M19.5 10.5v8.5" />
+    <path d="M3 20.5h18" />
+  </svg>
+);
+
+export const IconVault = (p) => (
+  <svg {...base} {...p}>
+    <rect x="3.5" y="3.5" width="17" height="17" rx="2" />
+    <circle cx="12" cy="12" r="4.2" />
+    <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+    <path d="M12 7.8V6M12 18v-1.8M16.2 12H18M6 12h1.8" />
+  </svg>
+);
+
+export const IconReceipt = (p) => (
+  <svg {...base} {...p}>
+    <path d="M6 2.8h12v18.4l-2.4-1.5-2.4 1.5-2.4-1.5-2.4 1.5-2.4-1.5V2.8Z" />
+    <path d="M8.5 8h7M8.5 11.5h7M8.5 15h4" />
+  </svg>
+);
+
+export const IconRefresh = (p) => (
+  <svg {...base} {...p}>
+    <path d="M4 12a8 8 0 0 1 13.6-5.7M20 12a8 8 0 0 1-13.6 5.7" />
+    <path d="M17.2 3.5v3.3h-3.3M6.8 20.5v-3.3h3.3" />
+  </svg>
+);
+
+export const IconFilter = (p) => (
+  <svg {...base} {...p}>
+    <path d="M4 5h16M7 12h10M10 19h4" />
+  </svg>
+);

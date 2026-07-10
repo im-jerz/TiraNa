@@ -12,6 +12,7 @@ import {
   IconChart,
   IconStar,
   IconMessage,
+  IconBell,
   IconLifeBuoy,
   IconSettings,
   IconPower,
@@ -29,6 +30,7 @@ const MORE_LINKS = [
   { to: "/dashboard/revenue", label: "Revenue", icon: IconChart },
   { to: "/dashboard/reviews", label: "Reviews", icon: IconStar },
   { to: "/dashboard/messages", label: "Messages", icon: IconMessage },
+  { to: "/dashboard/notifications", label: "Notifications", icon: IconBell },
   { to: "/dashboard/support", label: "Support & Disputes", icon: IconLifeBuoy },
   { to: "/dashboard/settings", label: "Settings", icon: IconSettings },
 ];

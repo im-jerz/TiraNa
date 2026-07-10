@@ -11,6 +11,7 @@ import {
   IconUsers,
   IconStar,
   IconMessage,
+  IconBell,
   IconLifeBuoy,
   IconSettings,
   IconChevronLeft,
@@ -41,13 +42,11 @@ const NAV_SECTIONS = [
     label: "Engagement",
     items: [
       { to: "/dashboard/reviews", label: "Reviews", icon: IconStar },
-      { to: "/dashboard/messages", label: "Messages", icon: IconMessage, badge: 3 },
     ],
   },
   {
     label: "Account",
     items: [
-      { to: "/dashboard/support", label: "Support & Disputes", icon: IconLifeBuoy },
       { to: "/dashboard/settings", label: "Settings", icon: IconSettings },
     ],
   },

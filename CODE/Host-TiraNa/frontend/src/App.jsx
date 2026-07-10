@@ -15,6 +15,10 @@ import BookingsPage from './pages/bookings/BookingsPage'
 import GuestManagement from './pages/guests/GuestManagement'
 import ReviewsPage from './pages/reviews/ReviewsPage'
 import RevenuePage from './pages/revenue/RevenuePage'
+import WalletPage from './pages/wallet/WalletPage'
+import NotificationsPage from './pages/notifications/NotificationsPage'
+{/*import NotificationsPage from './pages/notifications/NotificationsPage'*/}
+import SettingsPage from './pages/settings/SettingsPage'
 
 // sessionStorage key used to mark "the last navigation came from inside
 // the app, via handleNavigate" — see RequireInternalNav below. Cleared
@@ -133,6 +137,10 @@ function AuthRoutes() {
         <Route path="guests" element={<GuestManagement />} />
         <Route path="reviews" element={<ReviewsPage />} />
         <Route path="revenue" element={<RevenuePage />} />
+        <Route path="wallet" element={<WalletPage />} />
+        <Route path="notifications" element={<NotificationsPage />} />
+        {/* <Route path="notifications" element={<NotificationsPage />} /> */}
+        <Route path="settings" element={<SettingsPage />} />
       </Route>
 
       {/* Anything unrecognized falls back to sign-in */}

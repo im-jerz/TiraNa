@@ -37,9 +37,6 @@ export async function cancelBooking(bookingId, propertyIds) {
   return data;
 }
 
-export async function completeRefund(bookingId, propertyIds) {
-  const { data } = await clientApi.patch(`/api/host/${bookingId}/refund-completed`, {
-    property_ids: propertyIds,
-  });
-  return data;
-}
+// NOTE: completing a refund is no longer a one-click action here — clicking
+// "Refund Completed" now navigates to the Wallet page, where a receipt is
+// staged first. See src/api/refund.js and src/pages/wallet/RefundFlowModal.jsx.

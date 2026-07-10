@@ -33,6 +33,8 @@ services:
       DATABASE_URL: oracle+oracledb://AIRBNB_HOST:${ORACLE_APP_PASSWORD:-Carlangelo%2319}@oracle-db:1521/?service_name=FREEPDB1
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    volumes:
+      - ./backend/instance:/app/instance
     depends_on:
       oracle-db:
         condition: service_healthy

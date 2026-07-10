@@ -1,0 +1,770 @@
+/* ════════════════════════════════════════════════════════════════
+   SETTINGS — Account & Profile Management (§12.1 + §12.2)
+
+   Layout philosophy:
+     Mobile   (<640px)   : single-column stack, idcard full-width on top
+     Tablet   (640–1023) : single-column, idcard becomes compact horizontal card
+     Laptop   (1024–1279): two-column — sticky idcard rail + scrollable content
+     Desktop  (≥1280px)  : same two-column, wider content pane, more breathing room
+
+   Design language: navy + antique gold, no gradients, clean editorial.
+   Token references: all from index.css :root. No new values introduced.
+   ════════════════════════════════════════════════════════════════ */
+
+/* ─── Outer wrapper ─────────────────────────────────────────── */
+
+.stg-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  min-height: 0;
+}
+
+/* ─── Rail (idcard container) ────────────────────────────────── */
+
+.stg-rail {
+  width: 100%;
+}
+
+/* ─── Content column ─────────────────────────────────────────── */
+
+.stg-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  min-width: 0;
+}
+
+/* ─── Pill nav ───────────────────────────────────────────────── */
+
+.stg-pillnav {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.stg-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 38px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-full);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  font-family: var(--font-heading);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
+}
+
+.stg-pill:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.stg-pill.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+/* ─── Host ID Card ───────────────────────────────────────────── */
+
+.stg-idcard {
+  background: var(--color-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle textural noise layer — no gradient, purely compositional */
+.stg-idcard::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 80% 10%, rgba(201, 168, 76, 0.12) 0%, transparent 60%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='80' height='80' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  background-size: 100% 100%, 80px 80px;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.stg-idcard-top {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-4);
+  position: relative;
+  z-index: 1;
+}
+
+/* Avatar inside the idcard */
+.stg-idcard-avatar {
+  position: relative;
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: hsl(var(--avatar-hue, 218), 45%, 78%);
+  border: 3px solid rgba(201, 168, 76, 0.55);
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stg-idcard-avatar > span {
+  font-family: var(--font-heading);
+  font-size: var(--text-xl);
+  font-weight: 800;
+  color: hsl(var(--avatar-hue, 218), 50%, 28%);
+  line-height: 1;
+  position: relative;
+  z-index: 1;
+}
+
+.stg-idcard-avatar > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.stg-avatar-edit {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.stg-avatar-edit:hover {
+  background: var(--color-accent-hover);
+  transform: scale(1.1);
+}
+
+.stg-idcard-name {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+.stg-idcard-name h2 {
+  font-family: var(--font-heading);
+  font-size: var(--text-xl);
+  font-weight: 800;
+  color: var(--color-text-inverse);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin-bottom: var(--space-2);
+  word-break: break-word;
+}
+
+.stg-verified-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 26px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-full);
+  background: rgba(201, 168, 76, 0.18);
+  border: 1px solid rgba(201, 168, 76, 0.45);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-accent);
+  letter-spacing: 0.01em;
+}
+
+.stg-verified-pill.pending {
+  background: rgba(220, 38, 38, 0.12);
+  border-color: rgba(220, 38, 38, 0.35);
+  color: #FECACA;
+}
+
+.stg-idcard-bio {
+  font-size: var(--text-sm);
+  color: var(--color-text-on-panel);
+  line-height: 1.6;
+  opacity: 0.85;
+  position: relative;
+  z-index: 1;
+}
+
+/* ─── Contact rows (email + phone) in idcard ─────────────────── */
+
+.stg-idcard-contacts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4) 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  position: relative;
+  z-index: 1;
+}
+
+.stg-idcard-contact-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stg-idcard-contact-value {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.90);
+  word-break: break-all;
+}
+
+.stg-idcard-stats {
+  display: flex;
+  gap: var(--space-6);
+  padding-top: var(--space-4);
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  position: relative;
+  z-index: 1;
+  flex-wrap: wrap;
+}
+
+.stg-idcard-stats > div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.stg-idcard-stat-label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-text-on-panel);
+  opacity: 0.6;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.stg-idcard-stat-value {
+  font-family: var(--font-heading);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+/* ─── Section cards ──────────────────────────────────────────── */
+
+.stg-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  /* 64px topbar + 16px breathing room */
+  scroll-margin-top: 80px;
+}
+
+.stg-card-head {
+  padding: var(--space-6) var(--space-6) 0;
+  margin-bottom: var(--space-6);
+}
+
+.stg-card-head h2 {
+  font-family: var(--font-heading);
+  font-size: var(--text-xl);
+  font-weight: 800;
+  color: var(--color-text-primary);
+  letter-spacing: -0.02em;
+  margin-bottom: var(--space-1);
+}
+
+.stg-card-head p {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.stg-card > form,
+.stg-card > .stg-security-grid {
+  padding: 0 var(--space-6) var(--space-6);
+}
+
+/* ─── Photo row (form section) ───────────────────────────────── */
+
+.stg-photo-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  margin-bottom: var(--space-6);
+  padding-bottom: var(--space-6);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.stg-photo-avatar {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: hsl(var(--avatar-hue, 218), 45%, 88%);
+  border: 2px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-family: var(--font-heading);
+  font-size: var(--text-xl);
+  font-weight: 800;
+  color: hsl(var(--avatar-hue, 218), 50%, 30%);
+}
+
+.stg-photo-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ─── Read-only email field ──────────────────────────────────── */
+
+.stg-readonly-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 52px;
+  padding: 0 var(--space-4);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+  font-size: var(--text-base);
+  color: var(--color-text-secondary);
+  flex-wrap: wrap;
+}
+
+.stg-readonly-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 26px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* ─── Form action bar ────────────────────────────────────────── */
+
+.stg-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-border);
+  margin-top: var(--space-4);
+}
+
+.stg-unsaved {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-accent-hover);
+  margin-right: auto;
+}
+
+/* ─── Security sub-grid ──────────────────────────────────────── */
+
+.stg-security-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-5);
+}
+
+/* ─── Subcards (change password, sessions, 2fa) ──────────────── */
+
+.stg-subcard {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  background: var(--color-bg);
+}
+
+/* Let 2FA span full row when grid becomes 2-col */
+.stg-subcard-span {
+  /* becomes grid-column: span 2 at wider breakpoints, see below */
+}
+
+.stg-subcard-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.stg-subcard-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.stg-subcard-head h3 {
+  font-family: var(--font-heading);
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+/* ─── Active sessions list ───────────────────────────────────── */
+
+.stg-session-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.stg-session-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.stg-session-row:last-child {
+  border-bottom: none;
+}
+
+.stg-session-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.stg-session-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.stg-session-device {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-1);
+  flex-wrap: wrap;
+}
+
+.stg-current-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-success-light);
+  border: 1px solid rgba(22, 163, 74, 0.25);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-success);
+}
+
+.stg-session-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  flex-wrap: wrap;
+}
+
+.stg-session-meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.stg-session-empty {
+  padding: var(--space-4) 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+/* Revoke session button */
+.stg-revoke-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: none;
+  border: 1.5px solid transparent;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition:
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    background var(--transition-fast);
+}
+
+.stg-revoke-btn:hover {
+  color: var(--color-error);
+  border-color: rgba(220, 38, 38, 0.3);
+  background: var(--color-error-light);
+}
+
+.stg-revoke-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ─── 2FA row ────────────────────────────────────────────────── */
+
+.stg-2fa-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.stg-2fa-row p {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-2);
+}
+
+/* Disabled toggle appearance */
+.stg-subcard-span .switch {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+/* ─── Coming soon badge ──────────────────────────────────────── */
+
+.stg-soon-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--color-text-muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ─── Skeleton ───────────────────────────────────────────────── */
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.55; }
+  50%       { opacity: 1; }
+}
+
+/* Re-declare so settings.css is standalone if guests.css isn't loaded */
+.stg-wrap .skeleton-pulse {
+  background: var(--color-surface-alt);
+  border-radius: var(--radius-lg);
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   RESPONSIVE LAYOUT
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── Mobile (<480px): tight stacked, idcard compact ───────────── */
+@media (max-width: 479px) {
+  .stg-idcard {
+    padding: var(--space-5);
+  }
+
+  .stg-idcard-avatar {
+    width: 56px;
+    height: 56px;
+  }
+
+  .stg-idcard-name h2 {
+    font-size: var(--text-lg);
+  }
+
+  .stg-card-head,
+  .stg-card > form,
+  .stg-card > .stg-security-grid {
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+  }
+
+  .stg-photo-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .stg-form-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .stg-form-actions .btn-inline {
+    width: 100%;
+  }
+
+  .stg-form-actions .stg-unsaved {
+    margin-right: 0;
+    margin-bottom: var(--space-1);
+  }
+
+  .stg-readonly-field {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: var(--space-3) var(--space-4);
+    min-height: auto;
+    gap: var(--space-2);
+  }
+
+  .stg-session-meta {
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+}
+
+/* ── Tablet (640–1023px): pill-nav scrolls, idcard horizontal ─── */
+@media (min-width: 640px) {
+  .stg-wrap {
+    gap: var(--space-8);
+  }
+
+  .stg-idcard {
+    padding: var(--space-8);
+  }
+
+  .stg-idcard-avatar {
+    width: 88px;
+    height: 88px;
+  }
+
+  .stg-idcard-name h2 {
+    font-size: var(--text-2xl);
+  }
+
+  .stg-card-head {
+    padding: var(--space-8) var(--space-8) 0;
+    margin-bottom: var(--space-8);
+  }
+
+  .stg-card > form,
+  .stg-card > .stg-security-grid {
+    padding: 0 var(--space-8) var(--space-8);
+  }
+
+  /* Two columns for name/phone fields */
+  .builder-field-grid.cols-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .stg-security-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .stg-subcard-span {
+    grid-column: span 2;
+  }
+}
+
+/* ── Laptop (1024–1279px): 2-column, sticky rail ─────────────── */
+@media (min-width: 1024px) {
+  .stg-wrap {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    grid-template-rows: auto;
+    align-items: start;
+    gap: var(--space-8);
+  }
+
+  .stg-rail {
+    position: sticky;
+    top: calc(var(--space-5) + 72px); /* topbar clearance */
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .stg-content {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .stg-idcard {
+    padding: var(--space-6);
+  }
+
+  .stg-idcard-avatar {
+    width: 72px;
+    height: 72px;
+  }
+
+  .stg-idcard-name h2 {
+    font-size: var(--text-xl);
+  }
+}
+
+/* ── Desktop (≥1280px): wider rail + content ─────────────────── */
+@media (min-width: 1280px) {
+  .stg-wrap {
+    grid-template-columns: 340px 1fr;
+    gap: var(--space-10);
+  }
+
+  .stg-idcard {
+    padding: var(--space-8);
+  }
+
+  .stg-idcard-avatar {
+    width: 88px;
+    height: 88px;
+  }
+
+  .stg-idcard-name h2 {
+    font-size: var(--text-2xl);
+  }
+
+  .stg-pill {
+    height: 42px;
+    font-size: var(--text-base);
+  }
+}
