@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getBookings } from '../../api/client'
+import { getBookings } from '../../api/admin'
 
 const MOCK_BOOKINGS = [
   { id: 1001, listing_title: 'Beachfront Villa', guest_name: 'Juan Dela Cruz', guest_email: 'juan@email.com', check_in: '2024-06-15', check_out: '2024-06-18', total_price: 13500, status: 'confirmed', nights: 3, listing_id: 1 },
@@ -21,7 +21,7 @@ export default function AdminBookings() {
     setLoading(true)
     try {
       const data = await getBookings({ status: statusFilter, search, limit: 100 })
-      setBookings(data)
+      setBookings(Array.isArray(data) ? data : [])
     } catch (err) {
       console.error('Failed to fetch bookings:', err)
       setBookings([])

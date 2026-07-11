@@ -14,10 +14,11 @@ export default function AdminWithdrawals() {
     setLoading(true)
     setError('')
     try {
-      const data = await getWithdrawals({ status: statusFilter || undefined })
+      const data = await getWithdrawals({ status: statusFilter || undefined, limit: 100 })
       setWithdrawals(Array.isArray(data) ? data : [])
     } catch (err) {
       setError(err.message || 'Failed to load withdrawals')
+      setWithdrawals([])
     } finally {
       setLoading(false)
     }
@@ -70,7 +71,9 @@ export default function AdminWithdrawals() {
 
       <div className="table-container">
         {loading ? (
-          <div className="empty-state"><p>Loading...</p></div>
+          <div className="empty-state">
+            <p>Loading withdrawals...</p>
+          </div>
         ) : withdrawals.length === 0 ? (
           <div className="empty-state">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -93,10 +96,10 @@ export default function AdminWithdrawals() {
               <tbody>
                 {withdrawals.map((w) => (
                   <tr key={w.id}>
-                    <td className="td-id">{w.id}</td>
+                    <td className="td-id">#{w.id}</td>
                     <td className="td-main">{w.host_name || '—'}</td>
                     <td className="td-amount">₱{Number(w.amount).toLocaleString()}</td>
-                    <td className="td-muted">{w.method || '—'}</td>
+                    <td className="td-muted" style={{ textTransform: 'uppercase', fontSize: 11 }}>{w.method || '—'}</td>
                     <td><span className={`badge badge-${w.status}`}>{w.status}</span></td>
                     <td className="td-muted">{w.created_at ? new Date(w.created_at).toLocaleDateString() : '—'}</td>
                     <td>
@@ -121,20 +124,22 @@ export default function AdminWithdrawals() {
       </div>
 
       {rejectModal && (
-        <div className="modal-overlay open">
+        <div className="modal-overlay open" onClick={(e) => { if (e.target === e.currentTarget) setRejectModal(null) }}>
           <div className="modal">
             <div className="modal-header">
               <h2 className="modal-title">Reject Withdrawal</h2>
               <button onClick={() => setRejectModal(null)} className="modal-close">&times;</button>
             </div>
-            <p style={{fontSize:13,color:'#6b7280',marginBottom:16}}>{rejectModal.host_name} — ₱{Number(rejectModal.amount).toLocaleString()}</p>
+            <p style={{fontSize:13,color:'#6b7280',marginBottom:16}}>
+              <strong>{rejectModal.host_name}</strong> — ₱{Number(rejectModal.amount).toLocaleString()}
+            </p>
             <div className="form-group">
               <label className="form-label">Rejection Reason</label>
               <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="Rejection reason (required)..." className="form-textarea" rows={3} />
             </div>
             <div className="modal-footer">
               <button onClick={() => setRejectModal(null)} disabled={acting} className="btn btn-ghost">Cancel</button>
-              <button onClick={handleReject} disabled={acting || !rejectReason.trim()} className="btn btn-brand">{acting ? 'Rejecting...' : 'Reject'}</button>
+              <button onClick={handleReject} disabled={acting || !rejectReason.trim()} className="btn btn-danger">{acting ? 'Rejecting...' : 'Reject'}</button>
             </div>
           </div>
         </div>

@@ -9,7 +9,7 @@ from ..database import get_db
 from ..models import AdminAccount, AdminAuditLog, LoginAttempt, OTPVerification
 from ..schemas import (
     AdminLoginRequest, AdminResponse, AdminTokenResponse, 
-    VerifyOTPRequest, ChangePasswordRequest,
+    VerifyOTPRequest, ChangePasswordRequest, AdminProfileUpdateRequest,
     AdminRegisterRequest, AdminRegisterVerifyRequest,
     AdminAcceptInviteRequest
 )
@@ -145,6 +145,43 @@ def change_password(request: ChangePasswordRequest, current_admin: AdminAccount 
 
 @router.get("/me", response_model=AdminResponse)
 def admin_me(current_admin: AdminAccount = Depends(get_current_admin)):
+    return current_admin
+
+
+@router.put("/me", response_model=AdminResponse)
+def update_admin_profile(
+    request: AdminProfileUpdateRequest,
+    current_admin: AdminAccount = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    if request.username:
+        existing = db.query(AdminAccount).filter(
+            AdminAccount.username == request.username,
+            AdminAccount.id != current_admin.id
+        ).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Username already taken")
+        current_admin.username = request.username
+
+    if request.email:
+        existing = db.query(AdminAccount).filter(
+            AdminAccount.email == request.email,
+            AdminAccount.id != current_admin.id
+        ).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Email already registered")
+        current_admin.email = request.email
+
+    log = AdminAuditLog(
+        admin_id=current_admin.id,
+        admin_username=current_admin.username,
+        action="UPDATE_PROFILE",
+        details="Admin updated their profile",
+    )
+    db.add(log)
+    db.commit()
+    db.refresh(current_admin)
+
     return current_admin
 
 

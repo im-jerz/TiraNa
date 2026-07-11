@@ -6,7 +6,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import Layout from './components/Layout'
 import DashboardHome from './pages/admin/DashboardHome'
 import AdminUsers from './pages/admin/AdminUsers'
-import AdminListings from './pages/admin/AdminListings'
+
 import AdminBookings from './pages/admin/AdminBookings'
 import AdminPayments from './pages/admin/AdminPayments'
 import AdminReviews from './pages/admin/AdminReviews'
@@ -31,7 +31,7 @@ function App() {
             <Route element={<Layout />}>
               <Route index element={<DashboardHome />} />
               <Route path="users" element={<AdminUsers />} />
-              <Route path="listings" element={<AdminListings />} />
+
               <Route path="rooms" element={<AdminRooms />} />
               <Route path="verifications" element={<AdminVerifications />} />
               <Route path="bookings" element={<AdminBookings />} />

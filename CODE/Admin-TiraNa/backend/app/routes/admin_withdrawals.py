@@ -5,7 +5,7 @@ from datetime import datetime
 import httpx
 
 from ..database import get_db
-from ..models import AdminAccount, Withdrawal
+from ..models import AdminAccount, Withdrawal, AdminAuditLog
 from ..middleware.admin_auth import get_current_admin
 from ..config import get_settings
 
@@ -71,6 +71,14 @@ async def approve_withdrawal(
 
     withdrawal.status = "approved"
     withdrawal.updated_at = datetime.utcnow()
+
+    log = AdminAuditLog(
+        admin_id=current_admin.id,
+        admin_username=current_admin.username,
+        action="APPROVE_WITHDRAWAL",
+        details=f"Approved withdrawal #{withdrawal_id} (₱{withdrawal.amount}) for {withdrawal.host_name}",
+    )
+    db.add(log)
     db.commit()
     db.refresh(withdrawal)
 
@@ -117,6 +125,14 @@ async def reject_withdrawal(
     withdrawal.status = "rejected"
     withdrawal.rejection_reason = reason or "No reason provided"
     withdrawal.updated_at = datetime.utcnow()
+
+    log = AdminAuditLog(
+        admin_id=current_admin.id,
+        admin_username=current_admin.username,
+        action="REJECT_WITHDRAWAL",
+        details=f"Rejected withdrawal #{withdrawal_id} (₱{withdrawal.amount}) for {withdrawal.host_name}. Reason: {reason}",
+    )
+    db.add(log)
     db.commit()
     db.refresh(withdrawal)
 

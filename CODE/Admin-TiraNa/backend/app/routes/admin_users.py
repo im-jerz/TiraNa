@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
+from sqlalchemy.orm import Session
 import logging
-from ..models import AdminAccount
+from ..database import get_db
+from ..models import AdminAccount, AdminAuditLog
 from ..middleware.admin_auth import get_current_admin
 from ..services.host_api_client import host_api_client
 from ..services.client_api_client import client_api_client
@@ -44,9 +46,25 @@ async def list_users(
 @router.delete("/{user_id}")
 async def delete_user(
     user_id: str,
-    current_admin: AdminAccount = Depends(get_current_admin)
+    role: str = Query("", description="User role: 'Host' or 'Client'"),
+    current_admin: AdminAccount = Depends(get_current_admin),
+    db: Session = Depends(get_db),
 ):
-    success = await host_api_client.delete_host(int(user_id))
+    if role.lower() == "host":
+        success = await host_api_client.delete_host(int(user_id))
+    else:
+        success = await client_api_client.delete_user(user_id)
+
     if not success:
         raise HTTPException(status_code=404, detail="User not found or delete failed")
+
+    log = AdminAuditLog(
+        admin_id=current_admin.id,
+        admin_username=current_admin.username,
+        action="DELETE_USER",
+        details=f"Deleted {role or 'unknown'} user (ID: {user_id})",
+    )
+    db.add(log)
+    db.commit()
+
     return {"message": "User deleted successfully"}

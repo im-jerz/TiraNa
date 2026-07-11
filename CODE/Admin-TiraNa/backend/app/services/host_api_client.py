@@ -127,6 +127,18 @@ class HostAPIClient:
         result = await self._post(f"/api/admin/properties/{room_id}/status", {"status": status})
         return result is not None
 
+    async def approve_room(self, room_id: int) -> bool:
+        result = await self._post(f"/api/admin/properties/{room_id}/status", {"status": "active"})
+        return result is not None
+
+    async def reject_room(self, room_id: int, reason: str = "") -> bool:
+        result = await self._post(f"/api/admin/properties/{room_id}/status", {"status": "inactive"})
+        return result is not None
+
+    async def hide_room(self, room_id: int) -> bool:
+        result = await self._post(f"/api/admin/properties/{room_id}/status", {"status": "suspended"})
+        return result is not None
+
     # ─── Bookings ──────────────────────────────────────────────
 
     async def get_bookings(self, status: str = "", skip: int = 0, limit: int = 50) -> List[Dict]:

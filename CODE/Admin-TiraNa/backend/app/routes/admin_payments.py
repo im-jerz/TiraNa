@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from typing import List
-from ..models import AdminAccount
+from sqlalchemy.orm import Session
+from ..database import get_db
+from ..models import AdminAccount, AdminAuditLog
 from ..schemas import PaymentResponse
 from ..middleware.admin_auth import get_current_admin
 from ..services.client_api_client import client_api_client
@@ -47,12 +49,23 @@ async def refund_payment(
     payment_id: str,
     amount: float,
     reason: str,
-    current_admin: AdminAccount = Depends(get_current_admin)
+    current_admin: AdminAccount = Depends(get_current_admin),
+    db: Session = Depends(get_db),
 ):
     """Process a refund for a payment via Client API."""
     success = await client_api_client.refund_payment(payment_id, amount, reason)
     if not success:
         raise HTTPException(status_code=500, detail="Failed to process refund")
+
+    log = AdminAuditLog(
+        admin_id=current_admin.id,
+        admin_username=current_admin.username,
+        action="REFUND_PAYMENT",
+        details=f"Refunded ₱{amount} for payment {payment_id}. Reason: {reason}",
+    )
+    db.add(log)
+    db.commit()
+
     return {
         "message": f"Refund of ₱{amount} for payment {payment_id} processed successfully",
         "payment_id": payment_id,

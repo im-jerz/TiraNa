@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, Query, HTTPException, Body
+from sqlalchemy.orm import Session
 import uuid
 import logging
-from ..models import AdminAccount
+from ..database import get_db
+from ..models import AdminAccount, AdminAuditLog
 from ..middleware.admin_auth import get_current_admin
 from ..services.host_api_client import host_api_client
 from ..services.client_api_client import client_api_client
@@ -59,7 +61,8 @@ async def list_verifications(
 @router.post("/{verification_id}/approve")
 async def approve_verification(
     verification_id: str,
-    current_admin: AdminAccount = Depends(get_current_admin)
+    current_admin: AdminAccount = Depends(get_current_admin),
+    db: Session = Depends(get_db),
 ):
     if is_uuid(verification_id):
         success = await client_api_client.approve_verification(verification_id)
@@ -67,6 +70,16 @@ async def approve_verification(
         success = await host_api_client.approve_verification(int(verification_id))
     if not success:
         raise HTTPException(status_code=404, detail="Verification not found or approve failed")
+
+    log = AdminAuditLog(
+        admin_id=current_admin.id,
+        admin_username=current_admin.username,
+        action="APPROVE_VERIFICATION",
+        details=f"Approved verification (ID: {verification_id})",
+    )
+    db.add(log)
+    db.commit()
+
     return {"message": "Verification approved successfully"}
 
 
@@ -74,7 +87,8 @@ async def approve_verification(
 async def reject_verification(
     verification_id: str,
     body: dict = Body(default={}),
-    current_admin: AdminAccount = Depends(get_current_admin)
+    current_admin: AdminAccount = Depends(get_current_admin),
+    db: Session = Depends(get_db),
 ):
     reason = body.get("reason", "")
     if is_uuid(verification_id):
@@ -83,4 +97,14 @@ async def reject_verification(
         success = await host_api_client.reject_verification(int(verification_id), reason=reason)
     if not success:
         raise HTTPException(status_code=404, detail="Verification not found or reject failed")
+
+    log = AdminAuditLog(
+        admin_id=current_admin.id,
+        admin_username=current_admin.username,
+        action="REJECT_VERIFICATION",
+        details=f"Rejected verification (ID: {verification_id}). Reason: {reason}",
+    )
+    db.add(log)
+    db.commit()
+
     return {"message": "Verification rejected successfully"}

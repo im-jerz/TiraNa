@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getReviews, toggleReviewVisibility } from '../../api/client'
+import { getReviews, hideReview, showReview } from '../../api/admin'
 
 export default function AdminReviews() {
   const [reviews, setReviews] = useState([])
@@ -30,7 +30,11 @@ export default function AdminReviews() {
   const handleToggleHide = async (review) => {
     setActing(true)
     try {
-      await toggleReviewVisibility(review.id)
+      if (review.is_hidden) {
+        await showReview(review.id)
+      } else {
+        await hideReview(review.id)
+      }
       setReviews(prev => prev.map(r => r.id === review.id ? { ...r, is_hidden: !r.is_hidden } : r))
       setDetailModal(null)
     } catch (err) {

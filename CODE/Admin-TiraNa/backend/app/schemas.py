@@ -49,6 +49,11 @@ class AdminUpdateRequest(BaseModel):
     is_active: Optional[bool] = None
 
 
+class AdminProfileUpdateRequest(BaseModel):
+    username: Optional[str] = None
+    email: Optional[str] = None
+
+
 class AdminRegisterRequest(BaseModel):
     username: str
     email: str

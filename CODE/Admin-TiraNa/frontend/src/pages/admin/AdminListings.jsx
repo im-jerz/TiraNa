@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getProperties, updatePropertyStatus } from '../../api/host'
+import { getListings, approveListing, rejectListing, suspendListing } from '../../api/admin'
 
 const STATUS_MAP = {
   active: 'approved',
@@ -27,8 +27,8 @@ export default function AdminListings() {
   const fetchListings = useCallback(async () => {
     setLoading(true)
     try {
-      const properties = await getProperties({ search, limit: 100 })
-      setListings(properties)
+      const data = await getListings({ search, limit: 100 })
+      setListings(data)
     } catch (err) {
       console.error('Failed to fetch listings:', err)
       setListings([])
@@ -53,11 +53,22 @@ export default function AdminListings() {
     if (!actionModal) return
     setActing(true)
     try {
-      const newStatus = REVERSE_STATUS[actionType]
-      await updatePropertyStatus(actionModal.id, newStatus)
-      setListings(prev => prev.map(l =>
-        l.id === actionModal.id ? { ...l, status: newStatus } : l
-      ))
+      if (actionType === 'approve') {
+        await approveListing(actionModal.id)
+        setListings(prev => prev.map(l =>
+          l.id === actionModal.id ? { ...l, status: 'active' } : l
+        ))
+      } else if (actionType === 'reject') {
+        await rejectListing(actionModal.id, actionReason)
+        setListings(prev => prev.map(l =>
+          l.id === actionModal.id ? { ...l, status: 'inactive' } : l
+        ))
+      } else if (actionType === 'suspend') {
+        await suspendListing(actionModal.id, actionReason)
+        setListings(prev => prev.map(l =>
+          l.id === actionModal.id ? { ...l, status: 'suspended' } : l
+        ))
+      }
     } catch (err) {
       console.error('Failed to update listing status:', err)
     } finally {
@@ -127,10 +138,17 @@ export default function AdminListings() {
                             <>
                               <button onClick={() => openAction(l, 'approve')} className="btn btn-brand btn-sm">Approve</button>
                               <button onClick={() => openAction(l, 'reject')} className="btn btn-ghost btn-sm">Reject</button>
+                              <button onClick={() => openAction(l, 'suspend')} className="btn btn-danger btn-sm">Suspend</button>
                             </>
                           )}
-                          {(displayStatus === 'approved' || displayStatus === 'pending') && (
-                            <button onClick={() => openAction(l, 'suspend')} className="btn btn-danger btn-sm">Suspend</button>
+                          {displayStatus === 'approved' && (
+                            <>
+                              <button onClick={() => openAction(l, 'reject')} className="btn btn-ghost btn-sm">Reject</button>
+                              <button onClick={() => openAction(l, 'suspend')} className="btn btn-danger btn-sm">Suspend</button>
+                            </>
+                          )}
+                          {(displayStatus === 'suspended' || displayStatus === 'rejected') && (
+                            <button onClick={() => openAction(l, 'approve')} className="btn btn-brand btn-sm">Approve</button>
                           )}
                         </div>
                       </td>

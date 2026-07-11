@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getHosts, deleteHost } from '../../api/host'
-import { getUsers } from '../../api/client'
+import { getUsers, deleteUser } from '../../api/admin'
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([])
@@ -13,17 +12,8 @@ export default function AdminUsers() {
   const fetchUsers = useCallback(async () => {
     setLoading(true)
     try {
-      const [hosts, clientUsers] = await Promise.all([
-        getHosts({ search, limit: 100 }).catch(() => []),
-        getUsers({ search, limit: 100 }).catch(() => []),
-      ])
-      const merged = [...hosts, ...clientUsers]
-      merged.sort((a, b) => {
-        const da = a.created_at || ''
-        const db = b.created_at || ''
-        return db.localeCompare(da)
-      })
-      setUsers(merged)
+      const data = await getUsers({ search, limit: 100 })
+      setUsers(data.users || [])
     } catch (err) {
       console.error('Failed to fetch users:', err)
       setUsers([])
@@ -41,9 +31,7 @@ export default function AdminUsers() {
     if (!deleteTarget) return
     setDeleting(true)
     try {
-      if (deleteTarget.role === 'Host') {
-        await deleteHost(deleteTarget.id)
-      }
+      await deleteUser(deleteTarget.id, deleteTarget.role)
       setUsers(prev => prev.filter(u => u.id !== deleteTarget.id))
       setDeleteTarget(null)
     } catch (err) {

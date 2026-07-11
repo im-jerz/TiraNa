@@ -40,7 +40,7 @@ def register_host(data: dict, id_document_url: str, selfie_document_url: str) ->
     host = Host(
         email=data["email"],
         password_hash=password_hash,
-        status="awaiting_verification",
+        status="pending",
         email_verified=0,
     )
     db.session.add(host)
