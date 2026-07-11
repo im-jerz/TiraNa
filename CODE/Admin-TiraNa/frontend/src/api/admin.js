@@ -257,5 +257,3 @@ export async function updateTicket(ticketId, data) {
     body: JSON.stringify(data),
   })
 }
-  })
-}
