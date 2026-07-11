@@ -1,33 +1,56 @@
-import { useState } from 'react'
-
-const MOCK_WITHDRAWALS = [
-  { id: 1, host_name: 'Maria Santos', amount: 45000, method: 'bank_transfer', status: 'pending', created_at: '2024-06-25' },
-  { id: 2, host_name: 'Ana Mendoza', amount: 32000, method: 'gcash', status: 'approved', created_at: '2024-06-20' },
-  { id: 3, host_name: 'Maria Santos', amount: 15000, method: 'bank_transfer', status: 'rejected', created_at: '2024-06-15' },
-]
+import { useState, useEffect, useCallback } from 'react'
+import { getWithdrawals, approveWithdrawal, rejectWithdrawal } from '../../api/admin'
 
 export default function AdminWithdrawals() {
-  const [withdrawals, setWithdrawals] = useState(MOCK_WITHDRAWALS)
+  const [withdrawals, setWithdrawals] = useState([])
+  const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('')
   const [rejectModal, setRejectModal] = useState(null)
   const [rejectReason, setRejectReason] = useState('')
   const [acting, setActing] = useState(false)
 
-  const filteredWithdrawals = withdrawals.filter(w => !statusFilter || w.status === statusFilter)
+  const fetchWithdrawals = useCallback(async () => {
+    setLoading(true)
+    try {
+      const data = await getWithdrawals({ status: statusFilter, limit: 100 })
+      setWithdrawals(Array.isArray(data) ? data : [])
+    } catch (err) {
+      console.error('Failed to fetch withdrawals:', err)
+      setWithdrawals([])
+    } finally {
+      setLoading(false)
+    }
+  }, [statusFilter])
 
-  const handleApprove = (id) => {
+  useEffect(() => {
+    fetchWithdrawals()
+  }, [fetchWithdrawals])
+
+  const handleApprove = async (id) => {
     setActing(true)
-    setWithdrawals(prev => prev.map(w => w.id === id ? { ...w, status: 'approved' } : w))
-    setActing(false)
+    try {
+      await approveWithdrawal(id)
+      setWithdrawals(prev => prev.map(w => w.id === id ? { ...w, status: 'approved' } : w))
+    } catch (err) {
+      console.error('Failed to approve withdrawal:', err)
+    } finally {
+      setActing(false)
+    }
   }
 
-  const handleReject = () => {
+  const handleReject = async () => {
     if (!rejectModal || !rejectReason.trim()) return
     setActing(true)
-    setWithdrawals(prev => prev.map(w => w.id === rejectModal.id ? { ...w, status: 'rejected', reject_reason: rejectReason } : w))
-    setRejectModal(null)
-    setRejectReason('')
-    setActing(false)
+    try {
+      await rejectWithdrawal(rejectModal.id, rejectReason)
+      setWithdrawals(prev => prev.map(w => w.id === rejectModal.id ? { ...w, status: 'rejected', rejection_reason: rejectReason } : w))
+      setRejectModal(null)
+      setRejectReason('')
+    } catch (err) {
+      console.error('Failed to reject withdrawal:', err)
+    } finally {
+      setActing(false)
+    }
   }
 
   return (
@@ -45,7 +68,11 @@ export default function AdminWithdrawals() {
       </div>
 
       <div className="table-container">
-        {filteredWithdrawals.length === 0 ? (
+        {loading ? (
+          <div className="empty-state">
+            <p>Loading withdrawals...</p>
+          </div>
+        ) : withdrawals.length === 0 ? (
           <div className="empty-state">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             <p>No withdrawals found.</p>
@@ -65,12 +92,12 @@ export default function AdminWithdrawals() {
                 </tr>
               </thead>
               <tbody>
-                {filteredWithdrawals.map((w) => (
+                {withdrawals.map((w) => (
                   <tr key={w.id}>
-                    <td className="td-id">{w.id}</td>
+                    <td className="td-id">#{w.id}</td>
                     <td className="td-main">{w.host_name || '—'}</td>
                     <td className="td-amount">₱{Number(w.amount).toLocaleString()}</td>
-                    <td className="td-muted">{w.method || '—'}</td>
+                    <td className="td-muted" style={{ textTransform: 'uppercase', fontSize: 11 }}>{w.method || '—'}</td>
                     <td><span className={`badge badge-${w.status}`}>{w.status}</span></td>
                     <td className="td-muted">{new Date(w.created_at).toLocaleDateString()}</td>
                     <td>
@@ -88,27 +115,29 @@ export default function AdminWithdrawals() {
               </tbody>
             </table>
             <div className="pagination">
-              <div className="pagination-info">{filteredWithdrawals.length} withdrawal(s)</div>
+              <div className="pagination-info">{withdrawals.length} withdrawal(s)</div>
             </div>
           </>
         )}
       </div>
 
       {rejectModal && (
-        <div className="modal-overlay open">
+        <div className="modal-overlay open" onClick={(e) => { if (e.target === e.currentTarget) setRejectModal(null) }}>
           <div className="modal">
             <div className="modal-header">
               <h2 className="modal-title">Reject Withdrawal</h2>
               <button onClick={() => setRejectModal(null)} className="modal-close">&times;</button>
             </div>
-            <p style={{fontSize:13,color:'#6b7280',marginBottom:16}}>{rejectModal.host_name} — ₱{rejectModal.amount}</p>
+            <p style={{fontSize:13,color:'#6b7280',marginBottom:16}}>
+              <strong>{rejectModal.host_name}</strong> — ₱{Number(rejectModal.amount).toLocaleString()}
+            </p>
             <div className="form-group">
               <label className="form-label">Rejection Reason</label>
               <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="Rejection reason (required)..." className="form-textarea" rows={3} />
             </div>
             <div className="modal-footer">
               <button onClick={() => setRejectModal(null)} disabled={acting} className="btn btn-ghost">Cancel</button>
-              <button onClick={handleReject} disabled={acting || !rejectReason.trim()} className="btn btn-brand">{acting ? 'Rejecting...' : 'Reject'}</button>
+              <button onClick={handleReject} disabled={acting || !rejectReason.trim()} className="btn btn-danger">{acting ? 'Rejecting...' : 'Reject'}</button>
             </div>
           </div>
         </div>

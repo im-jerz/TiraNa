@@ -5,7 +5,7 @@ from typing import Optional, List
 from datetime import datetime
 
 from ..database import get_db
-from ..models import AdminAccount, Withdrawal
+from ..models import AdminAccount, Withdrawal, AdminAuditLog
 from ..middleware.admin_auth import get_current_admin
 
 router = APIRouter(prefix="/admin/withdrawals", tags=["Admin Withdrawals"])
@@ -69,6 +69,14 @@ async def approve_withdrawal(
     
     withdrawal.status = "approved"
     withdrawal.updated_at = datetime.utcnow()
+
+    log = AdminAuditLog(
+        admin_id=current_admin.id,
+        admin_username=current_admin.username,
+        action="APPROVE_WITHDRAWAL",
+        details=f"Approved withdrawal #{withdrawal_id} (₱{withdrawal.amount}) for {withdrawal.host_name}",
+    )
+    db.add(log)
     db.commit()
     db.refresh(withdrawal)
     
@@ -97,6 +105,14 @@ async def reject_withdrawal(
     withdrawal.status = "rejected"
     withdrawal.rejection_reason = reason
     withdrawal.updated_at = datetime.utcnow()
+
+    log = AdminAuditLog(
+        admin_id=current_admin.id,
+        admin_username=current_admin.username,
+        action="REJECT_WITHDRAWAL",
+        details=f"Rejected withdrawal #{withdrawal_id} (₱{withdrawal.amount}) for {withdrawal.host_name}. Reason: {reason}",
+    )
+    db.add(log)
     db.commit()
     db.refresh(withdrawal)
     

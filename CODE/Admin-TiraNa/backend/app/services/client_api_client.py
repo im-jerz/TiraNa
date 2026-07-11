@@ -97,6 +97,10 @@ class ClientAPIClient:
         data = self._unwrap(result)
         return data.get("users", []) if data else []
 
+    async def delete_user(self, user_id: str) -> bool:
+        result = await self._request("DELETE", f"/api/admin/users/{user_id}")
+        return result is not None
+
     # ─── Verifications ─────────────────────────────────────────
 
     async def get_verifications(self, status: str = "", skip: int = 0, limit: int = 50) -> List[Dict]:
@@ -179,19 +183,18 @@ class ClientAPIClient:
         if search:
             params["search"] = search
         result = await self._get("/api/admin/reviews", params)
-        data = self._unwrap(result)
-        if data and isinstance(data, dict):
-            return data.get("data", [])
+        if result and isinstance(result, dict):
+            return result.get("data", [])
         return []
 
-    async def toggle_review_visibility(self, review_id: int) -> bool:
+    async def toggle_review_visibility(self, review_id: str) -> bool:
         result = await self._post(f"/api/admin/reviews/{review_id}/toggle-hide")
         return result is not None
 
-    async def hide_review(self, review_id: int) -> bool:
+    async def hide_review(self, review_id: str) -> bool:
         return await self.toggle_review_visibility(review_id)
 
-    async def show_review(self, review_id: int) -> bool:
+    async def show_review(self, review_id: str) -> bool:
         return await self.toggle_review_visibility(review_id)
 
 

@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from typing import Optional, List
 
 from ..database import get_db
-from ..models import AdminAccount
+from ..models import AdminAccount, AdminAuditLog
 from ..middleware.admin_auth import get_current_admin
 from ..services.client_api_client import client_api_client
 
@@ -47,13 +47,22 @@ async def count_reviews(
 
 @router.post("/{review_id}/hide")
 async def hide_review(
-    review_id: int,
-    current_admin: AdminAccount = Depends(get_current_admin)
+    review_id: str,
+    current_admin: AdminAccount = Depends(get_current_admin),
+    db: Session = Depends(get_db),
 ):
     """Hide a review via Client API."""
     try:
         success = await client_api_client.toggle_review_visibility(review_id)
         if success:
+            log = AdminAuditLog(
+                admin_id=current_admin.id,
+                admin_username=current_admin.username,
+                action="HIDE_REVIEW",
+                details=f"Hidden review (ID: {review_id})",
+            )
+            db.add(log)
+            db.commit()
             return {"message": f"Review {review_id} visibility toggled"}
         else:
             raise HTTPException(status_code=404, detail="Review not found")
@@ -65,13 +74,22 @@ async def hide_review(
 
 @router.post("/{review_id}/show")
 async def show_review(
-    review_id: int,
-    current_admin: AdminAccount = Depends(get_current_admin)
+    review_id: str,
+    current_admin: AdminAccount = Depends(get_current_admin),
+    db: Session = Depends(get_db),
 ):
     """Show a hidden review via Client API."""
     try:
         success = await client_api_client.toggle_review_visibility(review_id)
         if success:
+            log = AdminAuditLog(
+                admin_id=current_admin.id,
+                admin_username=current_admin.username,
+                action="SHOW_REVIEW",
+                details=f"Shown review (ID: {review_id})",
+            )
+            db.add(log)
+            db.commit()
             return {"message": f"Review {review_id} visibility toggled"}
         else:
             raise HTTPException(status_code=404, detail="Review not found")

@@ -3,12 +3,12 @@ Admin Listings routes.
 Fetches property listings from Host API for moderation.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Body
 from sqlalchemy.orm import Session
 from typing import Optional, List
 
 from ..database import get_db
-from ..models import AdminAccount
+from ..models import AdminAccount, AdminAuditLog
 from ..middleware.admin_auth import get_current_admin
 from ..services.host_api_client import host_api_client
 
@@ -94,12 +94,21 @@ async def count_listings(
 @router.post("/{listing_id}/approve")
 async def approve_listing(
     listing_id: int,
-    current_admin: AdminAccount = Depends(get_current_admin)
+    current_admin: AdminAccount = Depends(get_current_admin),
+    db: Session = Depends(get_db),
 ):
     """Approve a property listing via Host API."""
     try:
         success = await host_api_client.approve_room(listing_id)
         if success:
+            log = AdminAuditLog(
+                admin_id=current_admin.id,
+                admin_username=current_admin.username,
+                action="APPROVE_LISTING",
+                details=f"Approved listing (ID: {listing_id})",
+            )
+            db.add(log)
+            db.commit()
             return {"message": f"Listing {listing_id} approved successfully"}
         else:
             raise HTTPException(status_code=400, detail="Failed to approve listing")
@@ -110,13 +119,23 @@ async def approve_listing(
 @router.post("/{listing_id}/reject")
 async def reject_listing(
     listing_id: int,
-    reason: str,
-    current_admin: AdminAccount = Depends(get_current_admin)
+    body: dict = Body(default={}),
+    current_admin: AdminAccount = Depends(get_current_admin),
+    db: Session = Depends(get_db),
 ):
     """Reject a property listing via Host API."""
+    reason = body.get("reason", "")
     try:
         success = await host_api_client.reject_room(listing_id, reason)
         if success:
+            log = AdminAuditLog(
+                admin_id=current_admin.id,
+                admin_username=current_admin.username,
+                action="REJECT_LISTING",
+                details=f"Rejected listing (ID: {listing_id}). Reason: {reason}",
+            )
+            db.add(log)
+            db.commit()
             return {"message": f"Listing {listing_id} rejected", "reason": reason}
         else:
             raise HTTPException(status_code=400, detail="Failed to reject listing")
@@ -127,14 +146,24 @@ async def reject_listing(
 @router.post("/{listing_id}/suspend")
 async def suspend_listing(
     listing_id: int,
-    reason: str,
-    current_admin: AdminAccount = Depends(get_current_admin)
+    body: dict = Body(default={}),
+    current_admin: AdminAccount = Depends(get_current_admin),
+    db: Session = Depends(get_db),
 ):
     """Suspend an active property listing via Host API."""
+    reason = body.get("reason", "")
     try:
         # Host API doesn't have suspend yet, but we can use hide_room as alternative
         success = await host_api_client.hide_room(listing_id)
         if success:
+            log = AdminAuditLog(
+                admin_id=current_admin.id,
+                admin_username=current_admin.username,
+                action="SUSPEND_LISTING",
+                details=f"Suspended listing (ID: {listing_id}). Reason: {reason}",
+            )
+            db.add(log)
+            db.commit()
             return {"message": f"Listing {listing_id} suspended", "reason": reason}
         else:
             raise HTTPException(status_code=400, detail="Failed to suspend listing")

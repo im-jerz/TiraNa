@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, Query, HTTPException, Body
+from sqlalchemy.orm import Session
 import logging
-from ..models import AdminAccount
+from ..database import get_db
+from ..models import AdminAccount, AdminAuditLog
 from ..middleware.admin_auth import get_current_admin
 from ..services.host_api_client import host_api_client
 
@@ -33,10 +35,21 @@ async def list_rooms(
 async def update_room_status(
     room_id: int,
     body: dict = Body(default={}),
-    current_admin: AdminAccount = Depends(get_current_admin)
+    current_admin: AdminAccount = Depends(get_current_admin),
+    db: Session = Depends(get_db),
 ):
     status = body.get("status", "active")
     success = await host_api_client.update_room_status(room_id, status)
     if not success:
         raise HTTPException(status_code=404, detail="Room not found or update failed")
+
+    log = AdminAuditLog(
+        admin_id=current_admin.id,
+        admin_username=current_admin.username,
+        action="UPDATE_ROOM_STATUS",
+        details=f"Updated room {room_id} status to {status}",
+    )
+    db.add(log)
+    db.commit()
+
     return {"message": f"Room status updated to {status}"}

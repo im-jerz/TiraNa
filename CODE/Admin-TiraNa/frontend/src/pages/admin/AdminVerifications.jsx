@@ -1,14 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  getVerifications as getHostVerifications,
-  approveVerification as approveHostVerification,
-  rejectVerification as rejectHostVerification,
-} from '../../api/host'
-import {
-  getVerifications as getClientVerifications,
-  approveVerification as approveClientVerification,
-  rejectVerification as rejectClientVerification,
-} from '../../api/client'
+  getVerifications,
+  approveVerification,
+  rejectVerification,
+} from '../../api/admin'
 
 export default function AdminVerifications() {
   const [verifications, setVerifications] = useState([])
@@ -22,17 +17,8 @@ export default function AdminVerifications() {
   const fetchVerifications = useCallback(async () => {
     setLoading(true)
     try {
-      const [hostData, clientData] = await Promise.all([
-        getHostVerifications({ status: filter.status, limit: 100 }).catch(() => []),
-        getClientVerifications({ status: filter.status, limit: 100 }).catch(() => []),
-      ])
-      const merged = [...hostData, ...clientData]
-      merged.sort((a, b) => {
-        const da = a.submitted_at || a.created_at || ''
-        const db = b.submitted_at || b.created_at || ''
-        return db.localeCompare(da)
-      })
-      setVerifications(merged)
+      const data = await getVerifications({ status: filter.status, limit: 100 })
+      setVerifications(data.verifications || [])
     } catch (err) {
       console.error('Failed to fetch verifications:', err)
       setVerifications([])
@@ -53,11 +39,7 @@ export default function AdminVerifications() {
   const handleApprove = async (id) => {
     setActionLoading(true)
     try {
-      if (selected?.type === 'host' || confirmApprove?.type === 'host') {
-        await approveHostVerification(id)
-      } else {
-        await approveClientVerification(id)
-      }
+      await approveVerification(id)
       setVerifications(prev => prev.map(v =>
         (v.id === id || v.user_id === id) ? { ...v, status: 'approved' } : v
       ))
@@ -74,11 +56,7 @@ export default function AdminVerifications() {
     if (!rejectReason) return
     setActionLoading(true)
     try {
-      if (selected?.type === 'host') {
-        await rejectHostVerification(id, rejectReason)
-      } else {
-        await rejectClientVerification(id, rejectReason)
-      }
+      await rejectVerification(id, rejectReason)
       setVerifications(prev => prev.map(v =>
         (v.id === id || v.user_id === id) ? { ...v, status: 'rejected', review_notes: rejectReason } : v
       ))
@@ -265,7 +243,7 @@ export default function AdminVerifications() {
                 </div>
               )}
 
-              {selected.status === 'pending' ? (
+              {(selected.status === 'pending' || selected.status === 'awaiting_verification') ? (
                 <>
                   <div className="form-group">
                     <label className="form-label">Rejection Reason</label>
@@ -294,7 +272,7 @@ export default function AdminVerifications() {
                   </div>
                 </>
               ) : (
-                <div className={`alert-strip ${selected.status === 'approved' ? 'alert-success' : 'alert-danger'}`}>
+                <div className={`alert-strip ${selected.status === 'approved' ? 'alert-success' : selected.status === 'rejected' ? 'alert-danger' : ''}`}>
                   <div className="alert-strip-icon">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                   </div>

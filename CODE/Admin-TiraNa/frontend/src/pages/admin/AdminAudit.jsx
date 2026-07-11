@@ -1,18 +1,47 @@
-import { useState } from 'react'
-
-const MOCK_LOGS = [
-  { id: 1, action: 'APPROVE_LISTING', details: 'Approved listing Villa (#1)', admin_username: 'superadmin', created_at: '2024-06-25 14:30:00' },
-  { id: 2, action: 'CANCEL_BOOKING', details: 'Cancelled booking #1005', admin_username: 'admin_juan', created_at: '2024-06-24 10:15:00' },
-  { id: 3, action: 'REFUND_PAYMENT', details: 'Refunded P3200 for payment #5004', admin_username: 'admin_ana', created_at: '2024-06-23 16:45:00' },
-  { id: 4, action: 'DELETE_USER', details: 'Deleted user spam (#892)', admin_username: 'superadmin', created_at: '2024-06-22 09:00:00' },
-  { id: 5, action: 'UPDATE_SETTING', details: 'Updated commission 8% to 10%', admin_username: 'superadmin', created_at: '2024-06-20 11:30:00' },
-]
+import { useState, useEffect } from 'react'
+import { getAuditLogs } from '../../api/admin'
 
 export default function AdminAudit() {
-  const [logs] = useState(MOCK_LOGS)
+  const [logs, setLogs] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [actionFilter, setActionFilter] = useState('')
+  const [page, setPage] = useState(0)
+  const [hasMore, setHasMore] = useState(true)
+  const limit = 50
 
-  const filteredLogs = logs.filter(l => !actionFilter || l.action === actionFilter)
+  useEffect(() => {
+    fetchLogs()
+  }, [actionFilter])
+
+  const fetchLogs = async (append = false) => {
+    try {
+      setLoading(true)
+      setError('')
+      const data = await getAuditLogs({
+        action: actionFilter,
+        skip: append ? page * limit : 0,
+        limit,
+      })
+      if (append) {
+        setLogs(prev => [...prev, ...data])
+      } else {
+        setLogs(data)
+        setPage(0)
+      }
+      setHasMore(data.length === limit)
+    } catch (err) {
+      setError(err.message || 'Failed to load audit logs')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadMore = () => {
+    const nextPage = page + 1
+    setPage(nextPage)
+    fetchLogs(true)
+  }
 
   const getActionStyle = (a) => {
     if (a.includes('DELETE') || a.includes('REJECT') || a.includes('CANCEL')) return {background:'#fee2e2',color:'#991b1b'}
@@ -28,44 +57,87 @@ export default function AdminAudit() {
         <div className="page-actions">
           <select value={actionFilter} onChange={(e) => setActionFilter(e.target.value)} className="filter-select">
             <option value="">All Actions</option>
-            <option value="APPROVE_LISTING">Approve Listing</option>
-            <option value="REJECT_LISTING">Reject Listing</option>
-            <option value="SUSPEND_LISTING">Suspend Listing</option>
-            <option value="CANCEL_BOOKING">Cancel Booking</option>
-            <option value="REFUND_PAYMENT">Refund Payment</option>
-            <option value="HIDE_REVIEW">Hide Review</option>
-            <option value="SHOW_REVIEW">Show Review</option>
-            <option value="UPDATE_TICKET">Update Ticket</option>
-            <option value="UPDATE_DISPUTE">Update Dispute</option>
-            <option value="APPROVE_WITHDRAWAL">Approve Withdrawal</option>
-            <option value="REJECT_WITHDRAWAL">Reject Withdrawal</option>
-            <option value="UPDATE_SETTING">Update Setting</option>
-            <option value="CREATE_ADMIN">Create Admin</option>
-            <option value="UPDATE_ADMIN">Update Admin</option>
-            <option value="DELETE_ADMIN">Delete Admin</option>
-            <option value="DELETE_USER">Delete User</option>
+            <optgroup label="Auth">
+              <option value="admin_login">Admin Login</option>
+              <option value="change_password">Change Password</option>
+              <option value="UPDATE_PROFILE">Update Profile</option>
+              <option value="admin_invite_accepted">Invite Accepted</option>
+              <option value="admin_registered">Admin Registered</option>
+            </optgroup>
+            <optgroup label="Admin Management">
+              <option value="CREATE_ADMIN">Create Admin</option>
+              <option value="UPDATE_ADMIN">Update Admin</option>
+              <option value="INVITE_ADMIN">Invite Admin</option>
+              <option value="DELETE_ADMIN">Delete Admin</option>
+            </optgroup>
+            <optgroup label="Users">
+              <option value="DELETE_USER">Delete User</option>
+            </optgroup>
+            <optgroup label="Listings">
+              <option value="APPROVE_LISTING">Approve Listing</option>
+              <option value="REJECT_LISTING">Reject Listing</option>
+              <option value="SUSPEND_LISTING">Suspend Listing</option>
+            </optgroup>
+            <optgroup label="Properties">
+              <option value="UPDATE_ROOM_STATUS">Update Room Status</option>
+            </optgroup>
+            <optgroup label="Verifications">
+              <option value="APPROVE_VERIFICATION">Approve Verification</option>
+              <option value="REJECT_VERIFICATION">Reject Verification</option>
+            </optgroup>
+            <optgroup label="Payments">
+              <option value="REFUND_PAYMENT">Refund Payment</option>
+            </optgroup>
+            <optgroup label="Reviews">
+              <option value="HIDE_REVIEW">Hide Review</option>
+              <option value="SHOW_REVIEW">Show Review</option>
+            </optgroup>
+            <optgroup label="Withdrawals">
+              <option value="APPROVE_WITHDRAWAL">Approve Withdrawal</option>
+              <option value="REJECT_WITHDRAWAL">Reject Withdrawal</option>
+            </optgroup>
+            <optgroup label="System">
+              <option value="UPDATE_SETTING">Update Setting</option>
+              <option value="UPDATE_TICKET">Update Ticket</option>
+              <option value="UPDATE_DISPUTE">Update Dispute</option>
+            </optgroup>
           </select>
         </div>
       </div>
 
-      {filteredLogs.length === 0 ? (
+      {error && <div className="alert-strip alert-danger" style={{marginBottom:16}}><div className="alert-strip-content"><p>Error</p><p>{error}</p></div></div>}
+
+      {loading && logs.length === 0 ? (
+        <div style={{display:'flex',justifyContent:'center',padding:'60px 0'}}>
+          <div className="spinner" />
+        </div>
+      ) : logs.length === 0 ? (
         <div className="empty-state">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
           <p>No audit logs found.</p>
         </div>
       ) : (
-        <div className="audit-list">
-          {filteredLogs.map((log) => (
-            <div key={log.id} className="audit-item">
-              <span className="audit-action" style={getActionStyle(log.action)}>{log.action}</span>
-              <span className="audit-details">{log.details}</span>
-              <div className="audit-meta">
-                <div>{log.admin_username}</div>
-                <div>{new Date(log.created_at).toLocaleString()}</div>
+        <>
+          <div className="audit-list">
+            {logs.map((log) => (
+              <div key={log.id} className="audit-item">
+                <span className="audit-action" style={getActionStyle(log.action)}>{log.action}</span>
+                <span className="audit-details">{log.details}</span>
+                <div className="audit-meta">
+                  <div>{log.admin_username}</div>
+                  <div>{new Date(log.created_at).toLocaleString()}</div>
+                </div>
               </div>
+            ))}
+          </div>
+          {hasMore && (
+            <div style={{textAlign:'center',padding:'16px 0'}}>
+              <button onClick={loadMore} disabled={loading} className="btn btn-ghost btn-sm">
+                {loading ? 'Loading...' : 'Load More'}
+              </button>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </div>
   )

@@ -92,6 +92,27 @@ router.get('/users/:userId', async (req, res) => {
   }
 })
 
+router.delete('/users/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params
+
+    const existing = await pool.query(`SELECT id FROM client_users WHERE id = $1`, [userId])
+    if (existing.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' })
+    }
+
+    await pool.query(`DELETE FROM verification_codes WHERE user_id = $1`, [userId])
+    await pool.query(`DELETE FROM saved_properties WHERE user_id = $1`, [userId])
+    await pool.query(`DELETE FROM personal_information WHERE user_id = $1`, [userId])
+    await pool.query(`DELETE FROM client_users WHERE id = $1`, [userId])
+
+    res.json({ message: 'User deleted successfully' })
+  } catch (err) {
+    console.error('Admin delete user error:', err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
 router.get('/verifications', async (req, res) => {
   try {
     const status = req.query.status || ''

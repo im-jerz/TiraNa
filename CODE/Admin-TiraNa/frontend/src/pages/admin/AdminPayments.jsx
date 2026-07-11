@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getPayments, getRevenueStats } from '../../api/client'
+import { getPayments, refundPayment } from '../../api/admin'
+import { getRevenueStats } from '../../api/client'
 
 const MOCK_PAYMENTS = [
   { id: 5001, payer_name: 'Juan Dela Cruz', amount: 13500, method: 'gcash', status: 'completed', created_at: '2024-06-10', booking_external_id: 'BK-1001' },
@@ -45,14 +46,20 @@ export default function AdminPayments() {
 
   const filteredPayments = payments
 
-  const handleRefund = () => {
+  const handleRefund = async () => {
     if (!refundModal || !refundAmount || !refundReason.trim()) return
     setActing(true)
-    setPayments(prev => prev.map(p => p.id === refundModal.id ? { ...p, status: 'refunded', refund_reason: refundReason } : p))
-    setRefundModal(null)
-    setRefundAmount('')
-    setRefundReason('')
-    setActing(false)
+    try {
+      await refundPayment(refundModal.id, refundAmount, refundReason)
+      setPayments(prev => prev.map(p => p.id === refundModal.id ? { ...p, status: 'refunded', refund_reason: refundReason } : p))
+      setRefundModal(null)
+      setRefundAmount('')
+      setRefundReason('')
+    } catch (err) {
+      console.error('Failed to process refund:', err)
+    } finally {
+      setActing(false)
+    }
   }
 
   return (

@@ -156,8 +156,6 @@ export default function AdminManagement() {
                           <button
                             onClick={() => setDeleteTarget(a)}
                             className="btn btn-danger btn-sm"
-                            disabled={a.id === 1}
-                            title={a.id === 1 ? 'Cannot delete the primary admin' : ''}
                           >
                             Delete
                           </button>

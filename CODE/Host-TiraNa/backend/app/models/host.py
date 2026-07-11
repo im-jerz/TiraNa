@@ -15,12 +15,12 @@ from app.extensions import db
 class Host(db.Model):
     __tablename__ = "HOSTS"
 
-    STATUSES = ("awaiting_verification", "active", "suspended", "inactive")
+    STATUSES = ("pending", "active", "suspended", "inactive")
 
     id = db.Column(db.Integer, db.Identity(), primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
-    status = db.Column(db.String(30), nullable=False, default="awaiting_verification")
+    status = db.Column(db.String(30), nullable=False, default="pending")
     email_verified = db.Column(db.Integer, nullable=False, default=0)  # 0/1
     tfa_enabled = db.Column(db.Integer, nullable=False, default=0)     # 0/1 — added for §12.2
     tfa_secret = db.Column(db.String(64))                              # TOTP base32 secret
