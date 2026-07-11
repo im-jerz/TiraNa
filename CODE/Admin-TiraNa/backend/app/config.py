@@ -18,8 +18,6 @@ class Settings(BaseSettings):
     SMTP_USER: str = ""
     SMTP_PASS: str = ""
     SMTP_FROM: str = "noreply@tirana.com"
-    
-    DEFAULT_ADMIN_PASSWORD: str = "admin123"
 
     PAYMONGO_SECRET_KEY: str = ""
     PAYMONGO_PUBLIC_KEY: str = ""

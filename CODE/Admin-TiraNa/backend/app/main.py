@@ -1,4 +1,3 @@
-import bcrypt
 import httpx
 from datetime import datetime, timedelta
 from fastapi import FastAPI, Depends, HTTPException, Request
@@ -76,37 +75,7 @@ app.include_router(admin_rooms_router)
 @app.on_event("startup")
 def startup():
     Base.metadata.create_all(bind=engine)
-    seed_default_admin()
     seed_default_settings()
-
-
-def seed_default_admin():
-    session = SessionLocal()
-    try:
-        target_email = "j1e1r1s1o1n@gmail.com"
-        existing = session.query(AdminAccount).filter(
-            AdminAccount.email == target_email
-        ).first()
-        if not existing:
-            password = settings.DEFAULT_ADMIN_PASSWORD or "Cardo123@"
-            hashed = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-            admin = AdminAccount(
-                username="admin",
-                email=target_email,
-                password_hash=hashed,
-                is_active=True,
-                password_changed=True,
-            )
-            session.add(admin)
-            session.commit()
-            print(f"[SEED] Default admin created (email: {target_email}, password: {password})")
-        else:
-            print(f"[SEED] Admin account {target_email} already exists, skipping")
-    except Exception as e:
-        session.rollback()
-        print(f"[SEED] Error seeding admin: {e}")
-    finally:
-        session.close()
 
 
 def seed_default_settings():
