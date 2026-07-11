@@ -80,3 +80,29 @@ export async function updateRoomStatus(roomId, status) {
     body: JSON.stringify({ status }),
   })
 }
+
+export async function getAdmins() {
+  return api('/admin/management/')
+}
+
+export async function getAdminCount() {
+  return api('/admin/management/count')
+}
+
+export async function createAdmin({ username, email, password }) {
+  return api('/admin/management/', {
+    method: 'POST',
+    body: JSON.stringify({ username, email, password }),
+  })
+}
+
+export async function updateAdmin(adminId, data) {
+  return api(`/admin/management/${adminId}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function deleteAdmin(adminId) {
+  return api(`/admin/management/${adminId}`, { method: 'DELETE' })
+}

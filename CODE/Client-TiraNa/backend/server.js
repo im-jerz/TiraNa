@@ -39,6 +39,16 @@ app.use('/api/saved-properties', savedPropertiesRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/admin', adminRoutes);
 
+async function ensureReviewSchema() {
+  try {
+    await pool.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS is_hidden BOOL DEFAULT false`)
+  } catch (err) {
+    console.error('Migration error (reviews.is_hidden):', err)
+  }
+}
+
+ensureReviewSchema()
+
 async function cleanupOldCodes() {
   try {
     await pool.query(
