@@ -9,6 +9,19 @@ from ..middleware.admin_auth import get_current_admin
 router = APIRouter(prefix="/admin/support", tags=["Admin Support"])
 
 
+@router.get("/my-tickets", response_model=List[TicketResponse])
+def get_my_tickets(
+    email: str = Query(..., description="Requester email"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+    db: Session = Depends(get_db),
+):
+    query = db.query(SupportTicket).filter(
+        SupportTicket.requester_email.ilike(email)
+    )
+    return query.order_by(SupportTicket.created_at.desc()).offset(skip).limit(limit).all()
+
+
 @router.get("/", response_model=List[TicketResponse])
 def list_tickets(
     skip: int = Query(0, ge=0),
@@ -49,6 +62,21 @@ def count_tickets(
     if priority:
         query = query.filter(SupportTicket.priority == priority)
     return {"total": query.count()}
+
+
+@router.get("/ticket/{ticket_id}", response_model=TicketResponse)
+def get_ticket_public(
+    ticket_id: int,
+    email: str = Query(..., description="Requester email for verification"),
+    db: Session = Depends(get_db),
+):
+    ticket = db.query(SupportTicket).filter(
+        SupportTicket.id == ticket_id,
+        SupportTicket.requester_email.ilike(email),
+    ).first()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    return ticket
 
 
 @router.get("/{ticket_id}", response_model=TicketResponse)

@@ -19,6 +19,8 @@ import WalletPage from './pages/wallet/WalletPage'
 import NotificationsPage from './pages/notifications/NotificationsPage'
 {/*import NotificationsPage from './pages/notifications/NotificationsPage'*/}
 import SettingsPage from './pages/settings/SettingsPage'
+import SupportPage from './pages/support/SupportPage'
+import DisputesPage from './pages/support/DisputesPage'
 
 // sessionStorage key used to mark "the last navigation came from inside
 // the app, via handleNavigate" — see RequireInternalNav below. Cleared
@@ -140,6 +142,8 @@ function AuthRoutes() {
         <Route path="wallet" element={<WalletPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
         {/* <Route path="notifications" element={<NotificationsPage />} /> */}
+        <Route path="support" element={<SupportPage />} />
+        <Route path="disputes" element={<DisputesPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
 

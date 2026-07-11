@@ -50,6 +50,10 @@ export default defineConfig({
         target: 'http://backend:5000',
         changeOrigin: true,
       },
+      '/admin': {
+        target: 'http://host.docker.internal:5002',
+        changeOrigin: true,
+      },
     },
   },
 })

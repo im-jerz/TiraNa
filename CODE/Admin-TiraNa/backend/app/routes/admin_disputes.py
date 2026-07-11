@@ -9,6 +9,19 @@ from ..middleware.admin_auth import get_current_admin
 router = APIRouter(prefix="/admin/disputes", tags=["Admin Disputes"])
 
 
+@router.get("/my-disputes", response_model=List[DisputeResponse])
+def get_my_disputes(
+    email: str = Query(..., description="Filed by email"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+    db: Session = Depends(get_db),
+):
+    query = db.query(Dispute).filter(
+        Dispute.filed_by_email.ilike(email)
+    )
+    return query.order_by(Dispute.created_at.desc()).offset(skip).limit(limit).all()
+
+
 @router.get("/", response_model=List[DisputeResponse])
 def list_disputes(
     skip: int = Query(0, ge=0),
@@ -33,6 +46,21 @@ def count_disputes(
     if status:
         query = query.filter(Dispute.status == status)
     return {"total": query.count()}
+
+
+@router.get("/dispute/{dispute_id}", response_model=DisputeResponse)
+def get_dispute_public(
+    dispute_id: int,
+    email: str = Query(..., description="Filed by email for verification"),
+    db: Session = Depends(get_db),
+):
+    dispute = db.query(Dispute).filter(
+        Dispute.id == dispute_id,
+        Dispute.filed_by_email.ilike(email),
+    ).first()
+    if not dispute:
+        raise HTTPException(status_code=404, detail="Dispute not found")
+    return dispute
 
 
 @router.get("/{dispute_id}", response_model=DisputeResponse)

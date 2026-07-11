@@ -47,6 +47,8 @@ const NAV_SECTIONS = [
   {
     label: "Account",
     items: [
+      { to: "/dashboard/support", label: "Support", icon: IconLifeBuoy },
+      { to: "/dashboard/disputes", label: "Disputes", icon: IconMessage },
       { to: "/dashboard/settings", label: "Settings", icon: IconSettings },
     ],
   },
