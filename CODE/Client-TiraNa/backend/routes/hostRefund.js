@@ -186,17 +186,8 @@ router.post('/refund-receipt/:bookingId/send', async (req, res) => {
       [bookingId]
     )
 
-    // Instead of deleting the original earning row, we insert a matching
-    // negative entry. This way the original "Booking approved" credit stays
-    // in the ledger and the refund shows up as its own debit line, so the
-    // host can see the full history of what happened with the booking.
     await pool.query(
-      `INSERT INTO wallets (host_id, booking_id, amount, type, description)
-       SELECT host_id, booking_id, -amount, 'refund', 'Refund issued'
-       FROM wallets
-       WHERE booking_id = $1
-       ORDER BY created_at ASC
-       LIMIT 1`,
+      `DELETE FROM wallets WHERE booking_id = $1`,
       [bookingId]
     )
 

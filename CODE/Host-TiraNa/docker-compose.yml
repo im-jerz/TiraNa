@@ -31,6 +31,8 @@ services:
     environment:
       FLASK_ENV: ${FLASK_ENV:-development}
       DATABASE_URL: oracle+oracledb://AIRBNB_HOST:${ORACLE_APP_PASSWORD:-Carlangelo%2319}@oracle-db:1521/?service_name=FREEPDB1
+      SHARED_DB_URL: postgresql://tira_admin:tira_secret@host.docker.internal:5432/tirana_db
+      CLIENT_API_URL: http://host.docker.internal:5000
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:

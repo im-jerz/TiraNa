@@ -305,22 +305,34 @@ router.patch('/:id/status', async (req, res) => {
 
     const booking = result.rows[0]
 
-    // This is the ONLY place money enters the host's wallet: the moment the
-    // host approves the booking. Nothing is credited at checkout time, and
-    // nothing shows up in the wallet's balance or transaction history before
-    // this point (see GET /wallet/summary and /wallet/transactions below).
     if (status === 'confirmed') {
-      const hostId = await getHostIdForProperty(booking.property_id)
-      if (hostId) {
-        const hostEarning = Number(booking.total_price) * (1 - COMMISSION_RATE)
-        await pool.query(
-          `INSERT INTO wallets (host_id, booking_id, amount, type, description)
-           VALUES ($1, $2, $3, 'earning', 'Booking approved')`,
-          [hostId, id, hostEarning]
-        )
-      } else {
-        console.error(`Wallet credit skipped: could not resolve host for property ${booking.property_id}`)
+      const existingWallet = await pool.query(
+        `SELECT id FROM wallets WHERE booking_id = $1 AND type = 'earning' LIMIT 1`,
+        [id]
+      )
+      if (existingWallet.rows.length === 0) {
+        const hostId = await getHostIdForProperty(booking.property_id)
+        if (hostId) {
+          const hostEarning = Number((Number(booking.total_price) * (1 - COMMISSION_RATE)).toFixed(2))
+          await pool.query(
+            `INSERT INTO wallets (host_id, booking_id, amount, type, description)
+             VALUES ($1, $2, $3, 'earning', 'Booking approved')`,
+            [hostId, id, hostEarning]
+          )
+        } else {
+          console.error(`Wallet credit skipped: could not resolve host for property ${booking.property_id}`)
+        }
       }
+    } else if (status === 'cancelled') {
+      await pool.query(
+        `INSERT INTO wallets (host_id, booking_id, amount, type, description)
+         SELECT host_id, booking_id, -amount, 'refund', 'Booking declined'
+         FROM wallets
+         WHERE booking_id = $1 AND type = 'earning'
+         ORDER BY created_at ASC
+         LIMIT 1`,
+        [id]
+      )
     }
 
     sendHostNotificationAndEmail(id, status).catch(err => console.error('Notification error:', err))
@@ -495,13 +507,13 @@ router.get('/wallet/summary', async (req, res) => {
       SELECT
         COALESCE(SUM(w.amount), 0) AS total_balance,
         COALESCE(SUM(w.amount) FILTER (
-          WHERE b.status = 'confirmed' AND b.check_out > now() AND w.type = 'earning'
+          WHERE b.status IN ('pending', 'cancelled', 'refund_requested') AND w.type = 'earning'
         ), 0) AS pending_balance,
         COALESCE(SUM(w.amount) FILTER (
-          WHERE ((b.status = 'confirmed' AND b.check_out <= now()) OR b.status = 'completed') AND w.type = 'earning'
+          WHERE b.status IN ('confirmed', 'completed') AND w.type = 'earning'
         ), 0) AS available_balance,
         COALESCE(SUM(w.amount) FILTER (
-          WHERE b.status = 'refund_requested' AND w.type = 'earning'
+          WHERE false AND w.type = 'earning'
         ), 0) AS on_hold_balance
       FROM wallets w
       JOIN bookings b ON b.id = w.booking_id
@@ -528,9 +540,9 @@ router.get('/wallet/summary', async (req, res) => {
 /**
  * GET /api/host/wallet/transactions
  *
- * Ledger entries for the Host wallet page (host_flow.md §8.2). Same rule
- * as above: a booking only appears here once approved, and disappears
- * entirely if later refunded.
+ * Ledger entries for the Host wallet page. For online payments, the wallet
+ * entry is created when payment is confirmed. For cash payments, it's
+ * created when the host approves. Declined bookings get a reversal entry.
  *
  * Query params:
  *   property_ids — comma-separated (required)
@@ -576,7 +588,7 @@ router.get('/wallet/transactions', async (req, res) => {
       let bucket = 'available'
       if (r.type === 'refund') bucket = 'refund'
       else if (r.booking_status === 'refund_requested') bucket = 'on_hold'
-      else if (r.booking_status === 'confirmed' && new Date(r.check_out) > now) bucket = 'pending'
+      else if (['pending', 'cancelled', 'refund_requested'].includes(r.booking_status)) bucket = 'pending'
 
       return {
         id: r.id,
@@ -597,6 +609,73 @@ router.get('/wallet/transactions', async (req, res) => {
     res.json({ data })
   } catch (err) {
     console.error('Wallet transactions error:', err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+/**
+ * POST /api/host/wallet/deduct
+ *
+ * Deducts from a host's wallet when a withdrawal is approved by admin.
+ * Only deducts from wallet rows where the booking is completed.
+ * Deletes wallet earning rows oldest-first until the amount is covered.
+ *
+ * Protected by INTERNAL_API_KEY (called by Admin-TiraNa).
+ */
+router.post('/wallet/deduct', async (req, res) => {
+  try {
+    const { host_id, amount } = req.body
+    console.log(`Wallet deduct requested: host_id=${host_id}, amount=${amount}`)
+    if (!host_id || !amount || amount <= 0) {
+      return res.status(400).json({ error: 'host_id and a positive amount are required' })
+    }
+
+    const hostIdStr = String(host_id)
+
+    const walletResult = await pool.query(
+      `SELECT w.id, w.amount, w.booking_id
+       FROM wallets w
+       JOIN bookings b ON b.id = w.booking_id
+       WHERE w.host_id = $1 AND w.type = 'earning'
+         AND b.status IN ('completed', 'confirmed')
+       ORDER BY b.status = 'completed' DESC, w.created_at ASC`,
+      [hostIdStr]
+    )
+
+    let remaining = Number(amount)
+    let deducted = 0
+    const idsToDelete = []
+    const idsToUpdate = []
+
+    for (const row of walletResult.rows) {
+      if (remaining <= 0) break
+      const rowAmount = Number(row.amount)
+
+      if (rowAmount <= remaining) {
+        remaining -= rowAmount
+        deducted += rowAmount
+        idsToDelete.push(row.id)
+      } else {
+        deducted += remaining
+        idsToUpdate.push({ id: row.id, newAmount: rowAmount - remaining })
+        remaining = 0
+      }
+    }
+
+    for (const { id, newAmount } of idsToUpdate) {
+      await pool.query(`UPDATE wallets SET amount = $1 WHERE id = $2`, [newAmount, id])
+    }
+
+    if (idsToDelete.length > 0) {
+      await pool.query(`DELETE FROM wallets WHERE id = ANY($1)`, [idsToDelete])
+    }
+
+    res.json({
+      message: 'Wallet deducted successfully',
+      deducted_amount: deducted,
+    })
+  } catch (err) {
+    console.error('Wallet deduct error:', err)
     res.status(500).json({ error: 'Internal server error' })
   }
 })

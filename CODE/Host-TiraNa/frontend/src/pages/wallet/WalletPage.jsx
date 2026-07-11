@@ -12,11 +12,8 @@ import {
   IconArrowDown,
   IconWallet,
   IconLock,
-  IconDownload,
   IconRefresh,
-  IconBank,
   IconSmartphone,
-  IconReceipt,
   IconAlertCircle,
 } from "../../components/icons";
 
@@ -25,9 +22,6 @@ const fmt = (n) =>
 
 const dateFmt = (iso) =>
   new Date(iso).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" });
-
-const timeFmt = (iso) =>
-  new Date(iso).toLocaleTimeString("en-PH", { hour: "numeric", minute: "2-digit" });
 
 function releaseLabel(iso) {
   const target = new Date(iso);
@@ -38,38 +32,6 @@ function releaseLabel(iso) {
   if (days === 1) return "Releases tomorrow";
   if (days <= 13) return `Releases in ${days} days`;
   return `Releases ${dateFmt(iso)}`;
-}
-
-const TX_FILTERS = [
-  { key: "all", label: "All" },
-  { key: "pending", label: "Reserved" },
-  { key: "available", label: "Available" },
-  { key: "on_hold", label: "On hold" },
-  { key: "refund", label: "Refunds" },
-];
-
-const BUCKET_META = {
-  pending: { label: "Reserved", tone: "adjust" },
-  available: { label: "Available", tone: "credit" },
-  on_hold: { label: "On hold", tone: "debit" },
-  refund: { label: "Refund", tone: "debit" },
-};
-
-function classify(tx) {
-  return tx.bucket ?? "available";
-}
-
-function exportCsv(rows, filename) {
-  if (!rows.length) return;
-  const header = Object.keys(rows[0]).join(",");
-  const body = rows.map((r) => Object.values(r).join(",")).join("\n");
-  const blob = new Blob([header + "\n" + body], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
 }
 
 /* ─── Skeleton ─────────────────────────────────────────────── */
@@ -106,14 +68,11 @@ function WalletError({ message, onRetry }) {
 /* ─── Main ─────────────────────────────────────────────────── */
 
 export default function WalletPage() {
-  const { wallet, methods, transactions, withdrawals, loading, error, requestWithdrawal, retry, saveMethod, reload } =
+  const { wallet, transactions, withdrawals, loading, error, requestWithdrawal, retry, reload } =
     useWalletData();
   const { push } = useToast();
 
   const [showWithdraw, setShowWithdraw] = useState(false);
-  const [txFilter, setTxFilter] = useState("all");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
   const [retryingId, setRetryingId] = useState(null);
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -128,16 +87,6 @@ export default function WalletPage() {
     searchParams.delete("refund");
     setSearchParams(searchParams, { replace: true });
   }
-
-  const filteredTx = useMemo(() => {
-    return transactions.filter((tx) => {
-      if (txFilter !== "all" && classify(tx) !== txFilter) return false;
-      const d = new Date(tx.date);
-      if (dateFrom && d < new Date(dateFrom)) return false;
-      if (dateTo && d > new Date(`${dateTo}T23:59:59`)) return false;
-      return true;
-    });
-  }, [transactions, txFilter, dateFrom, dateTo]);
 
   const reserved = useMemo(() => {
     return transactions
@@ -192,7 +141,7 @@ export default function WalletPage() {
           </div>
           <div className="wlt-hero-amount">{fmt(wallet.available_balance)}</div>
           <p className="wlt-hero-note">
-            Cleared funds ready to send to your bank or e-wallet. Reserved and on-hold amounts settle automatically.
+            Cleared funds ready to send to your bank or e-wallet. Reserved and on-hold amounts settle once bookings are approved or refunds resolved.
           </p>
           <button type="button" className="wlt-withdraw-btn" onClick={() => setShowWithdraw(true)}>
             <IconArrowUp width={16} height={16} /> Withdraw funds
@@ -224,16 +173,16 @@ export default function WalletPage() {
             <strong>{fmt(wallet.on_hold_balance)}</strong>
           </div>
           <p className="wlt-passbook-foot">
-            On hold covers bookings with a refund request pending resolution. Reserved funds — approved bookings
-            still within the guest's refund window — have their own breakdown below.
+            On hold covers bookings with a refund request pending resolution. Reserved funds — pending bookings
+            awaiting host approval — have their own breakdown below.
           </p>
         </div>
       </section>
 
       {/* ── Reserved for Refund: separate from Balance Breakdown ──
-          Money lands here the moment a booking is approved, and moves
-          to Available for Withdrawal automatically once the stay's
-          check-out date passes — see wallet/summary + wallet/transactions
+          Money lands here the moment a booking is created with online
+          payment, and moves to Available for Withdrawal once the host
+          approves the booking — see wallet/summary + wallet/transactions
           on the client backend. */}
       <section className="wlt-reserve-card" aria-label="Reserved for refund">
         <div className="wlt-reserve-main">
@@ -247,19 +196,19 @@ export default function WalletPage() {
           <div className="wlt-reserve-amount-panel">
             <div className="wlt-reserve-amount">{fmt(wallet.pending_balance)}</div>
             <span className="wlt-reserve-count">
-              {reserved.length === 0 ? "No bookings held" : `Across ${reserved.length} approved booking${reserved.length === 1 ? "" : "s"}`}
+              {reserved.length === 0 ? "No bookings held" : `Across ${reserved.length} booking${reserved.length === 1 ? "" : "s"}`}
             </span>
           </div>
           <p className="wlt-reserve-note">
-            Held from approved bookings while the guest can still request a refund. Each booking's share moves to
-            Available for Withdrawal automatically once its stay is completed.
+            Held from pending or cancelled bookings awaiting resolution. Each booking's share moves to
+            Available for Withdrawal once the host approves it.
           </p>
         </div>
 
         <div className="wlt-reserve-list-wrap">
           <div className="wlt-reserve-list-title">Upcoming releases</div>
           {reserved.length === 0 ? (
-            <p className="wlt-reserve-empty">Nothing reserved right now — approved bookings will show up here.</p>
+            <p className="wlt-reserve-empty">Nothing reserved right now — pending or cancelled bookings will show up here.</p>
           ) : (
             <>
               <ul className="wlt-reserve-list">
@@ -286,94 +235,8 @@ export default function WalletPage() {
         </div>
       </section>
 
-      {/* ── Body: transactions + withdrawal history ── */}
-      <div className="wlt-content-grid">
-        <section className="wlt-tx-card" aria-label="Transaction history">
-          <div className="wlt-tx-head">
-            <span className="wlt-card-title"><IconReceipt width={16} height={16} /> Transaction history</span>
-            <button
-              className="wlt-export-btn"
-              onClick={() =>
-                exportCsv(
-                  filteredTx.map((t) => ({
-                    Date: dateFmt(t.date),
-                    Status: BUCKET_META[t.bucket]?.label ?? t.bucket,
-                    Description: t.description,
-                    Amount: t.amount.toFixed(2),
-                    "Running balance": t.running_balance.toFixed(2),
-                  })),
-                  "wallet-transactions.csv"
-                )
-              }
-            >
-              <IconDownload width={14} height={14} /> Export CSV
-            </button>
-          </div>
-
-          <div className="wlt-tx-filters">
-            <div className="wlt-tx-tabs" role="tablist" aria-label="Transaction filter">
-              {TX_FILTERS.map((f) => (
-                <button
-                  key={f.key}
-                  role="tab"
-                  aria-selected={txFilter === f.key}
-                  className={`wlt-tx-tab${txFilter === f.key ? " active" : ""}`}
-                  onClick={() => setTxFilter(f.key)}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
-            <div className="wlt-date-range">
-              <input type="date" aria-label="From date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
-              <span>to</span>
-              <input type="date" aria-label="To date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
-            </div>
-          </div>
-
-          {filteredTx.length === 0 ? (
-            <div className="wlt-empty">
-              <IconReceipt width={26} height={26} />
-              <p>No transactions match these filters.</p>
-            </div>
-          ) : (
-            <div className="wlt-tx-table-wrap">
-              <table className="wlt-tx-table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Status</th>
-                    <th>Description</th>
-                    <th className="num">Amount</th>
-                    <th className="num">Balance</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredTx.map((tx) => {
-                    const meta = BUCKET_META[tx.bucket] ?? { label: tx.bucket, tone: "adjust" };
-                    return (
-                      <tr key={tx.id}>
-                        <td data-label="Date">
-                          <div className="wlt-tx-date">{dateFmt(tx.date)}<span>{timeFmt(tx.date)}</span></div>
-                        </td>
-                        <td data-label="Status">
-                          <span className={`wlt-tx-badge wlt-tx-badge--${meta.tone}`}>{meta.label}</span>
-                        </td>
-                        <td data-label="Description" className="wlt-tx-desc">{tx.description}</td>
-                        <td data-label="Amount" className={`num wlt-tx-amount wlt-tx-amount--${tx.amount >= 0 ? "pos" : "neg"}`}>
-                          {tx.amount >= 0 ? "+" : "−"}{fmt(Math.abs(tx.amount))}
-                        </td>
-                        <td data-label="Balance" className="num wlt-tx-balance">{fmt(tx.running_balance)}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-
-        <section className="wlt-wd-card" aria-label="Withdrawal history">
+      {/* ── Withdrawal history ── */}
+      <section className="wlt-wd-card" aria-label="Withdrawal history">
           <div className="wlt-tx-head">
             <span className="wlt-card-title"><IconArrowUp width={16} height={16} /> Withdrawal history</span>
           </div>
@@ -386,9 +249,7 @@ export default function WalletPage() {
               {withdrawals.map((w) => (
                 <li key={w.id} className="wlt-wd-row">
                   <span className="wlt-wd-icon">
-                    {w.method_label.toLowerCase().includes("gcash") || w.method_label.toLowerCase().includes("maya")
-                      ? <IconSmartphone width={16} height={16} />
-                      : <IconBank width={16} height={16} />}
+                    <IconSmartphone width={16} height={16} />
                   </span>
                   <div className="wlt-wd-info">
                     <strong>{fmt(w.amount)}</strong>
@@ -415,15 +276,12 @@ export default function WalletPage() {
             </ul>
           )}
         </section>
-      </div>
 
       {showWithdraw && (
         <WithdrawModal
           available={wallet.available_balance}
-          methods={methods}
           onClose={() => setShowWithdraw(false)}
           onSubmit={handleWithdrawSubmit}
-          onSaveMethod={saveMethod}
         />
       )}
 

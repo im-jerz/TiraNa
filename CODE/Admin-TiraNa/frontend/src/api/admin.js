@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002'
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '' : 'http://localhost:5002')
 
 async function api(path, options = {}) {
   const token = localStorage.getItem('admin_token')
@@ -105,4 +105,28 @@ export async function updateAdmin(adminId, data) {
 
 export async function deleteAdmin(adminId) {
   return api(`/admin/management/${adminId}`, { method: 'DELETE' })
+}
+
+export async function getWithdrawals({ status = '', skip = 0, limit = 50 } = {}) {
+  const params = new URLSearchParams({ skip, limit })
+  if (status) params.set('status', status)
+  return api(`/admin/withdrawals/?${params}`)
+}
+
+export async function getWithdrawalCount(status = '') {
+  const params = {}
+  if (status) params.status = status
+  const qs = new URLSearchParams(params).toString()
+  return api(`/admin/withdrawals/count${qs ? `?${qs}` : ''}`)
+}
+
+export async function approveWithdrawal(withdrawalId) {
+  return api(`/admin/withdrawals/${withdrawalId}/approve`, { method: 'POST' })
+}
+
+export async function rejectWithdrawal(withdrawalId, reason = '') {
+  return api(`/admin/withdrawals/${withdrawalId}/reject`, {
+    method: 'POST',
+    body: JSON.stringify({ reason }),
+  })
 }

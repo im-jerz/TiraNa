@@ -123,7 +123,7 @@ export async function getRevenueTrend(period = 'monthly') {
   return result.data || []
 }
 
-const ADMIN_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002'
+const ADMIN_API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '' : 'http://localhost:5002')
 
 export async function getDashboardStats(period = 'monthly') {
   const token = localStorage.getItem('admin_token')

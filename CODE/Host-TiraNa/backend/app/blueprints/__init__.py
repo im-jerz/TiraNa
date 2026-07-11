@@ -16,6 +16,7 @@ def register_blueprints(app):
     from app.blueprints.internal import internal_bp
     from app.blueprints.settings import settings_bp
     from app.blueprints.admin import admin_bp
+    from app.blueprints.wallet import wallet_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(properties_bp)
@@ -26,3 +27,4 @@ def register_blueprints(app):
     app.register_blueprint(internal_bp)
     app.register_blueprint(settings_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(wallet_bp)

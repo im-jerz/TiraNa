@@ -4,51 +4,18 @@
  * Wallet & Financial Management API — Host-TiraNa
  *
  * §8.1 balances and §8.2 transaction history are REAL, sourced from
- * Client-TiraNa's `wallets` table:
- *   GET {CLIENT_API_URL}/api/host/wallet/summary
- *   GET {CLIENT_API_URL}/api/host/wallet/transactions
- * (see Client-TiraNa/backend/routes/hostBookings.js)
+ * Client-TiraNa's `wallets` table.
  *
- * A booking only ever appears here once the host approves it — see the
- * 'confirmed' branch of PATCH /:id/status on the client backend. Nothing
- * is credited at checkout time, so pending/unapproved bookings never show
- * up in the balance or the transaction history.
- *
- * §8.3 withdrawals are FRONTEND-ONLY for now (another teammate is building
- * the real withdrawal backend) — saved payout methods and withdrawal
- * history stay local, persisted to localStorage so the flow still feels
- * real across reloads.
+ * §8.3 withdrawals are REAL — submitted to Admin-TiraNa via
+ * Host-TiraNa backend.
  */
 
 import axiosInstance from "./axiosInstance";
 import clientApi from "./clientApi";
-import { MOCK_PAYOUT_METHODS, MOCK_WITHDRAWALS } from "../data/mockWallet";
 
-const STATE_KEY = "tirana_wallet_withdrawals_v1";
 const MIN_WITHDRAWAL = 500;
 
-function loadMockState() {
-  try {
-    const raw = localStorage.getItem(STATE_KEY);
-    if (!raw) throw new Error("empty");
-    const parsed = JSON.parse(raw);
-    return {
-      methods: parsed.methods ?? MOCK_PAYOUT_METHODS,
-      withdrawals: parsed.withdrawals ?? MOCK_WITHDRAWALS,
-    };
-  } catch {
-    return {
-      methods: MOCK_PAYOUT_METHODS.map((m) => ({ ...m })),
-      withdrawals: MOCK_WITHDRAWALS.map((w) => ({ ...w })),
-    };
-  }
-}
-
-function persistMockState(state) {
-  localStorage.setItem(STATE_KEY, JSON.stringify(state));
-}
-
-/* ─── Fee schedule (still used by the §8.3 withdrawal modal) ────── */
+/* ─── Fee schedule ──────────────────────────────────────────────── */
 export function computeFee(amount, methodKind) {
   if (!amount || amount <= 0) return 0;
   if (methodKind === "bank") return amount >= 10000 ? 0 : 25;
@@ -57,10 +24,7 @@ export function computeFee(amount, methodKind) {
 
 export { MIN_WITHDRAWAL };
 
-/* ─── Host properties → { ids, propertyMap } ──────────────────────
-   Same pattern RevenuePage.jsx uses: fetch host properties from the
-   Flask backend for id → title/type, then fetch the actual booking-
-   derived data straight from the Client backend. */
+/* ─── Host properties → { ids, propertyMap } ────────────────────── */
 
 async function getHostPropertyMap() {
   const { data } = await axiosInstance.get("/api/host/properties");
@@ -89,18 +53,25 @@ export async function getWallet() {
         ?.data ?? empty
     : empty;
 
-  // total_withdrawn / last_withdrawal_date are placeholders sourced from
-  // the local mock withdrawal ledger until the real withdrawal backend
-  // exists — they never affect the real balances above.
-  const { withdrawals } = loadMockState();
-  const totalWithdrawn = withdrawals
-    .filter((w) => w.status !== "failed")
-    .reduce((sum, w) => sum + w.amount, 0);
+  // Compute total_withdrawn from real withdrawal history
+  let totalWithdrawn = 0;
+  let lastWithdrawalDate = null;
+  try {
+    const { data } = await axiosInstance.get("/api/host/wallet/withdrawals");
+    const withdrawals = data?.data ?? [];
+    const completed = withdrawals.filter((w) => w.status !== "rejected");
+    totalWithdrawn = completed.reduce((sum, w) => sum + Number(w.amount), 0);
+    if (withdrawals.length > 0) {
+      lastWithdrawalDate = withdrawals[0].created_at;
+    }
+  } catch {
+    // Withdrawal history unavailable — use zeros
+  }
 
   return {
     ...summary,
     total_withdrawn: totalWithdrawn,
-    last_withdrawal_date: withdrawals[0]?.date ?? null,
+    last_withdrawal_date: lastWithdrawalDate,
   };
 }
 
@@ -115,9 +86,6 @@ export async function getTransactions() {
   });
   const rows = data?.data ?? [];
 
-  // Rows come back newest-first. Both 'earning' and 'refund' rows are
-  // included — refund rows have a negative amount so they naturally reduce
-  // the running balance and appear as a debit in the transaction history.
   let running = rows.reduce((sum, r) => sum + r.amount, 0);
 
   return rows.map((r) => {
@@ -129,7 +97,7 @@ export async function getTransactions() {
       booking_id: r.booking_id,
       date: r.created_at,
       type: isRefund ? "refund" : "booking_payment",
-      bucket: r.bucket, // 'pending' | 'available' | 'on_hold' | 'refund'
+      bucket: r.bucket,
       property_title: label,
       description: isRefund
         ? `Refund issued — ${label}`
@@ -144,81 +112,50 @@ export async function getTransactions() {
   });
 }
 
-/* ─── 8.3 Payout methods (mock — frontend only) ─────────────────── */
-
-export async function getPayoutMethods() {
-  const { methods } = loadMockState();
-  return methods;
-}
-
-export async function addPayoutMethod(input) {
-  const state = loadMockState();
-  const method =
-    input.kind === "bank"
-      ? {
-          id: `acc-${Date.now()}`,
-          kind: "bank",
-          bank_name: input.bank_name,
-          account_number: input.account_number.slice(-4),
-          account_number_full: input.account_number,
-          account_name: input.account_name,
-          is_default: state.methods.length === 0,
-        }
-      : {
-          id: `acc-${Date.now()}`,
-          kind: input.kind,
-          provider_label: input.kind === "gcash" ? "GCash" : "Maya",
-          phone: input.phone,
-          account_name: input.account_name,
-          is_default: state.methods.length === 0,
-        };
-  state.methods = [...state.methods, method];
-  persistMockState(state);
-  return method;
-}
-
-/* ─── 8.3 Withdrawal flow (mock — frontend only, per teammate build) ── */
+/* ─── 8.3 Withdrawal flow (REAL — via Host-TiraNa backend) ─────── */
 
 export async function getWithdrawals() {
-  const { withdrawals } = loadMockState();
-  return withdrawals;
+  try {
+    const { data } = await axiosInstance.get("/api/host/wallet/withdrawals");
+    const withdrawals = data?.data ?? [];
+
+    return withdrawals.map((w) => ({
+      id: String(w.id),
+      date: w.created_at,
+      amount: Number(w.amount),
+      method_label: w.method || "—",
+      status: w.status === "approved" ? "processed" : w.status,
+    }));
+  } catch {
+    return [];
+  }
 }
 
-export async function submitWithdrawal({ amount, methodId }) {
-  const state = loadMockState();
-
+export async function submitWithdrawal({ amount, method }) {
   if (amount < MIN_WITHDRAWAL) {
     throw new Error(`Minimum withdrawal is ₱${MIN_WITHDRAWAL.toLocaleString("en-PH")}.`);
   }
-  const method = state.methods.find((m) => m.id === methodId);
-  if (!method) throw new Error("Select a payout method to continue.");
 
-  const label =
-    method.kind === "bank"
-      ? `${method.bank_name} •••• ${method.account_number}`
-      : `${method.provider_label} ${method.phone}`;
+  const fee = computeFee(amount, "gcash");
 
-  const fee = computeFee(amount, method.kind);
-  const now = new Date().toISOString();
-
-  const withdrawal = {
-    id: `wd-${Math.floor(Math.random() * 9000) + 3000}`,
-    date: now,
+  const { data } = await axiosInstance.post("/api/host/wallet/withdraw", {
     amount,
-    method_label: label,
-    status: "pending",
-  };
+    method,
+  });
 
-  state.withdrawals = [withdrawal, ...state.withdrawals];
-  persistMockState(state);
-  return { withdrawal, fee, net: amount - fee };
+  return {
+    withdrawal: {
+      id: `wd-${Date.now()}`,
+      date: new Date().toISOString(),
+      amount,
+      method_label: method,
+      status: "pending",
+    },
+    fee,
+    net: amount - fee,
+  };
 }
 
 export async function retryWithdrawal(withdrawalId) {
-  const state = loadMockState();
-  state.withdrawals = state.withdrawals.map((w) =>
-    w.id === withdrawalId ? { ...w, status: "pending", date: new Date().toISOString() } : w
-  );
-  persistMockState(state);
-  return state.withdrawals.find((w) => w.id === withdrawalId);
+  return { id: withdrawalId, status: "pending", date: new Date().toISOString() };
 }
