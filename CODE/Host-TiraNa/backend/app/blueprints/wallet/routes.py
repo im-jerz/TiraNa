@@ -4,8 +4,7 @@ Wallet routes.
     POST /api/host/wallet/withdraw   — submit withdrawal request
     GET  /api/host/wallet/withdrawals — list host's withdrawal history
 
-Writes directly to the shared PostgreSQL withdrawals table
-(Admin-TiraNa's database). No HTTP calls, no API keys.
+Calls Admin-TiraNa's internal API for withdrawal operations.
 """
 
 import os
@@ -16,17 +15,24 @@ from app.blueprints.wallet import wallet_bp
 from app.middleware.auth_middleware import host_required
 from app.utils.response import success_response, error_response
 from app.models.property import Property
-from app.shared_db import SharedWithdrawal, SharedSession
 
 
 def _client_api_url():
     return os.environ.get("CLIENT_API_URL", "http://localhost:5000").rstrip("/")
 
 
+def _admin_api_url():
+    return os.environ.get("ADMIN_API_URL", "http://host.docker.internal:5002").rstrip("/")
+
+
+def _admin_api_key():
+    return os.environ.get("ADMIN_INTERNAL_API_KEY", "tirana-internal-secret-key")
+
+
 @wallet_bp.route("/withdraw", methods=["POST"])
 @host_required
 def submit_withdrawal():
-    """Submit a withdrawal request — writes directly to shared DB."""
+    """Submit a withdrawal request via Admin-TiraNa API."""
     host = g.current_host
     data = request.get_json() or {}
 
@@ -71,24 +77,25 @@ def submit_withdrawal():
             status=400,
         )
 
-    # Insert directly into shared PostgreSQL withdrawals table
-    session = SharedSession()
+    # Call Admin-TiraNa API to create withdrawal
     try:
-        withdrawal = SharedWithdrawal(
-            host_id=host.id,
-            host_name=host_name,
-            host_email=host.email,
-            amount=float(amount),
-            method=method,
-            status="pending",
+        resp = http_requests.post(
+            f"{_admin_api_url()}/api/internal/withdrawals/",
+            params={
+                "host_id": host.id,
+                "host_name": host_name,
+                "host_email": host.email,
+                "amount": float(amount),
+                "method": method,
+            },
+            headers={"X-Internal-API-Key": _admin_api_key()},
+            timeout=15,
         )
-        session.add(withdrawal)
-        session.commit()
-    except Exception as e:
-        session.rollback()
-        return error_response("Failed to create withdrawal request.", status=500)
-    finally:
-        session.close()
+        if not resp.ok:
+            detail = resp.json().get("detail", "Failed to create withdrawal request.")
+            return error_response(detail, status=resp.status_code)
+    except Exception:
+        return error_response("Failed to create withdrawal request. Admin API unavailable.", status=502)
 
     return success_response(message="Withdrawal request submitted successfully.")
 
@@ -96,34 +103,20 @@ def submit_withdrawal():
 @wallet_bp.route("/withdrawals", methods=["GET"])
 @host_required
 def list_withdrawals():
-    """List the authenticated host's withdrawal history from shared DB."""
+    """List the authenticated host's withdrawal history via Admin-TiraNa API."""
     host = g.current_host
 
-    session = SharedSession()
     try:
-        withdrawals = (
-            session.query(SharedWithdrawal)
-            .filter(SharedWithdrawal.host_id == host.id)
-            .order_by(SharedWithdrawal.created_at.desc())
-            .all()
+        resp = http_requests.get(
+            f"{_admin_api_url()}/api/internal/withdrawals/",
+            params={"host_id": host.id},
+            headers={"X-Internal-API-Key": _admin_api_key()},
+            timeout=15,
         )
+        if not resp.ok:
+            return success_response(data=[])
 
-        data = [
-            {
-                "id": w.id,
-                "amount": float(w.amount),
-                "method": w.method,
-                "status": w.status,
-                "reference_number": w.reference_number,
-                "rejection_reason": w.rejection_reason,
-                "created_at": w.created_at.isoformat() if w.created_at else None,
-                "updated_at": w.updated_at.isoformat() if w.updated_at else None,
-            }
-            for w in withdrawals
-        ]
-
+        data = resp.json().get("data", [])
         return success_response(data=data)
     except Exception:
         return success_response(data=[])
-    finally:
-        session.close()
