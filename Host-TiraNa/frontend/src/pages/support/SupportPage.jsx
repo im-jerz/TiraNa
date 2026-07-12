@@ -1,24 +1,54 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { getHostIdentity } from "../../lib/hostIdentity";
+import {
+  IconMessage,
+  IconCalendarCheck,
+  IconMoney,
+  IconUser,
+  IconBuilding,
+  IconReceipt,
+  IconInfo,
+  IconEdit,
+  IconSearch,
+  IconAlertTriangle,
+  IconCheck,
+  IconChevronDown,
+  IconBookOpen,
+} from "../../components/icons.jsx";
+import {
+  DeskMark,
+  RailCategoryPicker,
+  RailStatusLegend,
+  AsideCard,
+  MiniStats,
+  EmptyLedger,
+} from "../../components/support/SupportUI.jsx";
 import "../../styles/support.css";
 
 const ADMIN_API = "";
 
 const CATEGORIES = [
-  { value: "general", label: "General Inquiry" },
-  { value: "booking", label: "Booking Issue" },
-  { value: "payment", label: "Payment Problem" },
-  { value: "account", label: "Account Help" },
-  { value: "property", label: "Property Issue" },
-  { value: "refund", label: "Refund Request" },
-  { value: "other", label: "Other" },
+  { value: "general", label: "General Inquiry", icon: IconMessage },
+  { value: "booking", label: "Booking Issue", icon: IconCalendarCheck },
+  { value: "payment", label: "Payment Problem", icon: IconMoney },
+  { value: "account", label: "Account Help", icon: IconUser },
+  { value: "property", label: "Property Issue", icon: IconBuilding },
+  { value: "refund", label: "Refund Request", icon: IconReceipt },
+  { value: "other", label: "Other", icon: IconInfo },
 ];
 
 const PRIORITIES = [
-  { value: "low", label: "Low" },
-  { value: "medium", label: "Medium" },
-  { value: "high", label: "High" },
-  { value: "urgent", label: "Urgent" },
+  { value: "low", label: "Low", eta: "48h" },
+  { value: "medium", label: "Medium", eta: "24h" },
+  { value: "high", label: "High", eta: "8h" },
+  { value: "urgent", label: "Urgent", eta: "2h" },
+];
+
+const STATUS_LEGEND = [
+  { value: "open", label: "Open", desc: "Received, awaiting review." },
+  { value: "in-progress", label: "In Progress", desc: "A host-ops agent is on it." },
+  { value: "resolved", label: "Resolved", desc: "Fixed — see the resolution note." },
+  { value: "closed", label: "Closed", desc: "Ticket archived." },
 ];
 
 function formatDate(str) {
@@ -64,6 +94,12 @@ export default function SupportPage() {
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const switchMode = (next) => {
+    setMode(next);
+    setError("");
+    setSuccess("");
   };
 
   const handleSubmit = async (e) => {
@@ -115,217 +151,272 @@ export default function SupportPage() {
     }
   }, [lookupEmail]);
 
+  const stats = useMemo(() => {
+    const active = tickets.filter((t) => t.status === "open" || t.status === "in-progress").length;
+    const resolved = tickets.filter((t) => t.status === "resolved" || t.status === "closed").length;
+    return [
+      { label: "Total", value: tickets.length, color: "var(--color-primary)" },
+      { label: "Active", value: active, color: "#2563EB" },
+      { label: "Resolved", value: resolved, color: "#16A34A" },
+    ];
+  }, [tickets]);
+
   return (
-    <div className="sup-page">
-      <div>
-        <h1 className="sup-card-title" style={{ fontSize: "var(--text-2xl)" }}>Support Center</h1>
-        <p className="sup-label" style={{ fontWeight: 400, color: "var(--color-text-secondary)" }}>
-          Submit a ticket or check the status of an existing one.
+    <div className="desk">
+      <DeskMark />
+
+      <header className="desk-header">
+        <span className="desk-kicker">Host Operations · Support</span>
+        <h1 className="desk-title">Support Desk</h1>
+        <p className="desk-subtitle">
+          Log an issue with a booking, payout, or listing — or trace the status of something you've already filed.
         </p>
-      </div>
 
-      <div className="sup-tabs">
-        <button
-          className={`sup-tab${mode === "form" ? " active" : ""}`}
-          onClick={() => { setMode("form"); setError(""); setSuccess(""); }}
-        >
-          Submit a Ticket
-        </button>
-        <button
-          className={`sup-tab${mode === "lookup" ? " active" : ""}`}
-          onClick={() => { setMode("lookup"); setError(""); setSuccess(""); }}
-        >
-          Check Status
-        </button>
-      </div>
+        <div className="desk-tabs" role="tablist" aria-label="Support view">
+          <button
+            role="tab"
+            aria-selected={mode === "form"}
+            className={`desk-tab${mode === "form" ? " active" : ""}`}
+            onClick={() => switchMode("form")}
+          >
+            <IconEdit /> Submit a Ticket
+          </button>
+          <button
+            role="tab"
+            aria-selected={mode === "lookup"}
+            className={`desk-tab${mode === "lookup" ? " active" : ""}`}
+            onClick={() => switchMode("lookup")}
+          >
+            <IconSearch /> Check Status
+          </button>
+        </div>
+      </header>
 
-      {error && <div className="sup-alert sup-alert-error">{error}</div>}
-      {success && <div className="sup-alert sup-alert-success">{success}</div>}
-
-      {mode === "form" && (
-        <div className="sup-card">
-          <form className="sup-form" onSubmit={handleSubmit}>
-            <div className="sup-form-row">
-              <div className="sup-field">
-                <label className="sup-label">Your Name</label>
-                <input
-                  className="sup-input"
-                  type="text"
-                  name="requester_name"
-                  value={form.requester_name}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div className="sup-field">
-                <label className="sup-label">Your Email</label>
-                <input
-                  className="sup-input"
-                  type="email"
-                  name="requester_email"
-                  value={form.requester_email}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="sup-field">
-              <label className="sup-label">Subject</label>
-              <input
-                className="sup-input"
-                type="text"
-                name="subject"
-                value={form.subject}
-                onChange={handleChange}
-                required
-                placeholder="Brief summary of your issue"
-              />
-            </div>
-
-            <div className="sup-form-row">
-              <div className="sup-field">
-                <label className="sup-label">Category</label>
-                <select
-                  className="sup-select"
-                  name="category"
-                  value={form.category}
-                  onChange={handleChange}
-                >
-                  {CATEGORIES.map((c) => (
-                    <option key={c.value} value={c.value}>{c.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="sup-field">
-                <label className="sup-label">Priority</label>
-                <select
-                  className="sup-select"
-                  name="priority"
-                  value={form.priority}
-                  onChange={handleChange}
-                >
-                  {PRIORITIES.map((p) => (
-                    <option key={p.value} value={p.value}>{p.label}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="sup-field">
-              <label className="sup-label">Description</label>
-              <textarea
-                className="sup-textarea"
-                name="description"
-                value={form.description}
-                onChange={handleChange}
-                required
-                rows={5}
-                placeholder="Provide as much detail as possible about your issue..."
-              />
-            </div>
-
-            <div className="sup-btn-row">
-              <button
-                type="submit"
-                className="sup-btn sup-btn-accent"
-                disabled={submitting}
-              >
-                {submitting ? "Submitting..." : "Submit Ticket"}
-              </button>
-            </div>
-          </form>
+      {error && (
+        <div className="sup-alert sup-alert-error">
+          <IconAlertTriangle />
+          <span>{error}</span>
+        </div>
+      )}
+      {success && (
+        <div className="sup-alert sup-alert-success">
+          <IconCheck />
+          <span>{success}</span>
         </div>
       )}
 
-      {mode === "lookup" && (
-        <>
-          <div className="sup-card">
-            <div className="sup-card-title">Check Your Ticket Status</div>
-            <div className="sup-lookup">
-              <input
-                className="sup-input"
-                type="email"
-                value={lookupEmail}
-                onChange={(e) => setLookupEmail(e.target.value)}
-                placeholder="Enter your email address"
-                onKeyDown={(e) => e.key === "Enter" && fetchTickets()}
-              />
-              <button
-                className="sup-btn sup-btn-primary"
-                onClick={fetchTickets}
-                disabled={loading || !lookupEmail.trim()}
-              >
-                {loading ? "Searching..." : "Search"}
-              </button>
-            </div>
-          </div>
+      <div className="desk-body">
+        {mode === "form" ? (
+          <RailCategoryPicker
+            items={CATEGORIES}
+            value={form.category}
+            onChange={(value) => setForm((prev) => ({ ...prev, category: value }))}
+          />
+        ) : (
+          <RailStatusLegend statuses={STATUS_LEGEND} />
+        )}
 
-          {tickets.length > 0 && (
-            <div className="sup-list">
-              {tickets.map((ticket) => (
-                <div key={ticket.id}>
-                  <div
-                    className="sup-list-item"
-                    onClick={() => setSelected(selected?.id === ticket.id ? null : ticket)}
-                  >
-                    <div className="sup-list-item-main">
-                      <div className="sup-list-item-id">#{ticket.id}</div>
-                      <div className="sup-list-item-title">{ticket.subject}</div>
-                      <div className="sup-list-item-meta">
-                        {formatDate(ticket.created_at)} · {CATEGORIES.find((c) => c.value === ticket.category)?.label || ticket.category}
-                      </div>
-                    </div>
-                    <div className="sup-list-item-badges">
-                      <span className={`sup-badge sup-badge-${ticket.priority}`}>{ticket.priority}</span>
-                      <span className={`sup-badge sup-badge-${ticket.status}`}>{ticket.status}</span>
-                    </div>
+        <div className="desk-main">
+          {mode === "form" && (
+            <div className="sup-card">
+              <div className="sup-card-title">Ticket Details</div>
+              <form className="sup-form" onSubmit={handleSubmit}>
+                <div className="sup-form-row">
+                  <div className="sup-field">
+                    <label className="sup-label">Your Name</label>
+                    <input
+                      className="sup-input"
+                      type="text"
+                      name="requester_name"
+                      value={form.requester_name}
+                      onChange={handleChange}
+                      required
+                    />
                   </div>
-
-                  {selected?.id === ticket.id && (
-                    <div className="sup-detail">
-                      <div className="sup-detail-grid">
-                        <div className="sup-detail-field sup-detail-full">
-                          <span className="sup-detail-label">Description</span>
-                          <span className="sup-detail-value" style={{ whiteSpace: "pre-wrap" }}>
-                            {ticket.description}
-                          </span>
-                        </div>
-                        {ticket.assigned_to && (
-                          <div className="sup-detail-field">
-                            <span className="sup-detail-label">Assigned To</span>
-                            <span className="sup-detail-value">{ticket.assigned_to}</span>
-                          </div>
-                        )}
-                        {ticket.resolution && (
-                          <div className="sup-detail-field sup-detail-full">
-                            <span className="sup-detail-label">Resolution</span>
-                            <span className="sup-detail-value" style={{ whiteSpace: "pre-wrap" }}>
-                              {ticket.resolution}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="sup-list-item-meta">
-                        Last updated: {formatDate(ticket.updated_at)}
-                      </div>
-                    </div>
-                  )}
+                  <div className="sup-field">
+                    <label className="sup-label">Your Email</label>
+                    <input
+                      className="sup-input"
+                      type="email"
+                      name="requester_email"
+                      value={form.requester_email}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
                 </div>
-              ))}
+
+                <div className="sup-field">
+                  <label className="sup-label">Subject</label>
+                  <input
+                    className="sup-input"
+                    type="text"
+                    name="subject"
+                    value={form.subject}
+                    onChange={handleChange}
+                    required
+                    placeholder="Brief summary of your issue"
+                  />
+                </div>
+
+                <div className="sup-field">
+                  <label className="sup-label">Priority</label>
+                  <div className="priority-pills">
+                    {PRIORITIES.map((p) => (
+                      <button
+                        key={p.value}
+                        type="button"
+                        className={`priority-pill pill-${p.value}${form.priority === p.value ? " active" : ""}`}
+                        onClick={() => setForm((prev) => ({ ...prev, priority: p.value }))}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="sup-field">
+                  <label className="sup-label">Description</label>
+                  <textarea
+                    className="sup-textarea"
+                    name="description"
+                    value={form.description}
+                    onChange={handleChange}
+                    required
+                    rows={5}
+                    placeholder="Provide as much detail as possible about your issue..."
+                  />
+                </div>
+
+                <div className="sup-btn-row">
+                  <button type="submit" className="sup-btn sup-btn-accent" disabled={submitting}>
+                    {submitting ? "Submitting..." : "Submit Ticket"}
+                  </button>
+                </div>
+              </form>
             </div>
           )}
 
-          {tickets.length === 0 && !loading && lookupEmail && !error && (
-            <div className="sup-empty">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span className="sup-empty-text">No tickets found for this email address.</span>
-            </div>
+          {mode === "lookup" && (
+            <>
+              <div className="sup-card">
+                <div className="sup-card-title">Check Your Ticket Status</div>
+                <div className="sup-lookup">
+                  <input
+                    className="sup-input"
+                    type="email"
+                    value={lookupEmail}
+                    onChange={(e) => setLookupEmail(e.target.value)}
+                    placeholder="Enter your email address"
+                    onKeyDown={(e) => e.key === "Enter" && fetchTickets()}
+                  />
+                  <button
+                    className="sup-btn sup-btn-primary"
+                    onClick={fetchTickets}
+                    disabled={loading || !lookupEmail.trim()}
+                  >
+                    {loading ? "Searching..." : "Search"}
+                  </button>
+                </div>
+              </div>
+
+              {tickets.length > 0 && (
+                <div className="ledger">
+                  {tickets.map((ticket) => {
+                    const expanded = selected?.id === ticket.id;
+                    return (
+                      <div key={ticket.id}>
+                        <div
+                          className="ledger-row"
+                          role="button"
+                          tabIndex={0}
+                          aria-expanded={expanded}
+                          onClick={() => setSelected(expanded ? null : ticket)}
+                          onKeyDown={(e) => e.key === "Enter" && setSelected(expanded ? null : ticket)}
+                        >
+                          <span className="ledger-index">#{ticket.id}</span>
+                          <span className="ledger-main">
+                            <span className="ledger-title">{ticket.subject}</span>
+                            <span className="ledger-meta">
+                              {formatDate(ticket.created_at)}
+                              <span className="ledger-tag">
+                                {CATEGORIES.find((c) => c.value === ticket.category)?.label || ticket.category}
+                              </span>
+                            </span>
+                          </span>
+                          <span className="ledger-badges">
+                            <span className={`sup-badge sup-badge-${ticket.priority}`}>{ticket.priority}</span>
+                            <span className={`sup-badge sup-badge-${ticket.status}`}>{ticket.status}</span>
+                          </span>
+                          <span className="ledger-chevron"><IconChevronDown /></span>
+                        </div>
+
+                        {expanded && (
+                          <div className="ledger-detail">
+                            <div className="sup-detail-grid">
+                              <div className="sup-detail-field sup-detail-full">
+                                <span className="sup-detail-label">Description</span>
+                                <span className="sup-detail-value" style={{ whiteSpace: "pre-wrap" }}>
+                                  {ticket.description}
+                                </span>
+                              </div>
+                              {ticket.assigned_to && (
+                                <div className="sup-detail-field">
+                                  <span className="sup-detail-label">Assigned To</span>
+                                  <span className="sup-detail-value">{ticket.assigned_to}</span>
+                                </div>
+                              )}
+                              {ticket.resolution && (
+                                <div className="sup-detail-field sup-detail-full">
+                                  <span className="sup-detail-label">Resolution</span>
+                                  <span className="sup-detail-value" style={{ whiteSpace: "pre-wrap" }}>
+                                    {ticket.resolution}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="ledger-detail-meta">Last updated: {formatDate(ticket.updated_at)}</div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {tickets.length === 0 && !loading && lookupEmail && !error && (
+                <EmptyLedger icon={IconBookOpen} text="No tickets found for this email address." />
+              )}
+            </>
           )}
-        </>
-      )}
+        </div>
+
+        <div className="desk-aside-slot">
+          {mode === "form" ? (
+            <AsideCard title="Response Times">
+              <div className="aside-list">
+                {PRIORITIES.map((p) => (
+                  <div className="aside-row" key={p.value}>
+                    <span className={`sup-badge sup-badge-${p.value}`}>{p.label}</span>
+                    <span className="aside-row-copy">first reply in ~{p.eta}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="aside-note">Business hours are 8:00 AM – 8:00 PM PHT, Monday to Saturday.</p>
+            </AsideCard>
+          ) : (
+            <AsideCard title="Your Tickets">
+              {tickets.length > 0 ? (
+                <MiniStats items={stats} />
+              ) : (
+                <p className="aside-note">
+                  Enter your email above to pull up every ticket you've filed with the Support Desk.
+                </p>
+              )}
+            </AsideCard>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
