@@ -410,8 +410,19 @@ function Reviews() {
       <div className="flex flex-col min-h-screen bg-white">
         <Header />
         <div className="flex-1">
-          <section className="bg-gradient-to-br from-charcoal via-teal to-charcoal pt-28 sm:pt-36 pb-20 sm:pb-28">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <section className="bg-charcoal pt-28 sm:pt-36 pb-20 sm:pb-28 relative overflow-hidden">
+            <div className="absolute inset-0">
+              <div className="absolute -top-24 -right-24 w-96 h-96 bg-teal/10 rounded-full blur-3xl" />
+              <div className="absolute -bottom-32 -left-32 w-[450px] h-[450px] bg-sage/[0.07] rounded-full blur-3xl" />
+              <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-olive/[0.08] rounded-full blur-3xl" />
+            </div>
+            <div className="absolute inset-0 opacity-[0.04]"
+              style={{
+                backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.6) 1px, transparent 0)',
+                backgroundSize: '32px 32px'
+              }}
+            />
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
               <div className="text-center">
                 <div className="h-10 bg-white/10 rounded w-48 mx-auto animate-pulse" />
                 <div className="h-4 bg-white/10 rounded w-32 mx-auto mt-3 animate-pulse" />
@@ -439,15 +450,33 @@ function Reviews() {
       <Header />
 
       <div className="flex-1">
-      <section className="bg-gradient-to-br from-charcoal via-teal to-charcoal pt-28 sm:pt-36 pb-20 sm:pb-28 relative overflow-hidden">
+      <section className="bg-charcoal pt-28 sm:pt-36 pb-20 sm:pb-28 relative overflow-hidden">
         <div className="absolute inset-0">
-          <div className="absolute top-10 right-20 w-64 h-64 bg-sage/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-10 left-20 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
+          <div className="absolute -top-24 -right-24 w-96 h-96 bg-teal/10 rounded-full blur-3xl" />
+          <div className="absolute -bottom-32 -left-32 w-[450px] h-[450px] bg-sage/[0.07] rounded-full blur-3xl" />
+          <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-olive/[0.08] rounded-full blur-3xl" />
         </div>
+
+        <div className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.6) 1px, transparent 0)',
+            backgroundSize: '32px 32px'
+          }}
+        />
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="text-center">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white">My Reviews</h1>
-            <p className="text-base text-white/60 mt-2">
+            <div className="animate-fade-up">
+              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-sage mb-5">
+                <span className="w-6 h-px bg-sage/60" />
+                Feedback
+                <span className="w-6 h-px bg-sage/60" />
+              </span>
+            </div>
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-3 tracking-tight animate-fade-up" style={{ animationDelay: '0.1s' }}>
+              My Reviews
+            </h1>
+            <p className="text-base text-white/60 animate-fade-up" style={{ animationDelay: '0.2s' }}>
               {pagination.total} {pagination.total === 1 ? 'review' : 'reviews'} shared
             </p>
           </div>
