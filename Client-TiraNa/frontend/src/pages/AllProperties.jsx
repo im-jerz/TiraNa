@@ -1,8 +1,8 @@
 import { useState, useMemo, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import Header from '../components/Header.jsx'
+import PropertyCard, { PropertyCardSkeleton } from '../components/PropertyCard.jsx'
 import { fetchListings } from '../api/listings.js'
-import { RatingStars } from '../components/StarRating.jsx'
 
 function AllProperties() {
   const [rooms, setRooms] = useState([])
@@ -114,71 +114,25 @@ function AllProperties() {
           {loading || rooms.length === 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="bg-white shadow-sm animate-pulse">
-                  <div className="relative h-52 sm:h-56 bg-gray-200">
-                    <div className="absolute top-3 right-3 w-20 h-5 bg-gray-300 rounded" />
-                  </div>
-                  <div className="p-4 sm:p-5">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="h-4 bg-gray-200 w-2/3 rounded" />
-                      <div className="flex items-center gap-1">
-                        <div className="w-3 h-3 bg-gray-200 rounded-full" />
-                        <div className="w-6 h-3 bg-gray-200 rounded" />
-                      </div>
-                    </div>
-                    <div className="h-3 bg-gray-200 w-1/2 rounded mb-3" />
-                    <div className="flex items-center justify-between">
-                      <div className="h-4 bg-gray-200 w-1/4 rounded" />
-                      <div className="h-3 bg-gray-200 w-16 rounded" />
-                    </div>
-                  </div>
-                </div>
+                <PropertyCardSkeleton key={i} />
               ))}
             </div>
           ) : filteredRooms.length === 0 ? (
             <div className="text-center py-20">
-              <svg className="w-16 h-16 mx-auto text-gray-200 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <p className="text-gray-400 text-sm">No properties match your search.</p>
-              <button onClick={() => setSearch('')} className="mt-3 text-sm text-teal hover:text-olive transition-colors underline underline-offset-2">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-sage/5 flex items-center justify-center">
+                <svg className="w-8 h-8 text-sage/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <p className="text-charcoal text-sm font-semibold mb-1">No properties match your search.</p>
+              <button onClick={() => setSearch('')} className="mt-3 text-xs font-medium text-sage hover:text-olive transition-colors bg-transparent border-none cursor-pointer underline underline-offset-4">
                 Clear search
               </button>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
               {filteredRooms.map((room) => (
-                <Link
-                  key={room.id}
-                  to={`/properties/${room.id}`}
-                  className="group bg-white shadow-sm hover:shadow-lg transition-shadow duration-300"
-                >
-                  <div className="relative h-48 sm:h-56 overflow-hidden">
-                    <img
-                      src={room.image}
-                      alt={room.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      loading="lazy"
-                    />
-                    <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 text-xs font-bold text-charcoal">
-                      ₱{room.price.toLocaleString()} <span className="font-normal text-gray-500">/ night</span>
-                    </div>
-                  </div>
-                  <div className="p-4 sm:p-5">
-                    <div className="flex items-start justify-between mb-1">
-                      <h3 className="text-sm sm:text-base font-semibold text-charcoal group-hover:text-teal transition-colors">{room.title}</h3>
-                      <div className="flex items-center gap-1 text-xs text-gray-600 shrink-0 ml-2">
-                        <RatingStars rating={room.rating} />
-                        <span>{room.rating}</span>
-                      </div>
-                    </div>
-                    <p className="text-xs sm:text-sm text-gray-500 mb-3">{room.location}</p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold text-teal">₱{room.price.toLocaleString()}<span className="text-xs font-normal text-gray-400">/night</span></span>
-                      <span className="text-xs font-medium text-olive group-hover:underline">View Details</span>
-                    </div>
-                  </div>
-                </Link>
+                <PropertyCard key={room.id} property={room} />
               ))}
             </div>
           )}

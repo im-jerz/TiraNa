@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
+import PropertyCard from '../components/PropertyCard.jsx'
 import { fetchListingDetail, fetchListings } from '../api/listings.js'
 
 const SAVED_API = 'http://localhost:5000/api/saved-properties'
@@ -118,14 +119,14 @@ function ShareModal({ url, title, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
-      <div className="bg-white w-full max-w-sm p-6 sm:p-8 shadow-xl" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal/50 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white w-full max-w-sm p-6 sm:p-8 rounded-2xl shadow-[0_8px_40px_rgba(39,51,56,0.15)]" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-base font-bold text-charcoal">Share</h3>
           <button
             type="button"
             onClick={onClose}
-            className="p-1 text-gray-400 hover:text-charcoal transition-colors"
+            className="p-1.5 text-gray-400 hover:text-charcoal hover:bg-gray-100 rounded-lg transition-colors bg-transparent border-none cursor-pointer"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -137,9 +138,9 @@ function ShareModal({ url, title, onClose }) {
           <button
             type="button"
             onClick={handleCopy}
-            className="w-full flex items-center gap-4 p-4 border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors text-left"
+            className="w-full flex items-center gap-4 p-4 border border-sage/10 hover:border-sage/30 hover:bg-sage/5 transition-all rounded-xl text-left bg-transparent cursor-pointer"
           >
-            <div className="w-10 h-10 rounded-full bg-sage/10 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-sage/10 flex items-center justify-center shrink-0">
               <svg className="w-5 h-5 text-sage" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
               </svg>
@@ -154,21 +155,26 @@ function ShareModal({ url, title, onClose }) {
             <button
               type="button"
               onClick={handleNativeShare}
-              className="w-full flex items-center gap-4 p-4 border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors text-left"
+              className="w-full flex items-center gap-4 p-4 border border-sage/10 hover:border-sage/30 hover:bg-sage/5 transition-all rounded-xl text-left bg-transparent cursor-pointer"
             >
-              <div className="w-10 h-10 rounded-full bg-teal/10 flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-teal/10 flex items-center justify-center shrink-0">
                 <svg className="w-5 h-5 text-teal" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                 </svg>
               </div>
               <div>
-                <p className="text-sm font-medium text-charcoal">Share via...</p>
+                <p className="text-sm font-medium text-charcoal">Share via</p>
                 <p className="text-xs text-gray-400">Use your device's share menu</p>
               </div>
             </button>
           )}
 
-
+          <div className="flex items-center gap-2 mt-2 p-3 bg-charcoal/[0.02] border border-sage/10 rounded-xl">
+            <svg className="w-4 h-4 text-sage/30 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            </svg>
+            <p className="text-xs text-gray-500 truncate">{url}</p>
+          </div>
         </div>
       </div>
     </div>
@@ -266,10 +272,10 @@ function RatingStars({ rating }) {
   const hasHalf = rating - full >= 0.5
 
   for (let i = 0; i < full; i++) {
-    stars.push(<StarIcon key={`full-${i}`} className="w-4 h-4 text-yellow-500" />)
+    stars.push(<StarIcon key={`full-${i}`} className="w-4 h-4 text-yellow-400" />)
   }
   if (hasHalf) {
-    stars.push(<HalfStarIcon key="half" className="w-4 h-4 text-yellow-500" />)
+    stars.push(<HalfStarIcon key="half" className="w-4 h-4 text-yellow-400" />)
   }
   while (stars.length < 5) {
     stars.push(<StarIcon key={`empty-${stars.length}`} className="w-4 h-4 text-gray-300" />)
@@ -281,9 +287,9 @@ function RatingBreakdownBar({ label, value }) {
   return (
     <div className="flex items-center gap-3">
       <span className="text-sm text-gray-600 w-28 shrink-0">{label}</span>
-      <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+      <div className="flex-1 h-1.5 bg-sage/10 rounded-full overflow-hidden">
         <div
-          className="h-full bg-teal rounded-full transition-all"
+          className="h-full bg-sage rounded-full transition-all"
           style={{ width: `${(value / 5) * 100}%` }}
         />
       </div>
@@ -317,7 +323,7 @@ function CategoryRatingRow({ label, value, onChange }) {
             className="p-0.5 transition-colors bg-transparent border-none cursor-pointer"
           >
             <StarIcon
-              className={`w-5 h-5 ${(hover || value) >= star ? 'text-yellow-500' : 'text-gray-300'}`}
+              className={`w-5 h-5 ${(hover || value) >= star ? 'text-yellow-400' : 'text-gray-300'}`}
             />
           </button>
         ))}
@@ -1022,7 +1028,7 @@ function PropertyDetails() {
           const now = new Date()
           const completed = list.find(b => {
             if (String(b.property_id) !== String(id)) return false
-            if (b.status !== 'confirmed') return false
+            if (b.status !== 'confirmed' && b.status !== 'completed') return false
             return new Date(b.check_out) < now
           })
           if (completed) {
@@ -1410,7 +1416,7 @@ function PropertyDetails() {
               </div>
             )}
 
-            <hr className="my-5 border-gray-200" />
+            <hr className="my-5 border-sage/10" />
 
             <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-gray-700">
               <span className="flex items-center gap-2">
@@ -1435,13 +1441,13 @@ function PropertyDetails() {
               </span>
             </div>
 
-            <hr className="my-5 border-gray-200" />
+            <hr className="my-5 border-sage/10" />
 
             <p className="text-sm sm:text-base text-gray-700 leading-relaxed whitespace-pre-line">
               {room.description}
             </p>
 
-            <hr className="my-6 border-gray-200" />
+            <hr className="my-6 border-sage/10" />
 
             <div>
               <h2 className="text-lg sm:text-xl font-bold text-charcoal mb-5">What this place offers</h2>
@@ -1467,15 +1473,15 @@ function PropertyDetails() {
               )}
             </div>
 
-            <hr className="my-6 border-gray-200" />
+            <hr className="my-6 border-sage/10" />
 
             <AvailabilityCalendar propertyId={id} />
 
-            <hr className="my-6 border-gray-200" />
+            <hr className="my-6 border-sage/10" />
 
             <div>
               <div className="flex items-center gap-2 mb-6">
-                <StarIcon className="w-5 h-5 text-yellow-500" />
+                <StarIcon className="w-5 h-5 text-yellow-400" />
                 <span className="text-lg sm:text-xl font-bold text-charcoal">{computedRating}</span>
                 <span className="text-lg text-gray-400">&middot;</span>
                 <span className="text-lg text-gray-600">{computedReviewsCount} reviews</span>
@@ -1487,12 +1493,12 @@ function PropertyDetails() {
               </div>
 
               {eligibleBooking && !reviewSubmitted && !showReviewForm && (
-                <div className="mb-8 p-5 bg-gray-50 border border-gray-200 text-center">
+                <div className="mb-8 p-5 sm:p-6 bg-white border border-sage/[0.06] rounded-2xl shadow-[0_2px_8px_rgba(156,176,128,0.04)] text-center">
                   <p className="text-sm font-semibold text-charcoal mb-3">Have you stayed here?</p>
                   <button
                     type="button"
                     onClick={() => setShowReviewForm(true)}
-                    className="px-6 py-2.5 bg-sage text-white text-sm font-medium uppercase tracking-wider hover:bg-olive transition-colors"
+                    className="px-6 py-2.5 bg-sage text-white text-sm font-medium hover:bg-olive transition-all rounded-lg"
                   >
                     Write a Review
                   </button>
@@ -1500,13 +1506,13 @@ function PropertyDetails() {
               )}
 
               {eligibleBooking && reviewSubmitted && (
-                <div className="mb-8 p-5 bg-teal/5 border border-teal/10 text-center">
+                <div className="mb-8 p-5 sm:p-6 bg-teal/5 border border-teal/10 rounded-2xl text-center">
                   <p className="text-sm font-medium text-teal">You have reviewed this property. Thank you!</p>
                 </div>
               )}
 
               {showReviewForm && (
-                <div className="mb-8 p-5 sm:p-6 bg-white border border-gray-200">
+                <div className="mb-8 p-5 sm:p-6 bg-white border border-sage/10 rounded-2xl shadow-[0_2px_12px_rgba(156,176,128,0.06)]">
                   <h3 className="text-sm font-bold text-charcoal mb-4">Write Your Review</h3>
                   <div className="space-y-3 mb-4">
                     {ratingCategories.map((cat) => (
@@ -1518,7 +1524,7 @@ function PropertyDetails() {
                       />
                     ))}
                   </div>
-                  <div className="flex items-center gap-2 mb-4 pb-4 border-b border-gray-100">
+                  <div className="flex items-center gap-2 mb-4 pb-4 border-b border-sage/10">
                     <span className="text-xs font-medium text-gray-500">Overall:</span>
                     {(() => {
                       const vals = Object.values(reviewRatings).map(Number).filter(v => v > 0)
@@ -1536,10 +1542,10 @@ function PropertyDetails() {
                     onChange={e => setReviewText(e.target.value)}
                     placeholder="Share your experience (optional)"
                     rows={3}
-                    className="w-full px-4 py-2.5 border border-gray-200 bg-white text-sm text-charcoal placeholder:text-gray-300 focus:outline-none focus:border-teal focus:ring-1 focus:ring-teal/20 transition-all resize-none mb-4"
+                    className="w-full px-4 py-2.5 border border-sage/15 bg-charcoal/[0.02] text-sm text-charcoal placeholder:text-gray-300 focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/10 rounded-xl transition-all resize-none mb-4"
                   />
                   {reviewError && (
-                    <div className="mb-4 bg-red-50 border border-red-100 px-4 py-3">
+                    <div className="mb-4 bg-red-50 border border-red-100 rounded-lg px-4 py-3">
                       <p className="text-xs text-red-600">{reviewError}</p>
                     </div>
                   )}
@@ -1548,7 +1554,7 @@ function PropertyDetails() {
                       type="button"
                       onClick={() => { setShowReviewForm(false); setReviewError(''); setReviewRatings({ accuracy: 0, checkIn: 0, cleanliness: 0, communication: 0, location: 0, value: 0 }); setReviewText('') }}
                       disabled={reviewLoading}
-                      className="px-4 py-2.5 text-sm font-medium text-charcoal border border-gray-200 hover:bg-gray-50 transition-colors bg-transparent"
+                      className="px-4 py-2.5 text-sm font-medium text-charcoal border border-sage/15 hover:bg-sage/5 transition-all rounded-lg bg-transparent"
                     >
                       Cancel
                     </button>
@@ -1556,7 +1562,7 @@ function PropertyDetails() {
                       type="button"
                       onClick={handleSubmitReview}
                       disabled={reviewLoading || Object.values(reviewRatings).every(v => Number(v) === 0)}
-                      className="px-6 py-2.5 text-sm font-medium text-white bg-sage hover:bg-olive transition-colors disabled:opacity-40"
+                      className="px-6 py-2.5 text-sm font-medium text-white bg-sage hover:bg-olive transition-all rounded-lg disabled:opacity-40"
                     >
                       {reviewLoading ? 'Submitting...' : 'Submit Review'}
                     </button>
@@ -1566,7 +1572,7 @@ function PropertyDetails() {
 
               <div className="space-y-6">
                 {room.reviews.map((review) => (
-                  <div key={review.id} className="pb-6 border-b border-gray-100 last:border-b-0 last:pb-0">
+                  <div key={review.id} className="p-4 sm:p-5 rounded-2xl bg-white border border-sage/[0.06] shadow-[0_2px_8px_rgba(156,176,128,0.04)]">
                     <div className="flex items-center gap-3 mb-2">
                       <img
                         src={review.avatar}
@@ -1585,13 +1591,13 @@ function PropertyDetails() {
                 {userReviews.map((review) => {
                   const isOwner = currentUserId && review.user_id === currentUserId
                   return (
-                    <div key={review.id} className="pb-6 border-b border-gray-100 last:border-b-0 last:pb-0 group relative">
+                    <div key={review.id} className="p-4 sm:p-5 rounded-2xl bg-white border border-sage/[0.06] shadow-[0_2px_8px_rgba(156,176,128,0.04)] relative group">
                       {isOwner && (
-                        <div className="absolute top-0 right-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             type="button"
                             onClick={() => openEditReview(review)}
-                            className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-sage hover:bg-sage/5 rounded transition-colors bg-transparent border-none cursor-pointer"
+                            className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-sage hover:bg-sage/5 rounded-lg transition-colors bg-transparent border-none cursor-pointer"
                             title="Edit review"
                           >
                             <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
@@ -1601,7 +1607,7 @@ function PropertyDetails() {
                           <button
                             type="button"
                             onClick={() => setDeleteTarget(review)}
-                            className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors bg-transparent border-none cursor-pointer"
+                            className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors bg-transparent border-none cursor-pointer"
                             title="Delete review"
                           >
                             <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
@@ -1650,9 +1656,9 @@ function PropertyDetails() {
               }} />
 
               <div className="mt-6 hidden lg:block">
-                <div className="border border-gray-200 rounded p-4">
+                <div className="border border-sage/[0.06] rounded-2xl p-4 shadow-[0_2px_8px_rgba(156,176,128,0.04)] bg-white">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-full bg-sage/10 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-xl bg-sage/10 flex items-center justify-center">
                       <BadgeIcon className="w-5 h-5 text-sage" />
                     </div>
                     <p className="text-xs text-gray-600">
@@ -1669,42 +1675,12 @@ function PropertyDetails() {
         </div>
       </section>
 
-      <section className="bg-gray-50 py-12 sm:py-16">
+      <section className="bg-gradient-to-b from-sage/[0.03] to-white py-12 sm:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-xl sm:text-2xl font-bold text-charcoal mb-8">Similar properties you might like</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-              {similarRooms.map((r) => (
-              <Link
-                key={r.id}
-                to={`/properties/${r.id}`}
-                className="group bg-white shadow-sm hover:shadow-lg transition-shadow duration-300"
-              >
-                <div className="relative h-48 overflow-hidden">
-                  <img
-                    src={r.image}
-                    alt={r.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
-                  />
-                  <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 text-xs font-bold text-charcoal">
-                    ₱{r.price} <span className="font-normal text-gray-500">/ night</span>
-                  </div>
-                </div>
-                <div className="p-4 sm:p-5">
-                  <div className="flex items-start justify-between mb-1">
-                    <h3 className="text-sm sm:text-base font-semibold text-charcoal group-hover:text-teal transition-colors">{r.title}</h3>
-                    <div className="flex items-center gap-1 text-xs text-gray-600 shrink-0 ml-2">
-                      <RatingStars rating={r.rating} />
-                      <span>{r.rating}</span>
-                    </div>
-                  </div>
-                  <p className="text-xs sm:text-sm text-gray-500 mb-3">{r.location}</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-teal">₱{r.price}<span className="text-xs font-normal text-gray-400">/night</span></span>
-                    <span className="text-xs font-medium text-olive group-hover:underline">View Details</span>
-                  </div>
-                </div>
-              </Link>
+            {similarRooms.map((r) => (
+              <PropertyCard key={r.id} property={r} />
             ))}
           </div>
         </div>
@@ -1754,10 +1730,10 @@ function PropertyDetails() {
       </footer>
 
       {editReview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => { setEditReview(null); setEditError('') }}>
-          <div className="bg-white w-full max-w-sm p-6 sm:p-8 shadow-xl" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal/50 backdrop-blur-sm" onClick={() => { setEditReview(null); setEditError('') }}>
+          <div className="bg-white w-full max-w-sm p-6 sm:p-8 rounded-2xl shadow-[0_8px_40px_rgba(39,51,56,0.15)]" onClick={e => e.stopPropagation()}>
             <h3 className="text-base font-bold text-charcoal mb-1">Edit Review</h3>
-            <p className="text-sm text-gray-500 mb-5 truncate">{room.title}</p>
+            <p className="text-sm text-gray-400 mb-5 truncate">{room.title}</p>
             <div className="mb-5 space-y-3">
               {ratingCategories.map((cat) => (
                 <div key={cat.key} className="flex items-center justify-between">
@@ -1771,7 +1747,7 @@ function PropertyDetails() {
                         className="p-0.5 transition-colors bg-transparent border-none cursor-pointer"
                       >
                         <svg
-                          className={`w-5 h-5 ${editRatings[cat.key] >= star ? 'text-yellow-500' : 'text-gray-300'}`}
+                          className={`w-5 h-5 ${editRatings[cat.key] >= star ? 'text-yellow-400' : 'text-gray-300'}`}
                           viewBox="0 0 20 20"
                           fill="currentColor"
                         >
@@ -1782,7 +1758,7 @@ function PropertyDetails() {
                   </div>
                 </div>
               ))}
-              <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+              <div className="flex items-center gap-2 pt-2 border-t border-sage/10">
                 <span className="text-xs font-medium text-gray-500">Overall:</span>
                 {(() => {
                   const vals = Object.values(editRatings).map(Number).filter(v => v > 0)
@@ -1801,10 +1777,10 @@ function PropertyDetails() {
               onChange={e => setEditText(e.target.value)}
               placeholder="Share your experience (optional)"
               rows={4}
-              className="w-full px-4 py-2.5 border border-gray-200 bg-white text-sm text-charcoal placeholder:text-gray-300 focus:outline-none focus:border-teal focus:ring-1 focus:ring-teal/20 transition-all resize-none mb-4"
+              className="w-full px-4 py-2.5 border border-sage/15 bg-charcoal/[0.02] text-sm text-charcoal placeholder:text-gray-300 focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/10 rounded-xl transition-all resize-none mb-4"
             />
             {editError && (
-              <div className="mb-4 bg-red-50 border border-red-100 px-4 py-3">
+              <div className="mb-4 bg-red-50 border border-red-100 rounded-lg px-4 py-3">
                 <p className="text-xs text-red-600">{editError}</p>
               </div>
             )}
@@ -1813,7 +1789,7 @@ function PropertyDetails() {
                 type="button"
                 onClick={() => { setEditReview(null); setEditError('') }}
                 disabled={editLoading}
-                className="flex-1 py-2.5 text-sm font-medium text-charcoal border border-gray-200 hover:bg-gray-50 transition-colors bg-transparent"
+                className="flex-1 py-2.5 text-sm font-medium text-charcoal border border-sage/15 hover:bg-sage/5 transition-all rounded-lg bg-transparent"
               >
                 Cancel
               </button>
@@ -1821,7 +1797,7 @@ function PropertyDetails() {
                 type="button"
                 onClick={handleEditReview}
                 disabled={editLoading || Object.values(editRatings).every(v => Number(v) === 0)}
-                className="flex-1 py-2.5 text-sm font-medium text-white bg-sage hover:bg-olive transition-colors disabled:opacity-40"
+                className="flex-1 py-2.5 text-sm font-medium text-white bg-sage hover:bg-olive transition-all rounded-lg disabled:opacity-40"
               >
                 {editLoading ? 'Saving...' : 'Save Changes'}
               </button>
@@ -1831,10 +1807,15 @@ function PropertyDetails() {
       )}
 
       {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => setDeleteTarget(null)}>
-          <div className="bg-white w-full max-w-sm p-6 sm:p-8 shadow-xl" onClick={e => e.stopPropagation()}>
-            <h3 className="text-base font-bold text-charcoal mb-2">Delete Review</h3>
-            <p className="text-sm text-gray-500 mb-6 leading-relaxed">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal/50 backdrop-blur-sm" onClick={() => setDeleteTarget(null)}>
+          <div className="bg-white w-full max-w-sm p-6 sm:p-8 rounded-2xl shadow-[0_8px_40px_rgba(39,51,56,0.15)]" onClick={e => e.stopPropagation()}>
+            <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center mb-4 mx-auto">
+              <svg className="w-6 h-6 text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+            </div>
+            <h3 className="text-base font-bold text-charcoal mb-2 text-center">Delete Review</h3>
+            <p className="text-sm text-gray-500 mb-6 leading-relaxed text-center">
               Are you sure you want to delete this review? This action cannot be undone.
             </p>
             <div className="flex items-center gap-3">
@@ -1842,7 +1823,7 @@ function PropertyDetails() {
                 type="button"
                 onClick={() => setDeleteTarget(null)}
                 disabled={deleteLoading}
-                className="flex-1 py-2.5 text-sm font-medium text-charcoal border border-gray-200 hover:bg-gray-50 transition-colors bg-transparent"
+                className="flex-1 py-2.5 text-sm font-medium text-charcoal border border-sage/15 hover:bg-sage/5 transition-all rounded-lg bg-transparent"
               >
                 Keep Review
               </button>
@@ -1850,7 +1831,7 @@ function PropertyDetails() {
                 type="button"
                 onClick={handleDeleteReview}
                 disabled={deleteLoading}
-                className="flex-1 py-2.5 text-sm font-medium text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-40"
+                className="flex-1 py-2.5 text-sm font-medium text-white bg-red-500 hover:bg-red-600 transition-all rounded-lg disabled:opacity-40"
               >
                 {deleteLoading ? 'Deleting...' : 'Yes, Delete'}
               </button>

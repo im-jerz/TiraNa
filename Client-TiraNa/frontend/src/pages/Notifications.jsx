@@ -149,18 +149,18 @@ function formatFullDate(dateStr) {
 
 function SkeletonCard() {
   return (
-    <div className="flex items-start gap-4 p-4 sm:p-5 border border-gray-100 animate-pulse">
-      <div className="shrink-0 w-10 h-10 rounded-full bg-gray-100" />
+    <div className="flex items-start gap-4 p-4 sm:p-5 bg-white border border-sage/10 rounded-xl animate-pulse">
+      <div className="shrink-0 w-10 h-10 rounded-full bg-sage/10" />
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
-          <div className="h-4 bg-gray-100 rounded w-1/3" />
-          <div className="h-2 w-2 rounded-full bg-gray-100" />
+          <div className="h-4 bg-sage/10 rounded w-1/3" />
+          <div className="h-2 w-2 rounded-full bg-sage/10" />
         </div>
-        <div className="h-3 bg-gray-50 rounded w-full mt-2" />
-        <div className="h-3 bg-gray-50 rounded w-3/4 mt-1" />
+        <div className="h-3 bg-sage/[0.06] rounded w-full mt-2" />
+        <div className="h-3 bg-sage/[0.06] rounded w-3/4 mt-1" />
         <div className="flex items-center gap-3 mt-3">
-          <div className="h-3 bg-gray-50 rounded w-16" />
-          <div className="h-3 bg-gray-50 rounded w-20" />
+          <div className="h-3 bg-sage/[0.06] rounded w-16" />
+          <div className="h-3 bg-sage/[0.06] rounded w-20" />
         </div>
       </div>
     </div>
@@ -184,39 +184,50 @@ function NotificationModal({ notification, onClose, onMarkRead }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-charcoal/50 backdrop-blur-sm" />
       <div
-        className="relative bg-white w-full max-w-lg shadow-xl animate-in"
+        className="relative bg-white w-full max-w-lg rounded-2xl shadow-[0_8px_40px_rgba(39,51,56,0.15)] animate-in"
         onClick={(e) => e.stopPropagation()}
-        style={{ animation: 'modalIn 0.2s ease-out' }}
+        style={{ animation: 'modalIn 0.25s ease-out' }}
       >
-        <div className="flex items-center justify-between p-5 border-b border-gray-100">
+        <div className="flex items-center justify-between p-5 sm:p-6 border-b border-sage/10">
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 flex items-center justify-center rounded-full ${colorClass}`}>
+            <div className={`w-10 h-10 flex items-center justify-center rounded-xl ${colorClass}`}>
               <Icon />
             </div>
             <div>
               <h2 className="text-sm font-semibold text-charcoal">{notification.title}</h2>
-              <span className="text-[11px] text-gray-400 capitalize">{typeLabels[notification.type] || notification.type}</span>
+              <span className="text-[11px] text-sage/70 capitalize font-medium">{typeLabels[notification.type] || notification.type}</span>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors bg-transparent border-none p-1 cursor-pointer"
+            className="text-gray-400 hover:text-charcoal transition-colors bg-gray-50 hover:bg-gray-100 border-none rounded-lg p-1.5 cursor-pointer"
           >
             <CloseIcon />
           </button>
         </div>
 
-        <div className="p-5">
+        <div className="p-5 sm:p-6">
           <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{notification.message}</p>
         </div>
 
-        <div className="px-5 pb-5 flex items-center justify-between text-[11px] text-gray-400">
-          <span>{formatFullDate(notification.created_at)}</span>
+        <div className="px-5 sm:px-6 pb-5 sm:pb-6 flex items-center justify-between text-[11px] text-gray-400 border-t border-sage/5 pt-4">
+          <span className="flex items-center gap-1.5">
+            <svg className="w-3.5 h-3.5 text-sage/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2" />
+              <circle cx="12" cy="12" r="9" />
+            </svg>
+            {formatFullDate(notification.created_at)}
+          </span>
           {notification.sender_username && (
-            <span>from @{notification.sender_username}</span>
+            <span className="text-sage/50 flex items-center gap-1">
+              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+              </svg>
+              @{notification.sender_username}
+            </span>
           )}
         </div>
       </div>
@@ -390,9 +401,9 @@ function Notifications() {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
 
           {/* Search and Filters */}
-          <div className="bg-white border border-gray-100 p-4 mb-4 space-y-3">
+          <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-[0_2px_12px_rgba(156,176,128,0.08)] border border-sage/10 p-4 sm:p-5 mb-5 space-y-4">
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-sage/40">
                 <SearchIcon />
               </div>
               <input
@@ -400,13 +411,13 @@ function Notifications() {
                 placeholder="Search notifications..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-50 border border-gray-200 text-charcoal placeholder-gray-400 focus:outline-none focus:border-sage focus:ring-1 focus:ring-sage/20 transition-colors"
+                className="w-full pl-10 pr-10 py-2.5 text-sm bg-charcoal/[0.03] border border-sage/15 text-charcoal placeholder:text-gray-400 focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/10 rounded-xl transition-all"
               />
               {search && (
                 <button
                   type="button"
                   onClick={() => setSearch('')}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 bg-transparent border-none cursor-pointer"
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-charcoal transition-colors bg-transparent border-none cursor-pointer"
                 >
                   <CloseIcon />
                 </button>
@@ -417,7 +428,7 @@ function Notifications() {
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="px-3 py-1.5 text-xs font-medium bg-gray-50 border border-gray-200 text-charcoal focus:outline-none focus:border-sage cursor-pointer"
+                className="px-3.5 py-2 text-xs font-medium bg-charcoal/[0.03] border border-sage/15 text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/10 rounded-lg cursor-pointer transition-all hover:border-sage/30"
               >
                 <option value="">All types</option>
                 {Object.entries(typeLabels).map(([value, label]) => (
@@ -428,34 +439,37 @@ function Notifications() {
               <select
                 value={readFilter}
                 onChange={(e) => setReadFilter(e.target.value)}
-                className="px-3 py-1.5 text-xs font-medium bg-gray-50 border border-gray-200 text-charcoal focus:outline-none focus:border-sage cursor-pointer"
+                className="px-3.5 py-2 text-xs font-medium bg-charcoal/[0.03] border border-sage/15 text-charcoal focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/10 rounded-lg cursor-pointer transition-all hover:border-sage/30"
               >
                 <option value="">All status</option>
                 <option value="unread">Unread</option>
                 <option value="read">Read</option>
               </select>
 
-              {hasFilters && (
-                <button
-                  type="button"
-                  onClick={clearFilters}
-                  className="text-xs font-medium text-sage hover:text-olive transition-colors bg-transparent border-none p-0 cursor-pointer"
-                >
-                  Clear filters
-                </button>
-              )}
+              <div className="flex items-center gap-2 ml-auto">
+                {hasFilters && (
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="text-xs font-medium text-sage hover:text-olive transition-colors bg-transparent border-none p-0 cursor-pointer"
+                  >
+                    Clear filters
+                  </button>
+                )}
 
-              <div className="flex-1" />
-
-              {unreadCount > 0 && (
-                <button
-                  type="button"
-                  onClick={handleMarkAllRead}
-                  className="text-xs font-medium text-sage hover:text-olive transition-colors bg-transparent border-none p-0 cursor-pointer"
-                >
-                  Mark all as read
-                </button>
-              )}
+                {unreadCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleMarkAllRead}
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-white bg-sage hover:bg-olive transition-colors px-3.5 py-1.5 rounded-lg border-none cursor-pointer shadow-[0_1px_4px_rgba(156,176,128,0.25)]"
+                  >
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Mark all read
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -467,30 +481,38 @@ function Notifications() {
               ))}
             </div>
           ) : notifications.length === 0 ? (
-            <div className="text-center py-20">
-              <div className="flex justify-center mb-4">
-                <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center">
-                  <BellIcon className="w-8 h-8 text-gray-300" />
+            <div className="text-center py-24 px-4">
+              <div className="relative inline-flex mb-6">
+                <div className="w-20 h-20 rounded-2xl bg-sage/5 flex items-center justify-center">
+                  <BellIcon className="w-10 h-10 text-sage/30" />
+                </div>
+                <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-sage/10 flex items-center justify-center">
+                  <svg className="w-3 h-3 text-sage/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </div>
               </div>
-              <p className="text-gray-400 text-sm font-medium">
-                {hasFilters ? 'No notifications match your filters' : 'No notifications yet'}
+              <p className="text-charcoal text-sm font-semibold mb-1">
+                {hasFilters ? 'No results found' : 'No notifications yet'}
               </p>
-              <p className="text-gray-300 text-xs mt-1">
-                {hasFilters ? 'Try adjusting your search or filters' : 'When you get notifications, they will appear here.'}
+              <p className="text-gray-400 text-xs max-w-xs mx-auto leading-relaxed">
+                {hasFilters ? 'Try adjusting your search or filters to find what you\'re looking for.' : 'When you receive notifications, they will appear right here.'}
               </p>
               {hasFilters && (
                 <button
                   type="button"
                   onClick={clearFilters}
-                  className="mt-4 text-xs font-medium text-sage hover:text-olive transition-colors bg-transparent border-none cursor-pointer"
+                  className="mt-5 inline-flex items-center gap-1.5 text-xs font-medium text-sage hover:text-olive transition-colors bg-transparent border-none cursor-pointer"
                 >
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+                  </svg>
                   Clear filters
                 </button>
               )}
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {notifications.map(n => {
                 const Icon = typeIcons[n.type] || SystemIcon
                 const colorClass = typeColors[n.type] || typeColors.system
@@ -498,26 +520,31 @@ function Notifications() {
                   <div
                     key={n.id}
                     onClick={() => openNotification(n)}
-                    className={`flex items-start gap-4 p-4 sm:p-5 transition-all cursor-pointer ${
-                      n.is_read ? 'bg-white hover:bg-gray-50' : 'bg-sage/[0.03] hover:bg-sage/[0.06]'
-                    } border border-gray-100 hover:border-gray-200 relative group`}
+                    className={`group flex items-start gap-4 p-4 sm:p-5 transition-all duration-200 cursor-pointer rounded-xl ${
+                      n.is_read
+                        ? 'bg-white hover:bg-charcoal/[0.02] shadow-[0_1px_4px_rgba(156,176,128,0.06)] hover:shadow-[0_4px_16px_rgba(156,176,128,0.1)]'
+                        : 'bg-sage/[0.04] hover:bg-sage/[0.07] shadow-[0_1px_4px_rgba(156,176,128,0.1)] hover:shadow-[0_4px_16px_rgba(156,176,128,0.14)]'
+                    } border border-sage/10 hover:border-sage/25 relative`}
                   >
-                    <div className={`shrink-0 w-10 h-10 flex items-center justify-center rounded-full ${colorClass}`}>
+                    {!n.is_read && (
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-8 bg-sage rounded-full" />
+                    )}
+                    <div className={`shrink-0 w-10 h-10 flex items-center justify-center rounded-xl transition-all group-hover:scale-105 ${colorClass}`}>
                       <Icon />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className={`text-sm ${n.is_read ? 'font-medium text-gray-600' : 'font-semibold text-charcoal'}`}>
+                        <h3 className={`text-sm ${n.is_read ? 'font-medium text-charcoal/60' : 'font-semibold text-charcoal'}`}>
                           {n.title}
                         </h3>
                         <div className="flex items-center gap-2 shrink-0">
                           {!n.is_read && (
-                            <span className="w-2 h-2 rounded-full bg-sage" />
+                            <span className="w-2 h-2 rounded-full bg-sage shadow-[0_0_4px_rgba(156,176,128,0.4)]" />
                           )}
                           <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); handleDelete(n.id) }}
-                            className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-all border-none bg-transparent p-0 cursor-pointer"
+                            className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-all duration-200 border-none bg-charcoal/[0.02] hover:bg-red-50 rounded-lg p-1 cursor-pointer"
                             title="Delete"
                           >
                             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
@@ -526,13 +553,21 @@ function Notifications() {
                           </button>
                         </div>
                       </div>
-                      <p className="text-xs sm:text-sm text-gray-500 mt-1 leading-relaxed line-clamp-2">{n.message}</p>
-                      <div className="flex items-center gap-3 mt-2">
-                        <span className="text-[11px] text-gray-400">{formatDate(n.created_at)}</span>
+                      <p className={`text-xs sm:text-sm mt-1 leading-relaxed line-clamp-2 ${n.is_read ? 'text-gray-400' : 'text-gray-500'}`}>{n.message}</p>
+                      <div className="flex items-center gap-4 mt-2.5">
+                        <span className="text-[11px] text-gray-400 flex items-center gap-1">
+                          <svg className="w-3 h-3 text-sage/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2" />
+                            <circle cx="12" cy="12" r="9" />
+                          </svg>
+                          {formatDate(n.created_at)}
+                        </span>
                         {n.sender_username && (
-                          <span className="text-[11px] text-gray-300">from @{n.sender_username}</span>
+                          <span className="text-[11px] text-sage/40">@{n.sender_username}</span>
                         )}
-                        <span className="text-[11px] text-gray-300 capitalize">{n.type}</span>
+                        <span className={`text-[11px] capitalize px-2 py-0.5 rounded-full ${
+                          n.is_read ? 'text-gray-400 bg-charcoal/[0.03]' : 'text-sage/60 bg-sage/[0.06]'
+                        }`}>{typeLabels[n.type] || n.type}</span>
                       </div>
                     </div>
                   </div>
@@ -543,12 +578,12 @@ function Notifications() {
 
           {/* Pagination */}
           {pagination.totalPages > 1 && (
-            <div className="flex items-center justify-center gap-1 mt-8">
+            <div className="flex items-center justify-center gap-1.5 mt-10">
               <button
                 type="button"
                 onClick={() => fetchNotifications(pagination.page - 1)}
                 disabled={pagination.page <= 1}
-                className="p-2 text-charcoal border border-gray-200 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed bg-transparent cursor-pointer"
+                className="p-2 text-charcoal border border-sage/15 hover:bg-sage/5 hover:border-sage/30 transition-all rounded-lg disabled:opacity-30 disabled:cursor-not-allowed bg-transparent cursor-pointer"
               >
                 <ChevronLeftIcon />
               </button>
@@ -566,16 +601,16 @@ function Notifications() {
                 }, [])
                 .map((p, i) =>
                   p === '...' ? (
-                    <span key={`ellipsis-${i}`} className="px-2 text-sm text-gray-400">...</span>
+                    <span key={`ellipsis-${i}`} className="px-2 text-sm text-sage/40">...</span>
                   ) : (
                     <button
                       key={p}
                       type="button"
                       onClick={() => fetchNotifications(p)}
-                      className={`w-9 h-9 text-sm font-medium transition-colors border cursor-pointer ${
+                      className={`w-9 h-9 text-sm font-medium transition-all duration-200 rounded-lg cursor-pointer ${
                         p === pagination.page
-                          ? 'bg-charcoal text-white border-charcoal'
-                          : 'bg-transparent text-charcoal border-gray-200 hover:bg-gray-50'
+                          ? 'bg-charcoal text-white shadow-[0_2px_8px_rgba(39,51,56,0.2)]'
+                          : 'bg-transparent text-charcoal border border-sage/15 hover:bg-sage/5 hover:border-sage/30'
                       }`}
                     >
                       {p}
@@ -586,7 +621,7 @@ function Notifications() {
                 type="button"
                 onClick={() => fetchNotifications(pagination.page + 1)}
                 disabled={pagination.page >= pagination.totalPages}
-                className="p-2 text-charcoal border border-gray-200 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed bg-transparent cursor-pointer"
+                className="p-2 text-charcoal border border-sage/15 hover:bg-sage/5 hover:border-sage/30 transition-all rounded-lg disabled:opacity-30 disabled:cursor-not-allowed bg-transparent cursor-pointer"
               >
                 <ChevronRightIcon />
               </button>

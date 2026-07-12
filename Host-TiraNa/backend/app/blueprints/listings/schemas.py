@@ -1,7 +1,9 @@
 from flask import request
 from marshmallow import Schema, fields
+from sqlalchemy import func
 
 from app.models.property import Property
+from app.extensions import db
 
 
 def _resolve_url(path):
@@ -17,6 +19,15 @@ PROPERTY_TYPE_LABELS = {
     "private_room": "Private room",
     "shared_room": "Shared room",
 }
+
+
+def _get_property_rating(property_id):
+    from app.models.review import Review
+    result = db.session.query(
+        func.coalesce(func.avg(Review.rating), 0),
+        func.count(Review.id)
+    ).filter(Review.property_id == str(property_id)).first()
+    return float(result[0]), int(result[1])
 
 
 class HostProfileSchema(Schema):
@@ -76,10 +87,12 @@ class ListingItemSchema(Schema):
         return ""
 
     def get_rating(self, obj):
-        return 0.0
+        avg_rating, _ = _get_property_rating(obj.id)
+        return round(avg_rating, 1) if avg_rating > 0 else 0.0
 
     def get_review_count(self, obj):
-        return 0
+        _, count = _get_property_rating(obj.id)
+        return count
 
     def is_superhost(self, obj):
         profile = obj.host.profile if obj.host else None
@@ -161,11 +174,21 @@ class ListingDetailSchema(ListingItemSchema):
         }
 
     def get_rating_breakdown(self, obj):
+        from app.models.review import Review
+        result = db.session.query(
+            func.coalesce(func.avg(Review.cleanliness), 0),
+            func.coalesce(func.avg(Review.accuracy), 0),
+            func.coalesce(func.avg(Review.communication), 0),
+            func.coalesce(func.avg(Review.location), 0),
+            func.coalesce(func.avg(Review.check_in), 0),
+            func.coalesce(func.avg(Review.value), 0),
+        ).filter(Review.property_id == str(obj.id)).first()
+
         return {
-            "cleanliness": 0,
-            "accuracy": 0,
-            "communication": 0,
-            "location": 0,
-            "checkIn": 0,
-            "value": 0,
+            "cleanliness": round(float(result[0]), 1),
+            "accuracy": round(float(result[1]), 1),
+            "communication": round(float(result[2]), 1),
+            "location": round(float(result[3]), 1),
+            "checkIn": round(float(result[4]), 1),
+            "value": round(float(result[5]), 1),
         }
