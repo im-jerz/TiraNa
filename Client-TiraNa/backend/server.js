@@ -1,0 +1,88 @@
+import express from 'express';
+import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import pool from './db.js';
+import authRoutes from './routes/auth.js';
+import profileRoutes from './routes/profile.js';
+import notificationRoutes from './routes/notifications.js';
+import bookingRoutes from './routes/booking.js';
+import reviewRoutes from './routes/reviews.js';
+import statsRoutes from './routes/stats.js';
+import hostBookingRoutes from './routes/hostBookings.js';
+import hostRefundRoutes from './routes/hostRefund.js';
+import hostReviewRoutes from './routes/hostReviews.js';
+import savedPropertiesRoutes from './routes/savedProperties.js';
+import paymentRoutes from './routes/payment.js';
+import adminRoutes from './routes/admin.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+app.use(cors());
+app.use(express.json({ limit: '5mb' }));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+app.use('/api/auth', authRoutes);
+app.use('/api/auth', profileRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/bookings', bookingRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api', statsRoutes);
+app.use('/api/host', hostBookingRoutes);
+app.use('/api/host', hostRefundRoutes);
+app.use('/api/host', hostReviewRoutes);
+app.use('/api/saved-properties', savedPropertiesRoutes);
+app.use('/api/payment', paymentRoutes);
+app.use('/api/admin', adminRoutes);
+
+async function ensureReviewSchema() {
+  try {
+    await pool.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS is_hidden BOOL DEFAULT false`)
+  } catch (err) {
+    console.error('Migration error (reviews.is_hidden):', err)
+  }
+}
+
+ensureReviewSchema()
+
+async function cleanupOldCodes() {
+  try {
+    await pool.query(
+      `DELETE FROM verification_codes
+       WHERE (used = true OR expires_at < now())
+         AND created_at < now() - interval '24 hours'`
+    )
+  } catch (err) {
+    console.error('Cleanup error:', err)
+  }
+}
+
+setInterval(cleanupOldCodes, 3_600_000)
+cleanupOldCodes()
+
+async function autoCompleteBookings() {
+  try {
+    const result = await pool.query(
+      `UPDATE bookings SET status = 'completed'
+       WHERE status = 'confirmed'
+         AND check_out < (now() AT TIME ZONE 'Asia/Manila')
+       RETURNING id`
+    )
+    if (result.rowCount > 0) {
+      console.log(`Auto-completed ${result.rowCount} booking(s): [${result.rows.map(r => r.id).join(', ')}]`)
+    }
+  } catch (err) {
+    console.error('Auto-complete bookings error:', err)
+  }
+}
+
+setInterval(autoCompleteBookings, 3_600_000)
+autoCompleteBookings()
+
+app.listen(PORT, () => {
+  console.log(`Empress backend running on port ${PORT}`);
+});

@@ -1,0 +1,68 @@
+services:
+  oracle-db:
+    image: gvenzl/oracle-free
+    container_name: tirana-oracle
+    ports:
+      - "${ORACLE_PORT:-1521}:1521"
+    environment:
+      ORACLE_PASSWORD: ${ORACLE_SYS_PASSWORD:-CarlangeloAdmin123}
+      APP_USER: AIRBNB_HOST
+      APP_USER_PASSWORD: ${ORACLE_APP_PASSWORD:-Carlangelo#19}
+    volumes:
+      - oracle_data:/opt/oracle/oradata
+    networks:
+      - tirana-network
+    healthcheck:
+      test: ["CMD-SHELL", "echo 'SELECT 1 FROM DUAL;' | sqlplus -s SYSTEM/$ORACLE_PASSWORD@FREEPDB1 > /dev/null 2>&1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 90s
+
+  backend:
+    build:
+      context: ./backend
+    container_name: tirana-backend
+    command: python wsgi.py
+    ports:
+      - "${BACKEND_PORT:-5001}:5000"
+    env_file:
+      - ./backend/.env
+    environment:
+      FLASK_ENV: ${FLASK_ENV:-development}
+      DATABASE_URL: oracle+oracledb://AIRBNB_HOST:${ORACLE_APP_PASSWORD:-Carlangelo%2319}@oracle-db:1521/?service_name=FREEPDB1
+      ADMIN_API_URL: http://host.docker.internal:5002
+      ADMIN_INTERNAL_API_KEY: ${ADMIN_INTERNAL_API_KEY:-tirana-internal-secret-key}
+      CLIENT_API_URL: http://host.docker.internal:5000
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./backend/instance:/app/instance
+    depends_on:
+      oracle-db:
+        condition: service_healthy
+    networks:
+      - tirana-network
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: tirana-frontend
+    ports:
+      - "${FRONTEND_PORT:-5174}:5174"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - tirana-network
+
+volumes:
+  oracle_data:
+
+networks:
+  tirana-network:
+    driver: bridge
