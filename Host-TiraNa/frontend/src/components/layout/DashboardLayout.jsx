@@ -17,7 +17,8 @@ const PAGE_META = {
   "/dashboard/wallet": { eyebrow: "Earnings", title: "Wallet & Payouts" },
   "/dashboard/reviews": { eyebrow: "Engagement", title: "Reviews" },
   "/dashboard/messages": { eyebrow: "Engagement", title: "Messages" },
-  "/dashboard/support": { eyebrow: "Account", title: "Support & Disputes" },
+  "/dashboard/support": { eyebrow: "Account", title: "Support" },
+  "/dashboard/disputes": { eyebrow: "Account", title: "Disputes" },
   "/dashboard/settings": { eyebrow: "Account", title: "Settings" },
 };
 

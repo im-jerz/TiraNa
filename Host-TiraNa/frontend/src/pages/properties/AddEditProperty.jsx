@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { STEP_DEFS, emptyPropertyDraft, validateStep, validateAll } from "./propertyDraft";
+import { savePropertyDraftLocal, loadPropertyDraftLocal, clearPropertyDraftLocal } from "./propertyDraftStorage";
 import { useToast } from "../../components/common/Toast";
+import ConfirmModal from "../../components/common/ConfirmModal";
 import { IconCheck, IconChevronLeft } from "../../components/icons";
 import { createProperty, updateProperty, savePropertyDraft, getProperty } from "../../api/properties";
 
@@ -86,7 +88,38 @@ export default function AddEditProperty() {
   const [submitting, setSubmitting] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [loadingExisting, setLoadingExisting] = useState(isEdit);
+  const [resumeCandidate, setResumeCandidate] = useState(null);
+  const [localDraftReady, setLocalDraftReady] = useState(isEdit); // edit flow never touches local storage
   const autosaveTimer = useRef(null);
+
+  // On the *new* property flow, check for a draft left behind by an earlier
+  // visit (e.g. the host navigated to another page mid-way through). We ask
+  // before applying it so we never silently blow away a fresh start.
+  useEffect(() => {
+    if (isEdit) return;
+    const saved = loadPropertyDraftLocal();
+    if (saved) {
+      setResumeCandidate(saved);
+    } else {
+      setLocalDraftReady(true);
+    }
+  }, [isEdit]);
+
+  function handleResumeDraft() {
+    setDraft(resumeCandidate.draft);
+    setStepIndex(resumeCandidate.stepIndex || 0);
+    if (resumeCandidate.draft?.photos?._previousCount > 0) {
+      push("Continuing your draft — please re-add your photos before submitting.", "info", 4000);
+    }
+    setResumeCandidate(null);
+    setLocalDraftReady(true);
+  }
+
+  function handleDiscardDraft() {
+    clearPropertyDraftLocal();
+    setResumeCandidate(null);
+    setLocalDraftReady(true);
+  }
 
   // Pre-fill on edit
   useEffect(() => {
@@ -113,6 +146,17 @@ export default function AddEditProperty() {
       cancelled = true;
     };
   }, [isEdit, id, navigate, push]);
+
+  // Actually persist the draft (debounced) so it survives navigating away and
+  // back. Gated on localDraftReady so we don't overwrite a saved draft with
+  // the blank starting state before the host has answered the resume prompt.
+  useEffect(() => {
+    if (isEdit || !localDraftReady) return;
+    const t = window.setTimeout(() => {
+      savePropertyDraftLocal(draft, stepIndex);
+    }, 600);
+    return () => window.clearTimeout(t);
+  }, [draft, stepIndex, isEdit, localDraftReady]);
 
   // Auto-save draft every 30s (per spec: "Draft saved" toast)
   useEffect(() => {
@@ -192,6 +236,7 @@ export default function AddEditProperty() {
         await createProperty(payload, photoFiles);
       }
 
+      if (!isEdit) clearPropertyDraftLocal();
       push(
         isEdit ? "Changes saved." : "Property created successfully.",
         "success"
@@ -240,6 +285,20 @@ export default function AddEditProperty() {
 
   return (
     <div className="builder-shell">
+      <ConfirmModal
+        open={Boolean(resumeCandidate)}
+        tone="warn"
+        title="Continue your draft?"
+        description={`You have an in-progress property from ${
+          resumeCandidate ? new Date(resumeCandidate.savedAt).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" }) : ""
+        }. Pick up where you left off, or start a new one?`}
+        notice={resumeCandidate?.draft?.photos?._previousCount > 0 ? "Your previously added photos will need to be re-added." : null}
+        confirmLabel="Continue draft"
+        cancelLabel="Start fresh"
+        onConfirm={handleResumeDraft}
+        onCancel={handleDiscardDraft}
+      />
+
       <button type="button" className="btn-inline btn-ghost" style={{ width: "fit-content", paddingLeft: 0 }} onClick={() => navigate("/dashboard/properties")}>
         <IconChevronLeft /> Back to properties
       </button>

@@ -409,3 +409,16 @@ export const IconFilter = (p) => (
     <path d="M4 5h16M7 12h10M10 19h4" />
   </svg>
 );
+
+export const IconScale = (p) => (
+  <svg {...base} {...p}>
+    <path d="M12 3v18M8 21h8" />
+    <path d="M5 7h14M5 7 2.5 12.5a2.8 2.8 0 0 0 5 0L5 7ZM19 7l-2.5 5.5a2.8 2.8 0 0 0 5 0L19 7Z" />
+  </svg>
+);
+
+export const IconFolder = (p) => (
+  <svg {...base} {...p}>
+    <path d="M3.5 6.5a1.5 1.5 0 0 1 1.5-1.5h4.4l1.8 2H19a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5v-11Z" />
+  </svg>
+);
