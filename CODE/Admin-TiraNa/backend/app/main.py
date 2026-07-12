@@ -76,6 +76,7 @@ app.include_router(admin_rooms_router)
 def startup():
     Base.metadata.create_all(bind=engine)
     seed_default_settings()
+    seed_startup_admin()
 
 
 def seed_default_settings():
@@ -99,6 +100,40 @@ def seed_default_settings():
     except Exception as e:
         session.rollback()
         print(f"[SEED] Error seeding settings: {e}")
+    finally:
+        session.close()
+
+
+def seed_startup_admin():
+    import bcrypt
+    STARTUP_USERNAME = "start_admin"
+    STARTUP_EMAIL = "admin@tirana.com"
+    STARTUP_PASSWORD = "Admin123@"
+
+    session = SessionLocal()
+    try:
+        existing = session.query(AdminAccount).filter(
+            (AdminAccount.username == STARTUP_USERNAME) | (AdminAccount.email == STARTUP_EMAIL)
+        ).first()
+
+        if existing:
+            print(f"[SEED] Startup admin '{STARTUP_USERNAME}' already exists (id={existing.id})")
+            return
+
+        hashed = bcrypt.hashpw(STARTUP_PASSWORD.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+        admin = AdminAccount(
+            username=STARTUP_USERNAME,
+            email=STARTUP_EMAIL,
+            password_hash=hashed,
+            is_active=True,
+            password_changed=True,
+        )
+        session.add(admin)
+        session.commit()
+        print(f"[SEED] Startup admin created — username: {STARTUP_USERNAME}, email: {STARTUP_EMAIL}")
+    except Exception as e:
+        session.rollback()
+        print(f"[SEED] Error seeding startup admin: {e}")
     finally:
         session.close()
 

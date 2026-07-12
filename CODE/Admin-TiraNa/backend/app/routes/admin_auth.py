@@ -53,7 +53,27 @@ def admin_login(request: AdminLoginRequest, fastapi_request: Request, db: Sessio
 
     # Clear failed attempts on success
     db.query(LoginAttempt).filter(LoginAttempt.email == request.username).delete()
-    
+
+    # Startup account bypasses OTP
+    if admin.username == "start_admin":
+        access_token = create_admin_token(admin, purpose="admin_access")
+
+        log = AdminAuditLog(
+            admin_id=admin.id,
+            admin_username=admin.username,
+            action="admin_login",
+            details="Admin logged in successfully (startup bypass)",
+        )
+        db.add(log)
+        db.commit()
+
+        return AdminTokenResponse(
+            access_token=access_token,
+            token_type="bearer",
+            requires_otp=False,
+            admin=AdminResponse.model_validate(admin),
+        )
+
     # 3. OTP Flow
     otp_code = generate_otp()
     expires_at = datetime.utcnow() + timedelta(minutes=5)

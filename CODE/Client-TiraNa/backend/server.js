@@ -64,6 +64,25 @@ async function cleanupOldCodes() {
 setInterval(cleanupOldCodes, 3_600_000)
 cleanupOldCodes()
 
+async function autoCompleteBookings() {
+  try {
+    const result = await pool.query(
+      `UPDATE bookings SET status = 'completed'
+       WHERE status = 'confirmed'
+         AND check_out < (now() AT TIME ZONE 'Asia/Manila')
+       RETURNING id`
+    )
+    if (result.rowCount > 0) {
+      console.log(`Auto-completed ${result.rowCount} booking(s): [${result.rows.map(r => r.id).join(', ')}]`)
+    }
+  } catch (err) {
+    console.error('Auto-complete bookings error:', err)
+  }
+}
+
+setInterval(autoCompleteBookings, 3_600_000)
+autoCompleteBookings()
+
 app.listen(PORT, () => {
   console.log(`Empress backend running on port ${PORT}`);
 });

@@ -21,8 +21,12 @@ export default function SignIn() {
     setError('')
     setLoading(true)
     try {
-      await login(email, password)
-      navigate('/verify-otp')
+      const result = await login(email, password)
+      if (result.requiresOtp) {
+        navigate('/verify-otp')
+      } else {
+        navigate('/')
+      }
     } catch (err) {
       setError(err.message)
     }
