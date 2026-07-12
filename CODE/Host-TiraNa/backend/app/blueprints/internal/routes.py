@@ -19,3 +19,16 @@ def property_host(property_id):
     if prop is None:
         return jsonify({"error": "Property not found"}), 404
     return jsonify({"host_id": prop.host_id})
+
+
+@internal_bp.route("/property/<int:property_id>", methods=["GET"])
+def property_detail(property_id):
+    """Return basic property info for cross-service lookups."""
+    prop = Property.query.get(property_id)
+    if prop is None:
+        return jsonify({"error": "Property not found"}), 404
+    return jsonify({
+        "id": prop.id,
+        "title": prop.title,
+        "host_id": prop.host_id,
+    })

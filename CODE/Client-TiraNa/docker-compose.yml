@@ -19,6 +19,9 @@ services:
       - ./backend/.env
     environment:
       - DATABASE_URL=postgresql://root@cockroachdb:26257/defaultdb?sslmode=disable
+      - HOST_API_URL=http://host.docker.internal:5001
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./backend:/app
       - /app/node_modules

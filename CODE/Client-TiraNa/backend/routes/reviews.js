@@ -152,7 +152,7 @@ router.get('/property/:propertyId', async (req, res) => {
               COALESCE(p.avatar_url, '') as avatar_url
        FROM reviews r
        LEFT JOIN personal_information p ON p.user_id = r.user_id
-       WHERE r.property_id = $1
+       WHERE r.property_id = $1 AND (r.is_hidden = false OR r.is_hidden IS NULL)
        ORDER BY r.created_at DESC`,
       [req.params.propertyId]
     )
@@ -198,7 +198,7 @@ router.get('/ratings', async (req, res) => {
                      COALESCE(AVG(location), 0) +
                      COALESCE(AVG(value), 0)) / 6.0, 1) AS avg_rating
        FROM reviews
-       WHERE property_id IN (${placeholders})
+       WHERE property_id IN (${placeholders}) AND (is_hidden = false OR is_hidden IS NULL)
        GROUP BY property_id`,
       propertyIds
     )

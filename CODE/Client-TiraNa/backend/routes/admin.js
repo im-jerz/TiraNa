@@ -3,6 +3,7 @@ import nodemailer from 'nodemailer'
 import pool from '../db.js'
 
 const router = Router()
+const HOST_API_URL = (process.env.HOST_API_URL || 'http://host-tirana-backend:5000').replace(/\/$/, '')
 
 const smtpAuth = process.env.SMTP_USER
   ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
@@ -290,7 +291,6 @@ router.get('/bookings', async (req, res) => {
     const bookings = result.rows.map(row => ({
       id: row.id,
       listing_id: row.property_id,
-      listing_title: null,
       guest_name: row.guest_name,
       guest_email: row.guest_email,
       check_in: row.check_in,
@@ -301,6 +301,23 @@ router.get('/bookings', async (req, res) => {
       status: row.status,
       created_at: row.created_at,
     }))
+
+    const propertyIds = [...new Set(bookings.map(b => b.listing_id).filter(Boolean))]
+    const titleMap = {}
+    await Promise.all(
+      propertyIds.map(async (pid) => {
+        try {
+          const resp = await fetch(`${HOST_API_URL}/api/internal/property/${pid}`)
+          if (resp.ok) {
+            const data = await resp.json()
+            titleMap[pid] = data.title
+          }
+        } catch {}
+      })
+    )
+    for (const b of bookings) {
+      b.listing_title = titleMap[b.listing_id] || null
+    }
 
     res.json({ data: bookings })
   } catch (err) {
