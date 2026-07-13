@@ -46,7 +46,7 @@ export async function fetchHostProfile(hostId) {
   return json.data
 }
 
-async function fetchPropertyRatings(propertyIds) {
+export async function fetchPropertyRatings(propertyIds) {
   if (propertyIds.length === 0) return {}
   try {
     const res = await fetch(`${REVIEWS_API}/ratings?property_ids=${propertyIds.join(',')}`)

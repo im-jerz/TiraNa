@@ -323,8 +323,19 @@ function Profile() {
       <div className="flex flex-col min-h-screen bg-white">
         <Header />
         <div className="flex-1">
-          <section className="bg-gradient-to-br from-charcoal via-teal to-charcoal pt-28 sm:pt-36 pb-20 sm:pb-28">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <section className="bg-charcoal pt-28 sm:pt-36 pb-20 sm:pb-28 relative overflow-hidden">
+            <div className="absolute inset-0">
+              <div className="absolute -top-24 -right-24 w-96 h-96 bg-teal/10 rounded-full blur-3xl" />
+              <div className="absolute -bottom-32 -left-32 w-[450px] h-[450px] bg-sage/[0.07] rounded-full blur-3xl" />
+              <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-olive/[0.08] rounded-full blur-3xl" />
+            </div>
+            <div className="absolute inset-0 opacity-[0.04]"
+              style={{
+                backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.6) 1px, transparent 0)',
+                backgroundSize: '32px 32px'
+              }}
+            />
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
               <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8">
                 <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-white/10 animate-pulse ring-2 ring-white/20 shrink-0" />
                 <div className="text-center sm:text-left">
@@ -385,11 +396,20 @@ function Profile() {
       <Header />
 
       <div className="flex-1">
-      <section className="bg-gradient-to-br from-charcoal via-teal to-charcoal pt-28 sm:pt-36 pb-20 sm:pb-28 relative overflow-hidden">
+      <section className="bg-charcoal pt-28 sm:pt-36 pb-20 sm:pb-28 relative overflow-hidden">
         <div className="absolute inset-0">
-          <div className="absolute top-10 right-20 w-64 h-64 bg-sage/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-10 left-20 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
+          <div className="absolute -top-24 -right-24 w-96 h-96 bg-teal/10 rounded-full blur-3xl" />
+          <div className="absolute -bottom-32 -left-32 w-[450px] h-[450px] bg-sage/[0.07] rounded-full blur-3xl" />
+          <div className="absolute top-1/3 left-1/2 w-64 h-64 bg-olive/[0.08] rounded-full blur-3xl" />
         </div>
+
+        <div className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.6) 1px, transparent 0)',
+            backgroundSize: '32px 32px'
+          }}
+        />
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="flex flex-col sm:flex-row items-center sm:items-center gap-6 sm:gap-8">
             <div className="relative group shrink-0">
@@ -416,13 +436,13 @@ function Profile() {
               />
             </div>
             <div className="text-center sm:text-left min-w-0">
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white break-words">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white break-words animate-fade-up">
                 {[user.first_name, user.middle_name, user.last_name].filter(Boolean).join(' ') || user.username}
               </h1>
               {(user.first_name || user.last_name) && (
-                <p className="text-base text-white/50 mt-0.5">@{user.username}</p>
+                <p className="text-base text-white/50 mt-0.5 animate-fade-up" style={{ animationDelay: '0.1s' }}>@{user.username}</p>
               )}
-              <p className="text-sm text-white/60 mt-1">{user.email}</p>
+              <p className="text-sm text-white/60 mt-1 animate-fade-up" style={{ animationDelay: '0.15s' }}>{user.email}</p>
             </div>
           </div>
         </div>
