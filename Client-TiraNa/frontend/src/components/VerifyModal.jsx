@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { CLIENT_API } from '../api/config.js'
 
 function MailIcon() {
   return (
@@ -65,7 +66,7 @@ function VerifyModal({ email, onVerified, onClose }) {
     setError('')
 
     try {
-      const res = await fetch('http://localhost:5000/api/auth/verify', {
+      const res = await fetch(`${CLIENT_API}/auth/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, code }),
@@ -92,7 +93,7 @@ function VerifyModal({ email, onVerified, onClose }) {
     setResent(false)
 
     try {
-      const res = await fetch('http://localhost:5000/api/auth/resend-code', {
+      const res = await fetch(`${CLIENT_API}/auth/resend-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),

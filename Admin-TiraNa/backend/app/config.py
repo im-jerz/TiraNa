@@ -27,6 +27,7 @@ class Settings(BaseSettings):
 
     HOST_API_BASE_URL: str = "http://host.docker.internal:5001"
     CLIENT_API_BASE_URL: str = "http://host.docker.internal:5000"
+    ADMIN_API_BASE_URL: str = "http://host.docker.internal:5002"
 
     model_config = {
         "env_file": _env_file,

@@ -1,6 +1,6 @@
-import { HOST_API_URL } from './config'
+import { HOST_API_URL, CLIENT_API } from './config'
 
-const REVIEWS_API = 'http://localhost:5000/api/reviews'
+const REVIEWS_API = `${CLIENT_API}/reviews`
 
 export async function fetchListings(params = {}) {
   const query = new URLSearchParams(params).toString()

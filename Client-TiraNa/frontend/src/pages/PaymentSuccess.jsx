@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
+import { CLIENT_API } from '../api/config.js'
 
 function CheckIcon({ className }) {
   return (
@@ -23,7 +24,7 @@ function PaymentSuccess() {
     const confirmPayment = async () => {
       try {
         const token = localStorage.getItem('token')
-        const res = await fetch('http://localhost:5000/api/payment/confirm', {
+        const res = await fetch(`${CLIENT_API}/payment/confirm`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

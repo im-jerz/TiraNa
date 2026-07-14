@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header.jsx'
+import { CLIENT_API, CLIENT_API_URL } from '../api/config.js'
 
-const API = 'http://localhost:5000/api/auth'
-const BACKEND_URL = 'http://localhost:5000'
+const API = `${CLIENT_API}/auth`
+const BACKEND_URL = CLIENT_API_URL
 
 function imgSrc(url) {
   return url?.startsWith('http') ? url : `${BACKEND_URL}${url}`

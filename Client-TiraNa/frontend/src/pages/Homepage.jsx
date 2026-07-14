@@ -4,6 +4,7 @@ import Header from '../components/Header.jsx'
 import Hero from '../components/Hero.jsx'
 import PropertyCard, { PropertyCardSkeleton } from '../components/PropertyCard.jsx'
 import { fetchFeaturedListings } from '../api/listings.js'
+import { HOST_APP_URL } from '../api/config.js'
 
 
 
@@ -174,7 +175,7 @@ function Homepage() {
                 </svg>
               </Link>
               <Link
-                to="http://localhost:5174/signup"
+                to={`${HOST_APP_URL}/signup`}
                 replace
                 className="inline-flex items-center gap-2 px-8 sm:px-10 py-3.5 sm:py-4 border border-white/20 text-white/90 font-medium uppercase tracking-wider text-sm sm:text-base hover:bg-white/10 hover:border-white/40 transition-colors rounded-xl"
               >

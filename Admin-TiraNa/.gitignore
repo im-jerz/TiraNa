@@ -14,7 +14,7 @@ eggs/
 # Virtual environments
 venv/
 env/
-
+.env
 
 # IDE
 .vscode/

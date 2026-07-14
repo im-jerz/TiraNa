@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
+import { CLIENT_API } from '../api/config.js'
 
-const API = 'http://localhost:5000/api/bookings'
+const API = `${CLIENT_API}/bookings`
 
 function ArrowLeftIcon({ className }) {
   return (
@@ -77,7 +78,7 @@ function Booking() {
       return
     }
 
-    fetch('http://localhost:5000/api/auth/profile', {
+    fetch(`${CLIENT_API}/auth/profile`, {
       headers: { 'Authorization': `Bearer ${token}` },
     })
       .then(res => res.json())
@@ -170,7 +171,7 @@ function Booking() {
       }
 
       if (paymentMethod === 'online') {
-        const checkoutRes = await fetch('http://localhost:5000/api/payment/create-checkout', {
+        const checkoutRes = await fetch(`${CLIENT_API}/payment/create-checkout`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

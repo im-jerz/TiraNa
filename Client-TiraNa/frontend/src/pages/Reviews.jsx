@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Header from '../components/Header.jsx'
-import { HOST_API_URL } from '../api/config.js'
+import { HOST_API_URL, CLIENT_API } from '../api/config.js'
 
-const REVIEW_API = 'http://localhost:5000/api/reviews'
+const REVIEW_API = `${CLIENT_API}/reviews`
 
 function computeAvg(review) {
   const cats = ['accuracy', 'checkIn', 'cleanliness', 'communication', 'location', 'value']

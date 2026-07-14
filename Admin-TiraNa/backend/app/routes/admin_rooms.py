@@ -5,7 +5,9 @@ from ..database import get_db
 from ..models import AdminAccount, AdminAuditLog
 from ..middleware.admin_auth import get_current_admin
 from ..services.host_api_client import host_api_client
+from ..config import get_settings
 
+settings = get_settings()
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/admin/rooms", tags=["Admin Rooms"])
 
@@ -26,7 +28,7 @@ async def list_rooms(
 
     for r in rooms:
         if r.get("cover_photo") and not r["cover_photo"].startswith("http"):
-            r["cover_photo"] = f"http://localhost:5001{r['cover_photo']}"
+            r["cover_photo"] = f"{settings.HOST_API_BASE_URL}{r['cover_photo']}"
 
     return {"rooms": rooms}
 

@@ -1,48 +1,43 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import Header from '../components/Header.jsx'
-
-const stats = [
-  { label: 'Available Properties', value: '20+' },
-  { label: 'Happy Guests', value: '50+' },
-  { label: 'Verified Hosts', value: '15+' },
-  { label: 'Cities Covered', value: '10+' },
-]
+import { HOST_APP_URL } from '../api/config.js'
 
 const values = [
   {
-    title: 'For Hosts',
-    description: 'List your property easily and start earning. Set your own price, availability, and house rules.',
+    title: 'Identity Verification',
+    description: 'Landlords and tenants must submit valid government IDs and proof of ownership for admin approval, preventing fraud and scams.',
     icon: (
       <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
       </svg>
     ),
   },
   {
-    title: 'For Guests',
-    description: 'Browse and book unique stays from cozy studios to entire houses. Filter by location, price, and amenities.',
+    title: 'Secure Payments',
+    description: 'PayMongo-integrated payments supporting GCash, Maya, and credit/debit cards with transaction records for both parties.',
     icon: (
       <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
       </svg>
     ),
   },
   {
-    title: 'Easy to Use',
-    description: 'Simple and intuitive interface designed for both hosts and guests. List or book in just a few clicks.',
+    title: 'Lease Management',
+    description: 'Digital lease contracts created and stored within the system, replacing informal verbal agreements.',
     icon: (
       <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
       </svg>
     ),
   },
   {
-    title: 'Secure & Reliable',
-    description: 'Safe booking process with verified listings and secure transactions for peace of mind.',
+    title: 'Neighborhood Guides',
+    description: 'Cost-of-living data, commute options, safety info, and nearby amenities to help migrants navigate unfamiliar cities.',
     icon: (
       <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
       </svg>
     ),
   },
@@ -51,20 +46,20 @@ const values = [
 const howItWorks = [
   {
     step: '01',
-    title: 'Browse Listings',
-    description: 'Explore available properties. Use filters to find the perfect match for your needs and budget.',
+    title: 'Register & Verify',
+    description: 'Create an account and submit your government ID for identity verification to ensure a trusted community.',
     color: 'bg-sage',
   },
   {
     step: '02',
-    title: 'Book a Stay',
-    description: 'Reserve your chosen property with ease. View details, check availability, and confirm your booking instantly.',
+    title: 'Browse & Book',
+    description: 'Search verified listings by location, price, and amenities. Reserve your stay with secure PayMongo payments.',
     color: 'bg-teal',
   },
   {
     step: '03',
-    title: 'Host Your Property',
-    description: 'List your own property. Set your price, upload photos, and start accepting guests in minutes.',
+    title: 'List & Earn',
+    description: 'Submit your property with proof of ownership for admin approval. Manage bookings and track earnings.',
     color: 'bg-olive',
   },
 ]
@@ -109,7 +104,7 @@ function About() {
               About TiraNa
             </h1>
             <p className="text-base sm:text-lg text-white/70 max-w-xl leading-relaxed animate-fade-up" style={{ animationDelay: '0.2s' }}>
-              TiraNa is a platform where homeowners can list their properties, and travelers can find the perfect place to stay.
+              A digital rental platform designed for fresh graduates from Philippine provinces who relocate to Metro Manila for employment.
             </p>
           </div>
         </div>
@@ -120,30 +115,30 @@ function About() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 sm:gap-16 items-center">
             <div className="animate-fade-in">
               <span className="text-xs font-semibold uppercase tracking-widest text-sage">About the Platform</span>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-charcoal mt-3 mb-4">List Your Space, Find Your Stay</h2>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-charcoal mt-3 mb-4">Verified Rentals, Secure Payments, Real Protection</h2>
               <p className="text-sm sm:text-base text-gray-500 leading-relaxed mb-4">
-                TiraNa is a full-featured accommodation marketplace built for everyone. Whether you have a spare space or an entire house, or you&apos;re looking for a place to stay, our platform makes it easy to connect hosts with travelers.
+                TiraNa addresses the lack of verified data on safety, availability, and legitimacy in existing online rental systems. The platform targets fresh graduates from Philippine provinces who face pervasive rental scams, housing costs consuming 60–100% of entry-level salaries, and informal lease agreements with no legal recourse.
               </p>
               <p className="text-sm sm:text-base text-gray-500 leading-relaxed mb-4">
-                Hosts can list their properties with photos, pricing, and availability — then manage bookings directly through their dashboard. Guests can browse listings, compare options, and reserve their ideal stay with just a few clicks.
+                By consolidating landlord and tenant identity verification, secure payments through PayMongo (GCash, Maya, cards), digital lease management, in-app messaging, and neighborhood guides with cost-of-living data into a single platform, TiraNa aims to reduce scam exposure, formalize rental agreements, and improve housing outcomes.
               </p>
               <p className="text-sm sm:text-base text-gray-500 leading-relaxed">
-                Built as a school project, TiraNa demonstrates how modern web technologies come together to create a real-world application — from user authentication and database management to responsive design and seamless user experience.
+                The system comprises three interconnected modules — Admin, Host, and Client — built with ReactJS frontend and containerized via Docker, ensuring every booking is visible to tenants, landlords, and administrators simultaneously.
               </p>
             </div>
             <div className="relative animate-scale-in">
               <div className="relative h-72 sm:h-96 overflow-hidden">
                 <img
-                  src="https://images.unsplash.com/photo-1556911220-bffb0c8e0f7c?w=600&h=500&fit=crop"
-                  alt="TiraNa story"
-                  className="w-full h-full object-cover"
+                  src="/favicon.svg"
+                  alt="TiraNa logo"
+                  className="w-full h-full object-contain p-8"
                   loading="lazy"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-charcoal/20 to-transparent" />
               </div>
               <div className="absolute -bottom-4 -left-4 bg-sage text-white px-6 py-4 hidden sm:block">
                 <p className="text-2xl font-bold">TiraNa</p>
-                <p className="text-xs text-white/80">Accommodation Marketplace</p>
+                <p className="text-xs text-white/80">Digital Rental Platform</p>
               </div>
             </div>
           </div>
@@ -165,19 +160,6 @@ function About() {
                 </div>
                 <h3 className="text-lg font-bold text-charcoal mb-3">{item.title}</h3>
                 <p className="text-sm text-gray-500 leading-relaxed">{item.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16 sm:py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 sm:gap-12">
-            {stats.map((stat) => (
-              <div key={stat.label} className="text-center animate-scale-in">
-                <p className="text-3xl sm:text-4xl font-bold text-teal mb-1">{stat.value}</p>
-                <p className="text-xs sm:text-sm text-gray-500 uppercase tracking-wider">{stat.label}</p>
               </div>
             ))}
           </div>
@@ -209,16 +191,16 @@ function About() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12 sm:mb-16">
             <span className="text-xs font-semibold uppercase tracking-widest text-sage">For Hosts</span>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-charcoal mt-3 mb-3">Earn by Sharing Your Space</h2>
-            <p className="text-sm sm:text-base text-gray-500 max-w-lg mx-auto">Have an extra space or a whole house? List it on TiraNa and start hosting today.</p>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-charcoal mt-3 mb-3">List Your Property, Start Earning</h2>
+            <p className="text-sm sm:text-base text-gray-500 max-w-lg mx-auto">Submit your property for verification and connect with verified tenants through a trusted platform.</p>
           </div>
           <div className="max-w-3xl mx-auto">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               {[
-                { title: 'List Your Property', desc: 'Add photos, set pricing, and define availability in minutes.' },
-                { title: 'Manage Bookings', desc: 'Accept or decline reservations from your dashboard.' },
-                { title: 'Earn Income', desc: 'Set your own rates and earn money from your extra space.' },
-                { title: 'Connect with Guests', desc: 'Message travelers and provide a great stay experience.' },
+                { title: 'Submit for Verification', desc: 'Provide proof of ownership and government ID for admin approval.' },
+                { title: 'Create Listings', desc: 'Add photos, set pricing, define amenities, and manage availability.' },
+                { title: 'Manage Bookings', desc: 'Accept or decline reservations and track all transactions.' },
+                { title: 'Track Revenue', desc: 'Monitor earnings, payout history, and booking statistics.' },
               ].map((item, i) => (
                 <div key={item.title} className="flex items-center gap-4 p-5 bg-gray-50 hover:bg-sage/5 transition-colors duration-300 group animate-fade-up" style={{ animationDelay: `${i * 0.1}s` }}>
                   <div className="w-10 h-10 bg-teal text-white flex items-center justify-center shrink-0 text-xs font-bold uppercase group-hover:bg-olive transition-colors">
@@ -236,7 +218,7 @@ function About() {
             </div>
             <div className="text-center mt-8">
               <Link
-                to="http://localhost:5174/signup"
+                to={`${HOST_APP_URL}/signup`}
                 replace
                 className="inline-block px-6 py-3 bg-sage text-white font-medium uppercase tracking-wider text-xs sm:text-sm hover:bg-olive transition-colors"
               >
@@ -250,8 +232,8 @@ function About() {
       {!user && (
         <section className="py-16 sm:py-20 bg-gradient-to-br from-charcoal via-teal to-charcoal text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">Experience TiraNa Today</h2>
-          <p className="text-sm sm:text-base text-white/70 mb-8 max-w-lg mx-auto">List your property or book your next stay — all in one platform.</p>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">Start Your Rental Journey Safely</h2>
+          <p className="text-sm sm:text-base text-white/70 mb-8 max-w-lg mx-auto">Join a verified community of tenants and landlords. Find affordable housing or list your property with confidence.</p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               to="/client/signup"

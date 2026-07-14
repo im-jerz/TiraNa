@@ -7,7 +7,9 @@ from ..models import AdminAccount, AdminAuditLog
 from ..middleware.admin_auth import get_current_admin
 from ..services.host_api_client import host_api_client
 from ..services.client_api_client import client_api_client
+from ..config import get_settings
 
+settings = get_settings()
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/admin/verifications", tags=["Admin Verifications"])
 
@@ -42,15 +44,15 @@ async def list_verifications(
 
     for v in host_verifications:
         if v.get("id_card_url") and not v["id_card_url"].startswith("http"):
-            v["id_card_url"] = f"http://localhost:5001{v['id_card_url']}"
+            v["id_card_url"] = f"{settings.HOST_API_BASE_URL}{v['id_card_url']}"
         if v.get("selfie_url") and not v["selfie_url"].startswith("http"):
-            v["selfie_url"] = f"http://localhost:5001{v['selfie_url']}"
+            v["selfie_url"] = f"{settings.HOST_API_BASE_URL}{v['selfie_url']}"
 
     for v in client_verifications:
         if v.get("id_front_url") and not v["id_front_url"].startswith("http"):
-            v["id_front_url"] = f"http://localhost:5000{v['id_front_url']}"
+            v["id_front_url"] = f"{settings.CLIENT_API_BASE_URL}{v['id_front_url']}"
         if v.get("id_back_url") and not v["id_back_url"].startswith("http"):
-            v["id_back_url"] = f"http://localhost:5000{v['id_back_url']}"
+            v["id_back_url"] = f"{settings.CLIENT_API_BASE_URL}{v['id_back_url']}"
 
     merged = host_verifications + client_verifications
     merged.sort(key=lambda v: v.get("submitted_at") or v.get("created_at") or "", reverse=True)

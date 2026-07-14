@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import PropertyCard from '../components/PropertyCard.jsx'
 import { fetchListingDetail, fetchListings } from '../api/listings.js'
+import { CLIENT_API } from '../api/config.js'
 
-const SAVED_API = 'http://localhost:5000/api/saved-properties'
+const SAVED_API = `${CLIENT_API}/saved-properties`
 
 function StarIcon({ className }) {
   return (
@@ -757,7 +758,7 @@ function ChevronRightIcon({ className }) {
   )
 }
 
-const BOOKING_API = 'http://localhost:5000/api/bookings'
+const BOOKING_API = `${CLIENT_API}/bookings`
 
 function AvailabilityCalendar({ propertyId }) {
   const [bookings, setBookings] = useState([])
@@ -1008,7 +1009,7 @@ function PropertyDetails() {
       .catch(() => setError(true))
       .finally(() => setLoading(false))
 
-    fetch(`http://localhost:5000/api/reviews/property/${id}`)
+    fetch(`${CLIENT_API}/reviews/property/${id}`)
       .then(res => res.json())
       .then(data => setUserReviews(data.data || []))
       .catch(() => {})
@@ -1019,7 +1020,7 @@ function PropertyDetails() {
       if (stored) {
         try { setCurrentUserId(JSON.parse(stored).id) } catch {}
       }
-      fetch(`http://localhost:5000/api/bookings`, {
+      fetch(`${CLIENT_API}/bookings`, {
         headers: { Authorization: `Bearer ${token}` },
       })
         .then(res => res.json())
@@ -1033,7 +1034,7 @@ function PropertyDetails() {
           })
           if (completed) {
             setEligibleBooking(completed)
-            fetch(`http://localhost:5000/api/reviews/check/${completed.id}`, {
+            fetch(`${CLIENT_API}/reviews/check/${completed.id}`, {
               headers: { Authorization: `Bearer ${token}` },
             })
               .then(res => res.json())
@@ -1182,7 +1183,7 @@ function PropertyDetails() {
       const token = localStorage.getItem('token')
       const catValues = Object.values(editRatings).map(Number).filter(v => v > 0)
       const overallRating = Math.round((catValues.reduce((a, b) => a + b, 0) / catValues.length) * 10) / 10
-      const res = await fetch(`http://localhost:5000/api/reviews/${editReview.id}`, {
+      const res = await fetch(`${CLIENT_API}/reviews/${editReview.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -1204,7 +1205,7 @@ function PropertyDetails() {
       setEditReview(null)
       setEditRatings({ accuracy: 0, checkIn: 0, cleanliness: 0, communication: 0, location: 0, value: 0 })
       setEditText('')
-      fetch(`http://localhost:5000/api/reviews/property/${id}`)
+      fetch(`${CLIENT_API}/reviews/property/${id}`)
         .then(res => res.json())
         .then(d => setUserReviews(d.data || []))
         .catch(() => {})
@@ -1220,7 +1221,7 @@ function PropertyDetails() {
     setDeleteLoading(true)
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch(`http://localhost:5000/api/reviews/${deleteTarget.id}`, {
+      const res = await fetch(`${CLIENT_API}/reviews/${deleteTarget.id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -1228,7 +1229,7 @@ function PropertyDetails() {
       if (!res.ok) throw new Error(data.error)
       setDeleteTarget(null)
       setReviewSubmitted(false)
-      fetch(`http://localhost:5000/api/reviews/property/${id}`)
+      fetch(`${CLIENT_API}/reviews/property/${id}`)
         .then(res => res.json())
         .then(d => setUserReviews(d.data || []))
         .catch(() => {})
@@ -1263,7 +1264,7 @@ function PropertyDetails() {
       const token = localStorage.getItem('token')
       const catValues = Object.values(reviewRatings).map(Number).filter(v => v > 0)
       const overallRating = Math.round((catValues.reduce((a, b) => a + b, 0) / catValues.length) * 10) / 10
-      const res = await fetch('http://localhost:5000/api/reviews', {
+      const res = await fetch(`${CLIENT_API}/reviews`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1287,7 +1288,7 @@ function PropertyDetails() {
       setShowReviewForm(false)
       setReviewRatings({ accuracy: 0, checkIn: 0, cleanliness: 0, communication: 0, location: 0, value: 0 })
       setReviewText('')
-      fetch(`http://localhost:5000/api/reviews/property/${id}`)
+      fetch(`${CLIENT_API}/reviews/property/${id}`)
         .then(res => res.json())
         .then(d => setUserReviews(d.data || []))
         .catch(() => {})

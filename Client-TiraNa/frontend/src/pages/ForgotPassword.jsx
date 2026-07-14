@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { CLIENT_API } from '../api/config.js'
 
 function MailIcon() {
   return (
@@ -29,7 +30,7 @@ function ForgotPassword() {
     setLoading(true)
 
     try {
-      const res = await fetch('http://localhost:5000/api/auth/forgot-password', {
+      const res = await fetch(`${CLIENT_API}/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),

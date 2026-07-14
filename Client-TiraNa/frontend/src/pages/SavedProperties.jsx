@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Header from '../components/Header.jsx'
 import PropertyCard, { PropertyCardSkeleton } from '../components/PropertyCard.jsx'
-import { HOST_API_URL } from '../api/config.js'
+import { HOST_API_URL, CLIENT_API } from '../api/config.js'
 import { fetchPropertyRatings } from '../api/listings.js'
 
-const SAVED_API = 'http://localhost:5000/api/saved-properties'
+const SAVED_API = `${CLIENT_API}/saved-properties`
 
 function HeartIcon({ className, filled }) {
   return (

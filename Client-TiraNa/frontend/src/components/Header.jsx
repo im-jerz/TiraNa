@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { CLIENT_API } from '../api/config.js'
 
 const navLinks = [
   { label: 'Home', path: '/' },
@@ -72,7 +73,7 @@ function Header() {
 
     async function fetchUnread() {
       try {
-        const res = await fetch('http://localhost:5000/api/notifications/unread-count', {
+        const res = await fetch(`${CLIENT_API}/notifications/unread-count`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         if (res.ok) {
@@ -286,7 +287,7 @@ function Header() {
                   </Link>
                 ) : (
                   <Link
-                    to="http://localhost:5174/signup"
+                    to={`${HOST_APP_URL}/signup`}
                     replace
                     className={`max-sm:hidden text-xs sm:text-sm font-medium transition-colors ${
                       t ? 'text-white/70 hover:text-white' : 'text-gray-500 hover:text-charcoal'
@@ -310,7 +311,7 @@ function Header() {
                   </Link>
                 ) : (
                   <Link
-                    to="http://localhost:5174/signin"
+                    to={`${HOST_APP_URL}/signin`}
                     replace
                     className={`inline-flex items-center text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2 font-medium transition-colors rounded ${
                       t

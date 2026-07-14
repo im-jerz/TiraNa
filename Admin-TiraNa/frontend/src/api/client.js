@@ -1,5 +1,13 @@
 const CLIENT_API_URL = import.meta.env.VITE_CLIENT_API_URL || (import.meta.env.DEV ? '/client-api' : 'http://localhost:5000')
 
+function toLocalhost(url) {
+  if (!url) return url
+  return url.replace(/host\.docker\.internal:\d+/g, (match) => {
+    const port = match.split(':')[1]
+    return `localhost:${port}`
+  })
+}
+
 async function api(path, options = {}) {
   const headers = {
     'Content-Type': 'application/json',
@@ -42,12 +50,8 @@ export async function getVerifications({ status = '', skip = 0, limit = 50 } = {
     return result.verifications.map(v => ({
       ...v,
       type: 'client',
-      id_front_url: v.id_front_url && !v.id_front_url.startsWith('http')
-        ? `${CLIENT_API_URL}${v.id_front_url}`
-        : v.id_front_url || '',
-      id_back_url: v.id_back_url && !v.id_back_url.startsWith('http')
-        ? `${CLIENT_API_URL}${v.id_back_url}`
-        : v.id_back_url || '',
+      id_front_url: v.id_front_url ? toLocalhost(v.id_front_url) : '',
+      id_back_url: v.id_back_url ? toLocalhost(v.id_back_url) : '',
     }))
   }
   return []

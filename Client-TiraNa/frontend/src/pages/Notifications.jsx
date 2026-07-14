@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header.jsx'
+import { CLIENT_API } from '../api/config.js'
 
-const API = 'http://localhost:5000/api/notifications'
+const API = `${CLIENT_API}/notifications`
 
 function BellIcon({ className = 'w-5 h-5' }) {
   return (
