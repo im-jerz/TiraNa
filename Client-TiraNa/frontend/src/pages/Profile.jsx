@@ -261,6 +261,28 @@ function Profile() {
   const [idFrontFile, setIdFrontFile] = useState(null)
   const [idBackFile, setIdBackFile] = useState(null)
 
+  const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
+
+  function validateImageFile(file) {
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      return 'Only image files are allowed (JPEG, PNG, WebP, HEIC)'
+    }
+    return null
+  }
+
+  function handleIdFileSelect(e, setFile) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const err = validateImageFile(file)
+    if (err) {
+      setError(err)
+      e.target.value = ''
+      return
+    }
+    setFile(file)
+    e.target.value = ''
+  }
+
   async function handleIdUpload() {
     if (!idFrontFile || !idBackFile) {
       setError('Please select both ID front and back images')
@@ -697,7 +719,7 @@ function Profile() {
                             type="file"
                             accept="image/*"
                             className="hidden"
-                            onChange={(e) => { const f = e.target.files?.[0]; if (f) setIdFrontFile(f); e.target.value = '' }}
+                            onChange={(e) => handleIdFileSelect(e, setIdFrontFile)}
                           />
                         </div>
                         <div>
@@ -722,7 +744,7 @@ function Profile() {
                             type="file"
                             accept="image/*"
                             className="hidden"
-                            onChange={(e) => { const f = e.target.files?.[0]; if (f) setIdBackFile(f); e.target.value = '' }}
+                            onChange={(e) => handleIdFileSelect(e, setIdBackFile)}
                           />
                         </div>
                       </div>
