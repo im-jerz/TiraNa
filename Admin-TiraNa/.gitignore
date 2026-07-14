@@ -45,3 +45,6 @@ test.db
 
 # Plans
 ../../PLAN/
+
+
+.env

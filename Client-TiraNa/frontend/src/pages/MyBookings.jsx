@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Header from '../components/Header.jsx'
-import { HOST_API_URL } from '../api/config.js'
+import { HOST_API_URL, CLIENT_API } from '../api/config.js'
 
-const BOOKING_API = 'http://localhost:5000/api/bookings'
-const REVIEW_API = 'http://localhost:5000/api/reviews'
+const BOOKING_API = `${CLIENT_API}/bookings`
+const REVIEW_API = `${CLIENT_API}/reviews`
 
 const filters = [
   { id: 'all', label: 'All' },

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import VerifyModal from '../components/VerifyModal.jsx'
+import { CLIENT_API } from '../api/config.js'
 
 function EyeIcon({ open }) {
   return (
@@ -109,7 +110,7 @@ function Signup() {
     setLoading(true)
 
     try {
-      const res = await fetch('http://localhost:5000/api/auth/signup', {
+      const res = await fetch(`${CLIENT_API}/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

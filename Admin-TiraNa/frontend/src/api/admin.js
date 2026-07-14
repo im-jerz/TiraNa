@@ -1,5 +1,13 @@
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '' : 'http://localhost:5002')
 
+function toLocalhost(url) {
+  if (!url) return url
+  return url.replace(/host\.docker\.internal:\d+/g, (match) => {
+    const port = match.split(':')[1]
+    return `localhost:${port}`
+  })
+}
+
 async function api(path, options = {}) {
   const token = localStorage.getItem('admin_token')
 
@@ -72,7 +80,17 @@ export async function getRooms({ status = '', search = '', skip = 0, limit = 50 
   const params = new URLSearchParams({ skip, limit })
   if (status) params.set('status', status)
   if (search) params.set('search', search)
-  return api(`/admin/rooms/?${params}`)
+  const result = await api(`/admin/rooms/?${params}`)
+  if (result && result.rooms) {
+    return {
+      ...result,
+      rooms: result.rooms.map(r => ({
+        ...r,
+        cover_photo: toLocalhost(r.cover_photo),
+      })),
+    }
+  }
+  return result
 }
 
 export async function updateRoomStatus(roomId, status) {
@@ -148,7 +166,15 @@ export async function getListings({ status = '', search = '', skip = 0, limit = 
   const params = new URLSearchParams({ skip, limit })
   if (status) params.set('status', status)
   if (search) params.set('search', search)
-  return api(`/admin/listings/?${params}`)
+  const result = await api(`/admin/listings/?${params}`)
+  if (Array.isArray(result)) {
+    return result.map(l => ({
+      ...l,
+      cover_photo: toLocalhost(l.cover_photo),
+      photo_url: toLocalhost(l.photo_url),
+    }))
+  }
+  return result
 }
 
 export async function approveListing(listingId) {

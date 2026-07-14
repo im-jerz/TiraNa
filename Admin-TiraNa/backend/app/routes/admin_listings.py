@@ -11,7 +11,9 @@ from ..database import get_db
 from ..models import AdminAccount, AdminAuditLog
 from ..middleware.admin_auth import get_current_admin
 from ..services.host_api_client import host_api_client
+from ..config import get_settings
 
+settings = get_settings()
 router = APIRouter(prefix="/admin/listings", tags=["Admin Listings"])
 
 
@@ -32,6 +34,9 @@ async def list_listings(
         # Frontend expects: title, host_email, price_per_night, status, id, photo_url, etc.
         listings = []
         for room in rooms:
+            cover_photo = room.get("cover_photo") or room.get("photo_url")
+            if cover_photo and not cover_photo.startswith("http"):
+                cover_photo = f"{settings.HOST_API_BASE_URL}{cover_photo}"
             listings.append({
                 "id": room.get("id"),
                 "title": room.get("name"),  # Map 'name' to 'title'
@@ -40,7 +45,8 @@ async def list_listings(
                 "host_email": room.get("host_email"),
                 "price_per_night": room.get("price_per_night"),
                 "status": room.get("status", "pending"),
-                "photo_url": room.get("photo_url"),
+                "cover_photo": cover_photo,
+                "photo_url": cover_photo,
                 "location": room.get("location"),
                 "description": room.get("description"),
                 "property_type": room.get("property_type"),

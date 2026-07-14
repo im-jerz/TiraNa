@@ -1,5 +1,13 @@
 const HOST_API_URL = import.meta.env.VITE_HOST_API_URL || (import.meta.env.DEV ? '/host-api' : 'http://localhost:5001')
 
+function toLocalhost(url) {
+  if (!url) return url
+  return url.replace(/host\.docker\.internal:\d+/g, (match) => {
+    const port = match.split(':')[1]
+    return `localhost:${port}`
+  })
+}
+
 async function api(path, options = {}) {
   const headers = {
     'Content-Type': 'application/json',
@@ -55,8 +63,8 @@ export async function getProperties({ status = '', search = '', skip = 0, limit 
   if (data && data.properties) {
     return data.properties.map(p => ({
       ...p,
-      cover_photo: p.cover_photo && !p.cover_photo.startsWith('http')
-        ? `${HOST_API_URL}${p.cover_photo}`
+      cover_photo: p.cover_photo
+        ? toLocalhost(p.cover_photo)
         : p.cover_photo,
     }))
   }
@@ -84,12 +92,8 @@ export async function getVerifications({ status = '', skip = 0, limit = 50 } = {
       ...v,
       type: 'host',
       status: v.status === 'active' ? 'approved' : v.status === 'inactive' ? 'rejected' : v.status,
-      id_card_url: v.id_card_url && !v.id_card_url.startsWith('http')
-        ? `${HOST_API_URL}${v.id_card_url}`
-        : v.id_card_url || '',
-      selfie_url: v.selfie_url && !v.selfie_url.startsWith('http')
-        ? `${HOST_API_URL}${v.selfie_url}`
-        : v.selfie_url || '',
+      id_card_url: v.id_card_url ? toLocalhost(v.id_card_url) : '',
+      selfie_url: v.selfie_url ? toLocalhost(v.selfie_url) : '',
     }))
   }
   return []

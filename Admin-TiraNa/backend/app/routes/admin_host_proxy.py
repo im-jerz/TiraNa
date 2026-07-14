@@ -219,7 +219,7 @@ async def get_host_verifications(
         host_verifications = await host_api_client.get_verifications(
             status=host_status, skip=skip, limit=limit
         )
-        admin_base = "http://localhost:5002"
+        admin_base = settings.ADMIN_API_BASE_URL
         for v in host_verifications:
             v["id"] = str(v["id"])
             v["type"] = "host"
@@ -239,7 +239,7 @@ async def get_host_verifications(
         client_verifications = await client_api_client.get_verifications(
             status=client_status, skip=skip, limit=limit
         )
-        admin_base = f"http://localhost:5002"
+        admin_base = settings.ADMIN_API_BASE_URL
         for v in client_verifications:
             v["type"] = "guest"
             if v.get("id_url") and v["id_url"].startswith("/uploads/"):

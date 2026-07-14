@@ -82,7 +82,7 @@ def startup():
 def seed_default_settings():
     defaults = {
         "commission_percentage": ("10", "Platform commission percentage"),
-        "host_api_base_url": ("http://localhost:5001", "Host module API base URL"),
+        "host_api_base_url": (settings.HOST_API_BASE_URL, "Host module API base URL"),
         "platform_name": ("TiraNa", "Platform display name"),
         "support_email": ("support@tirana.com", "Support contact email"),
         "min_payout_amount": ("500", "Minimum withdrawal amount (PHP)"),
