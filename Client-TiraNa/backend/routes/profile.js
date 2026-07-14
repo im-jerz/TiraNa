@@ -12,6 +12,8 @@ const __dirname = path.dirname(__filename)
 const router = Router()
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret'
 
+const ALLOWED_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     if (file.fieldname.startsWith('id_')) {
@@ -29,7 +31,13 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (!ALLOWED_MIMES.includes(file.mimetype)) {
+      return cb(new Error('Only image files are allowed (JPEG, PNG, WebP, HEIC)'))
+    }
+    cb(null, true)
+  }
 })
 
 function authMiddleware(req, res, next) {
@@ -213,7 +221,14 @@ router.delete('/account', authMiddleware, async (req, res) => {
   }
 })
 
-router.post('/upload-avatar', authMiddleware, upload.single('avatar'), async (req, res) => {
+function handleMulterError(err, req, res, next) {
+  if (err instanceof multer.MulterError || err.message?.includes('image files')) {
+    return res.status(400).json({ error: err.message || 'Invalid file type. Only images are allowed.' })
+  }
+  next(err)
+}
+
+router.post('/upload-avatar', authMiddleware, upload.single('avatar'), handleMulterError, async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'Avatar image is required' })
@@ -239,7 +254,7 @@ router.post('/upload-avatar', authMiddleware, upload.single('avatar'), async (re
 router.post('/verify-id', authMiddleware, upload.fields([
   { name: 'id_front', maxCount: 1 },
   { name: 'id_back', maxCount: 1 }
-]), async (req, res) => {
+]), handleMulterError, async (req, res) => {
   try {
     const frontFile = req.files?.id_front?.[0]
     const backFile = req.files?.id_back?.[0]
