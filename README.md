@@ -35,7 +35,6 @@ TiraNa is built on a **microservices architecture** with three independent subsy
 - **Landlord & Property Verification** — Admin-reviewed ID and ownership documents to prevent rental scams
 - **Secure Payments** — PayMongo-integrated payments (GCash, Maya, credit/debit cards)
 - **Digital Lease Management** — In-app lease contracts and booking management
-- **In-App Messaging** — Direct host-tenant communication within the platform
 - **Neighborhood Guides** — Cost-of-living data, commute options, and safety info for Metro Manila areas
 - **Review & Rating System** — Post-stay ratings for landlords and properties
 - **Admin Dashboard** — Dispute resolution, analytics, user management, and audit logs
