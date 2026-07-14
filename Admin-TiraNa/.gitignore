@@ -14,7 +14,7 @@ eggs/
 # Virtual environments
 venv/
 env/
-.env
+
 
 # IDE
 .vscode/
@@ -45,3 +45,6 @@ test.db
 
 # Plans
 ../../PLAN/
+
+
+.env
